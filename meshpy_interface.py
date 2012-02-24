@@ -15,10 +15,12 @@ def create_mesh( max_area, roundtrip_points, facets = None, holes=None ):
 
     if facets is not None:
         mesh = create_tetrahedron_mesh( roundtrip_points, facets )
+        return mesh2d(mesh.points, mesh.elements)
     else:
         mesh = create_triangle_mesh( roundtrip_points, holes )
+        return mesh3d(mesh.points, mesh.elements)
 
-    return _construct_mymesh( mesh )
+    return
 # ==============================================================================
 def create_triangle_mesh(roundtrip_points, holes):
     '''Create a mesh.
@@ -67,32 +69,4 @@ def _round_trip_connect(start, end):
 def _needs_refinement( vertices, area ):
     '''Refinement function.'''
     return area > MAX_AREA
-# ==============================================================================
-def _construct_mymesh( meshpy_mesh ):
-    '''Create the mesh entity.'''
-    import mesh
-    import vtk
-
-    # Create the vertices.
-    num_nodes = len(meshpy_mesh.points)
-    nodes = np.empty(num_nodes, dtype=np.dtype((float, 3)))
-    for k, point in enumerate(meshpy_mesh.points):
-        if len(point) == 2:
-            nodes[k][:2] = point
-            nodes[k][2] = 0.0
-        elif len(point) == 3:
-            nodes[k] = point
-        else:
-            raise ValueError('Unknown point.')
-          
-    # Create the elements (cells).
-    num_elems = len(meshpy_mesh.elements)
-    # Take the dimension of the first cell to be the dimension of all cells.
-    dim_elems = len(meshpy_mesh.elements[0])
-    elems = np.empty(num_elems, dtype=np.dtype((int,dim_elems)))
-    for k, element in enumerate(meshpy_mesh.elements):
-        elems[k] = element
-    
-    # create the mesh data structure
-    return mesh.Mesh( nodes, elems )
 # ==============================================================================

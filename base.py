@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 # ==============================================================================
+__all__ = []
+
 import numpy as np
 # ==============================================================================
-class Mesh:
+class _base_mesh:
     # --------------------------------------------------------------------------
     def __init__(self,
                  nodes,
@@ -81,8 +83,16 @@ class Mesh:
 
         # set points
         vtk_points = vtk.vtkPoints()
-        for point in points:
-            vtk_points.InsertNextPoint( point )
+        if len(points[0]) == 2:
+            cell_type = vtk.VTK_TRIANGLE
+            for point in points:
+                vtk_points.InsertNextPoint(point[0], point[1], 0.0)
+        elif len(points[0]) == 3:
+            cell_type = vtk.VTK_TETRA
+            for point in points:
+                vtk_points.InsertNextPoint(point[0], point[1], point[2])
+        else:
+            raise RuntimeError('???')
         mesh.SetPoints( vtk_points )
 
         # set cells
@@ -91,18 +101,9 @@ class Mesh:
             num_local_nodes = len(cellNodes)
             pts.SetNumberOfIds(num_local_nodes)
             # get the connectivity for this element
-            k = 0
-            # TODO insert the whole thing at once?
-            for node_index in cellNodes:
+            for k, node_index in enumerate(cellNodes):
                 pts.InsertId(k, node_index)
-                k += 1
-            if num_local_nodes == 3:
-                element_type = vtk.VTK_TRIANGLE
-            elif num_local_nodes == 4:
-                element_type = vtk.VTK_TETRA
-            else:
-                raise ValueError('Unknown element.')
-            mesh.InsertNextCell(element_type, pts)
+            mesh.InsertNextCell(cell_type, pts)
 
         # set values
         if X is not None:
