@@ -371,7 +371,7 @@ class mesh2d(_base_mesh):
             for edge_id in xrange(len(self.edgesCells)):
                 ccs = self.cell_circumcenters[self.edgesCells[edge_id]]
                 if len(ccs) == 2:
-                    p = np.c_[ccs[0], ccs[1]]
+                    p = ccs.T
                 elif len(ccs) == 1:
                     edge_midpoint = 0.5 * (self.nodes[self.edgesNodes[edge_id][0]]
                                           +self.nodes[self.edgesNodes[edge_id][1]])
@@ -415,7 +415,7 @@ class mesh2d(_base_mesh):
                 if node_id in node_ids:
                     ccs = self.cell_circumcenters[self.edgesCells[edge_id]]
                     if len(ccs) == 2:
-                        p = np.c_[ccs[0], ccs[1]]
+                        p = ccs.T
                         q = np.c_[ccs[0], ccs[1], self.nodes[node_id]]
                     elif len(ccs) == 1:
                         edge_midpoint = 0.5 * (self.nodes[node_ids[0]]

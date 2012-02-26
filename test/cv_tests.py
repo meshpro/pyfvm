@@ -70,12 +70,10 @@ class TestMesh(unittest.TestCase):
         self._run_test(mesh, actual_values)
         return
     # --------------------------------------------------------------------------
-    def test_tet(self):
+    def test_tetrahedron(self):
         filename = 'tetrahedron.e'
         mesh, point_data, field_data = voropy.read( filename )
 
-        #if mesh.edgesNodes is None:
-            #mesh.create_adjacent_entities()
         #mesh.show_edge(54)
 
         actual_values = [ 64.150028545708011,

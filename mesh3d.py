@@ -429,11 +429,6 @@ class mesh3d(_base_mesh):
             self.create_cell_circumcenters()
         cell_ccs = self.cell_circumcenters
 
-        # get face circumcenters
-        if self.face_circumcenters is None:
-            self.create_face_circumcenters()
-        face_ccs = self.face_circumcenters
-
         edge_midpoint = 0.5 * (edge_nodes[0] + edge_nodes[1])
 
         # plot covolume and highlight faces in matching colors
@@ -445,32 +440,33 @@ class mesh3d(_base_mesh):
             col = mpl.colors.hsv_to_rgb(hsv_face_col)[0][0]
 
             # paint the face
-            face_nodes = self.nodes[self.facesNodes[face_id]]
             import mpl_toolkits.mplot3d as mpl3
+            face_nodes = self.nodes[self.facesNodes[face_id]]
             tri = mpl3.art3d.Poly3DCollection( [face_nodes] )
             tri.set_color(mpl.colors.rgb2hex(col))
             #tri.set_alpha( 0.5 )
             ax.add_collection3d( tri )
 
             # mark face circumcenters
-            face_cc = face_ccs[face_id]
+            face_cc = self._get_face_circumcenter(face_id)
             ax.plot([face_cc[0]], [face_cc[1]], [face_cc[2]],
                     marker='o', color=col)
 
-            boundary_col = [0.5,0.5,0.5]
+            face_col = '0.7'
             ccs = cell_ccs[ self.facesCells[face_id] ]
             if len(ccs) == 2:
+                tri = mpl3.art3d.Poly3DCollection([np.vstack((ccs, edge_midpoint))])
+                tri.set_color(face_col)
+                ax.add_collection3d( tri )
                 ax.plot(ccs[:,0], ccs[:,1], ccs[:,2], color=col)
             elif len(ccs) == 1:
+                tri = mpl3.art3d.Poly3DCollection([np.vstack((ccs[0], face_cc, edge_midpoint))])
+                tri.set_color(face_col)
+                ax.add_collection3d( tri )
                 ax.plot([ccs[0][0],face_cc[0]],
                         [ccs[0][1],face_cc[1]],
                         [ccs[0][2],face_cc[2]],
                         color=col)
-                face_cc = face_ccs[face_id]
-                ax.plot([edge_midpoint[0],face_cc[0]],
-                        [edge_midpoint[1],face_cc[1]],
-                        [edge_midpoint[2],face_cc[2]],
-                        color=boundary_col)
             else:
                 raise RuntimeError('???')
 
