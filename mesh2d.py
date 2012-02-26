@@ -343,16 +343,12 @@ class mesh2d(_base_mesh):
 
         return edge_normals
     # --------------------------------------------------------------------------
-    def show(self, highlight_nodes = []):
+    def show(self, show_covolumes = True):
         '''Plot the mesh.'''
         if self.edgesNodes is None:
-            raise RuntimeError('Can only show mesh when edges are created.')
+            self.create_adjacent_entities()
 
         import matplotlib.pyplot as plt
-        from mpl_toolkits.mplot3d import Axes3D
-
-        if self.cell_circumcenters is None:
-            self.create_cell_circumcenters()
 
         fig = plt.figure()
         #ax = fig.gca(projection='3d')
@@ -365,35 +361,71 @@ class mesh2d(_base_mesh):
             x = self.nodes[node_ids]
             ax.plot(x[:,0],
                     x[:,1],
-                    #x[:,2],
                     col)
 
-        # Highlight nodes and their covolumes.
-        node_col = 'r'
-        covolume_col = '0.5'
-        for node_id in highlight_nodes:
-            x = self.nodes[node_id]
-            ax.plot([x[0]],
-                    [x[1]],
-                    color=node_col, marker='o')
-            # Plot the covolume.
-            # TODO Something like nodesEdges would be useful here.
-            for edge_id, node_ids in enumerate(self.edgesNodes):
+        # Highlight covolumes.
+        if show_covolumes:
+            if self.cell_circumcenters is None:
+                self.create_cell_circumcenters()
+            covolume_col = '0.5'
+            for edge_id in xrange(len(self.edgesCells)):
+                ccs = self.cell_circumcenters[self.edgesCells[edge_id]]
+                if len(ccs) == 2:
+                    p = np.c_[ccs[0], ccs[1]]
+                elif len(ccs) == 1:
+                    edge_midpoint = 0.5 * (self.nodes[self.edgesNodes[edge_id][0]]
+                                          +self.nodes[self.edgesNodes[edge_id][1]])
+                    p = np.c_[ccs[0], edge_midpoint]
+                else:
+                    raise RuntimeError('An edge has to have either 1 or 2 adjacent cells.')
+                ax.plot(p[0], p[1], color = covolume_col)
+
+        plt.show()
+        return
+    # --------------------------------------------------------------------------
+    def show_node(self, node_id, show_covolume = True):
+        '''Plot the vicinity of a node and its covolume.'''
+        if self.edgesNodes is None:
+            self.create_adjacent_entities()
+
+        import matplotlib.pyplot as plt
+
+        fig = plt.figure()
+        #ax = fig.gca(projection='3d')
+        ax = fig.gca()
+        plt.axis('equal')
+
+        # plot edges
+        col = 'k'
+        for node_ids in self.edgesNodes:
+            if node_id in node_ids:
+                x = self.nodes[node_ids]
+                ax.plot(x[:,0],
+                        x[:,1],
+                        col)
+
+        # Highlight covolumes.
+        if show_covolume:
+            if self.cell_circumcenters is None:
+                self.create_cell_circumcenters()
+            covolume_boundary_col = '0.5'
+            covolume_area_col = '0.7'
+            for edge_id in xrange(len(self.edgesCells)):
+                node_ids = self.edgesNodes[edge_id]
                 if node_id in node_ids:
-                    adjacent_cells = self.edgesCells[edge_id]
-                    ccs = self.cell_circumcenters[adjacent_cells]
+                    ccs = self.cell_circumcenters[self.edgesCells[edge_id]]
                     if len(ccs) == 2:
-                        ax.plot( [ccs[0][0], ccs[1][0]],
-                                 [ccs[0][1], ccs[1][1]],
-                                 color = covolume_col )
+                        p = np.c_[ccs[0], ccs[1]]
+                        q = np.c_[ccs[0], ccs[1], self.nodes[node_id]]
                     elif len(ccs) == 1:
                         edge_midpoint = 0.5 * (self.nodes[node_ids[0]]
                                               +self.nodes[node_ids[1]])
-                        ax.plot( [ccs[0][0], edge_midpoint[0]],
-                                 [ccs[0][1], edge_midpoint[1]],
-                                 color = covolume_col )
+                        p = np.c_[ccs[0], edge_midpoint]
+                        q = np.c_[ccs[0], edge_midpoint, self.nodes[node_id]]
                     else:
                         raise RuntimeError('An edge has to have either 1 or 2 adjacent cells.')
+                    ax.fill(q[0], q[1], color = covolume_area_col)
+                    ax.plot(p[0], p[1], color = covolume_boundary_col)
 
         plt.show()
         return

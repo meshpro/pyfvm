@@ -40,6 +40,7 @@ class TestMesh(unittest.TestCase):
         actual_values = [ 10.0,
                           5.0,
                           2.5 ]
+
         self._run_test(mesh, actual_values)
         return
     # --------------------------------------------------------------------------
@@ -89,6 +90,7 @@ class TestMesh(unittest.TestCase):
         actual_values = [ 302.52270072101,
                           15.3857579093391,
                           1.12779746704366 ]
+
         self._run_test(mesh, actual_values)
         return
     # --------------------------------------------------------------------------
