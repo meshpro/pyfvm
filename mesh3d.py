@@ -26,19 +26,6 @@ class mesh3d(_base_mesh):
         #         new_cells[k]['nodes'] = self.cells[k]['nodes']
         #
         # does not seem to work for whatever reason.
-        # Hence, handle cells and friends of dictionaries of np.arrays.
-        if not isinstance(nodes,np.ndarray):
-           raise TypeError('For performace reasons, build nodes as np.empty(num_nodes, dtype=np.dtype((float, 3)))')
-
-        if not isinstance(cellsNodes,np.ndarray):
-           raise TypeError('For performace reasons, build cellsNodes as np.empty(num_nodes, dtype=np.dtype((int, 3)))')
-
-        if cellsEdges is not None and not isinstance(cellsEdges,np.ndarray):
-           raise TypeError('For performace reasons, build cellsEdges as np.empty(num_nodes, dtype=np.dtype((int, 3)))')
-
-        if edgesNodes is not None and  not isinstance(edgesNodes,np.ndarray):
-           raise TypeError('For performace reasons, build edgesNodes as np.empty(num_nodes, dtype=np.dtype((int, 2)))')
-
         self.nodes = nodes
         self.edgesNodes = edgesNodes
         self.edgesFaces = None
@@ -52,6 +39,7 @@ class mesh3d(_base_mesh):
         self.cell_circumcenters = None
         self.cellsVolume = None
         self.control_volumes = None
+        return
     # --------------------------------------------------------------------------
     def create_cells_volume(self):
         '''Returns the volume of a tetrahedron given by the nodes.

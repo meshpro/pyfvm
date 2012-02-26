@@ -10,30 +10,7 @@ class _base_mesh:
                  nodes,
                  cellsNodes
                  ):
-        # It would be sweet if we could handle cells and the rest as arrays
-        # with fancy dtypes such as
-        #
-        #     np.dtype([('nodes', (int, num_local_nodes)),
-        #               ('edges', (int, num_local_edges))]),
-        #
-        # but right now there's no (no easy?) way to extend nodes properly
-        # for the case that 'edges' aren't given. A simple recreate-and-copy
-        #
-        #     for k in xrange(num_cells):
-        #         new_cells[k]['nodes'] = self.cells[k]['nodes']
-        #
-        # does not seem to work for whatever reason.
-        # Hence, handle cells and friends of dictionaries of np.arrays.
-        if not isinstance(nodes,np.ndarray):
-           raise TypeError('For performace reasons, build nodes as np.empty(num_nodes, dtype=np.dtype((float, 3)))')
-
-        if not isinstance(cellsNodes,np.ndarray):
-           raise TypeError('For performace reasons, build cellsNodes as np.empty(num_nodes, dtype=np.dtype((int, 3)))')
-
-        self.nodes = nodes
-        self.cellsNodes = cellsNodes
-        self.cellsVolume = None
-        self.vtk_mesh = None
+        return
     # --------------------------------------------------------------------------
     def write( self,
                filename,
@@ -44,14 +21,13 @@ class _base_mesh:
         import os
         import vtk
 
-        if self.vtk_mesh is None:
-            self.vtk_mesh = self._generate_vtk_mesh(self.nodes, self.cellsNodes)
+        vtk_mesh = self._generate_vtk_mesh(self.nodes, self.cellsNodes)
 
         # add arrays
         if extra_arrays:
             for key, value in extra_arrays.iteritems():
-                self.vtk_mesh.GetPointData().AddArray(
-                    self._create_vtkdoublearray(value, key))
+                vtk_mesh.GetPointData() \
+                        .AddArray(self._create_vtkdoublearray(value, key))
 
         extension = os.path.splitext(filename)[1]
         if extension == ".vtu": # VTK XML format
@@ -71,7 +47,7 @@ class _base_mesh:
 
         writer.SetFileName( filename )
 
-        writer.SetInput( self.vtk_mesh )
+        writer.SetInput( vtk_mesh )
 
         writer.Write()
 
