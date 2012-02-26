@@ -134,6 +134,7 @@ class mesh2d(_base_mesh):
         # Record the newly added nodes.
         num_new_nodes = len(self.edgesNodes)
         new_nodes = np.empty(num_new_nodes, dtype=np.dtype((float,2)))
+        self.nodes = np.append(self.nodes, new_nodes, axis=0)
         new_node_gid = len(self.nodes)
 
         # After the refinement step, all previous edge-node associations will
@@ -169,10 +170,10 @@ class mesh2d(_base_mesh):
                     # for the cell creation.
                     local_edge_midpoint_gids[k] = \
                         edge_midpoint_gids[edge_gid]
-                    local_edge_newedges[k] = edge_newedges[edge_gid]
+                    local_edge_newedges[k] = edge_midpoint_gids[edge_gid]
                 else:
                     # Create new node at the edge midpoint.
-                    new_nodes[new_node_gid] = \
+                    self.nodes[new_node_gid] = \
                         0.5 * (self.nodes[edgenodes_gids[0]] \
                               +self.nodes[edgenodes_gids[1]])
                     local_edge_midpoint_gids[k] = new_node_gid
@@ -230,8 +231,6 @@ class mesh2d(_base_mesh):
                               local_neighbor_newedges[k][1]])
                 new_cell_gid += 1
 
-        print new_cellsNodes
-        self.nodes = np.append(self.nodes, new_nodes, axis=0)
         self.edgesNodes = new_edgesNodes
         self.cellsNodes = new_cellsNodes
         self.cellsEdges = new_cellsEdges
