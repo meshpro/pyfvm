@@ -26,7 +26,7 @@ class mesh3d(_base_mesh):
         #         new_cells[k]['nodes'] = self.cells[k]['nodes']
         #
         # does not seem to work for whatever reason.
-        super(mesh3d, self).__init__()
+        super(mesh3d, self).__init__(nodes, cellsNodes)
         self.nodes = nodes
         self.edgesNodes = edgesNodes
         self.edgesFaces = None

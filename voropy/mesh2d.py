@@ -28,7 +28,7 @@ class mesh2d(_base_mesh):
         #
         # does not seem to work for whatever reason.
         # Hence, handle cells and friends of dictionaries of np.arrays.
-        super(mesh2d, self).__init__()
+        super(mesh2d, self).__init__(nodes, cellsNodes)
         self.nodes = nodes
         self.edgesNodes = edgesNodes
         self.edgesCells = edgesCells
