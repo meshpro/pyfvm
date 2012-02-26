@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # ==============================================================================
-__all__=['mesh3d']
+__all__ = ['mesh3d']
 
 import numpy as np
 from base import _base_mesh
@@ -26,6 +26,7 @@ class mesh3d(_base_mesh):
         #         new_cells[k]['nodes'] = self.cells[k]['nodes']
         #
         # does not seem to work for whatever reason.
+        super(mesh3d, self).__init__()
         self.nodes = nodes
         self.edgesNodes = edgesNodes
         self.edgesFaces = None
@@ -78,9 +79,9 @@ class mesh3d(_base_mesh):
 
         # Get upper bound for number of edges; trim later.
         max_num_edges = num_local_nodes * num_cells
-        self.edgesNodes = np.empty(max_num_edges, dtype=np.dtype((int,2)))
+        self.edgesNodes = np.empty(max_num_edges, dtype=np.dtype((int, 2)))
         self.edgesCells = [[] for k in xrange(max_num_edges)]
-        self.cellsEdges = np.empty(num_cells, dtype=np.dtype((int,6)))
+        self.cellsEdges = np.empty(num_cells, dtype=np.dtype((int, 6)))
 
         # The (sorted) dictionary node_edges keeps track of how nodes and edges
         # are connected.
@@ -115,11 +116,11 @@ class mesh3d(_base_mesh):
 
         # Create faces.
         max_num_faces = 4 * num_cells
-        self.facesNodes = np.empty(max_num_faces, dtype=np.dtype((int,3)))
-        self.facesEdges = np.empty(max_num_faces, dtype=np.dtype((int,3)))
+        self.facesNodes = np.empty(max_num_faces, dtype=np.dtype((int, 3)))
+        self.facesEdges = np.empty(max_num_faces, dtype=np.dtype((int, 3)))
         self.facesCells = [[] for k in xrange(max_num_faces)]
         self.edgesFaces = [[] for k in xrange(new_edge_gid)]
-        self.cellsFaces = np.empty(num_cells, dtype=np.dtype((int,4)))
+        self.cellsFaces = np.empty(num_cells, dtype=np.dtype((int, 4)))
         # Loop over all elements.
         new_face_gid = 0
         registered_faces = {}
@@ -171,7 +172,7 @@ class mesh3d(_base_mesh):
         '''
         import vtk
         num_cells = len(self.cellsNodes)
-        self.cell_circumcenters = np.empty(num_cells, dtype=np.dtype((float,3)))
+        self.cell_circumcenters = np.empty(num_cells, dtype=np.dtype((float, 3)))
         for cell_id, cellNodes in enumerate(self.cellsNodes):
             x = self.nodes[cellNodes]
             vtk.vtkTetra.Circumsphere(x[0], x[1], x[2], x[3],
@@ -238,7 +239,7 @@ class mesh3d(_base_mesh):
                           #-(alpha * b[0] - beta * a[0]) * w[2]) / omega
         #m[2] = x[0][2] + ((alpha * b[0] - beta * a[0]) * w[1]
                           #-(alpha * b[1] - beta * a[1]) * w[0]) / omega
-        return
+        #return
     # --------------------------------------------------------------------------
     def compute_control_volumes(self):
         '''Computes the control volumes of the mesh.'''
@@ -252,7 +253,7 @@ class mesh3d(_base_mesh):
 
         # Compute covolumes and control volumes.
         num_nodes = len(self.nodes)
-        self.control_volumes = np.zeros((num_nodes,1), dtype = float)
+        self.control_volumes = np.zeros((num_nodes, 1), dtype = float)
         for edge_id in xrange(len(self.edgesNodes)):
             edge_node_ids = self.edgesNodes[edge_id]
             edge = self.nodes[edge_node_ids[1]] \
@@ -346,7 +347,7 @@ class mesh3d(_base_mesh):
         # face normals points in the direction of the cell with the higher
         # cell ID.
         num_faces = len(self.facesNodes)
-        face_normals = np.zeros(num_faces, dtype=np.dtype((float,3)))
+        face_normals = np.zeros(num_faces, dtype=np.dtype((float, 3)))
         for cell_id, cellFaces in enumerate(self.cellsFaces):
             # Loop over the local faces.
             for k in xrange(4):
@@ -365,8 +366,6 @@ class mesh3d(_base_mesh):
                     # face_nodes[0].
                     face_normals[face_id] = face_nodes[0] \
                                           - self.nodes[other_node_id]
-                    if face_id == 2:
-                        tmp = face_normals[face_id]
                     # Make it orthogonal to the face by doing Gram-Schmidt
                     # with the two edges of the face.
                     edge_id = self.facesEdges[face_id][0]
@@ -389,7 +388,7 @@ class mesh3d(_base_mesh):
     def show_edge(self, edge_id):
         '''Displays edge with covolume.'''
         import matplotlib as mpl
-        from mpl_toolkits.mplot3d import Axes3D
+        #from mpl_toolkits.mplot3d import Axes3D
         import matplotlib.pyplot as plt
         fig = plt.figure()
         ax = fig.gca(projection='3d')
@@ -406,10 +405,10 @@ class mesh3d(_base_mesh):
         for cell_id in self.edgesCells[edge_id]:
             for edge in self.cellsEdges[cell_id]:
                 x = self.nodes[self.edgesNodes[edge]]
-                ax.plot(x[:,0], x[:,1], x[:,2], col)
+                ax.plot(x[:, 0], x[:, 1], x[:, 2], col)
 
         # make clear which is the edge
-        ax.plot(edge_nodes[:,0], edge_nodes[:,1], edge_nodes[:,2],
+        ax.plot(edge_nodes[:, 0], edge_nodes[:, 1], edge_nodes[:, 2],
                 color=col, linewidth=3.0 )
 
         # get cell circumcenters
@@ -424,7 +423,7 @@ class mesh3d(_base_mesh):
         for k, face_id in enumerate(self.edgesFaces[edge_id]):
             # get rainbow color
             h = float(k) / num_local_faces
-            hsv_face_col = np.array([[[h,1.0,1.0]]])
+            hsv_face_col = np.array([[[h, 1.0, 1.0]]])
             col = mpl.colors.hsv_to_rgb(hsv_face_col)[0][0]
 
             # paint the face
@@ -446,14 +445,14 @@ class mesh3d(_base_mesh):
                 tri = mpl3.art3d.Poly3DCollection([np.vstack((ccs, edge_midpoint))])
                 tri.set_color(face_col)
                 ax.add_collection3d( tri )
-                ax.plot(ccs[:,0], ccs[:,1], ccs[:,2], color=col)
+                ax.plot(ccs[:, 0], ccs[:, 1], ccs[:, 2], color=col)
             elif len(ccs) == 1:
                 tri = mpl3.art3d.Poly3DCollection([np.vstack((ccs[0], face_cc, edge_midpoint))])
                 tri.set_color(face_col)
                 ax.add_collection3d( tri )
-                ax.plot([ccs[0][0],face_cc[0]],
-                        [ccs[0][1],face_cc[1]],
-                        [ccs[0][2],face_cc[2]],
+                ax.plot([ccs[0][0], face_cc[0]],
+                        [ccs[0][1], face_cc[1]],
+                        [ccs[0][2], face_cc[2]],
                         color=col)
             else:
                 raise RuntimeError('???')
@@ -466,11 +465,13 @@ class mesh3d(_base_mesh):
         col = 'r'
         for k in highlight_cells:
             cell_id = self.edgesCells[edge_id][k]
-            ax.plot([cell_ccs[cell_id,0]], [cell_ccs[cell_id,1]], [cell_ccs[cell_id,2]],
+            ax.plot([cell_ccs[cell_id, 0]],
+                    [cell_ccs[cell_id, 1]],
+                    [cell_ccs[cell_id, 2]],
                     color = col, marker='o')
             for edge in self.cellsEdges[cell_id]:
                 x = self.nodes[self.edgesNodes[edge]]
-                ax.plot(x[:,0], x[:,1], x[:,2], col, linestyle='dashed')
+                ax.plot(x[:, 0], x[:, 1], x[:, 2], col, linestyle='dashed')
 
         plt.show()
         return

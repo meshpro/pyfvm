@@ -36,7 +36,7 @@ class TestMesh(unittest.TestCase):
     # --------------------------------------------------------------------------
     def test_rectanglesmall(self):
         filename = 'rectanglesmall.e'
-        mesh, point_data, field_data = voropy.read( filename )
+        mesh, _, _ = voropy.read( filename )
         actual_values = [ 10.0,
                           5.0,
                           2.5 ]
@@ -45,18 +45,16 @@ class TestMesh(unittest.TestCase):
         return
     # --------------------------------------------------------------------------
     def test_arrow3d(self):
-        num_nodes = 5
         nodes = np.array([[0.0,  0.0, 0.0],
                           [2.0, -1.0, 0.0],
                           [2.0,  0.0, 0.0],
                           [2.0,  1.0, 0.0],
                           [0.5,  0.0, -0.9],
                           [0.5,  0.0, 0.9]])
-        cellsNodes = np.array([[1,2,4,5],
-                              [2,3,4,5],
-                              [0,1,4,5],
-                              [0,3,4,5]])
-        import voropy.mesh3d
+        cellsNodes = np.array([[1, 2, 4, 5],
+                               [2, 3, 4, 5],
+                               [0, 1, 4, 5],
+                               [0, 3, 4, 5]])
         mesh = voropy.mesh3d(nodes, cellsNodes)
 
         # pull this to see what a negative covolume looks like
@@ -72,7 +70,7 @@ class TestMesh(unittest.TestCase):
     # --------------------------------------------------------------------------
     def test_tetrahedron(self):
         filename = 'tetrahedron.e'
-        mesh, point_data, field_data = voropy.read( filename )
+        mesh, _, _ = voropy.read( filename )
 
         #mesh.show_edge(54)
 
@@ -84,7 +82,7 @@ class TestMesh(unittest.TestCase):
     # --------------------------------------------------------------------------
     def test_pacman(self):
         filename = 'pacman.e'
-        mesh, point_data, field_data = voropy.read( filename )
+        mesh, _, _ = voropy.read( filename )
         actual_values = [ 302.52270072101,
                           15.3857579093391,
                           1.12779746704366 ]
@@ -94,7 +92,7 @@ class TestMesh(unittest.TestCase):
     # --------------------------------------------------------------------------
     def test_cubesmall(self):
         filename = 'cubesmall.e'
-        mesh, point_data, field_data = voropy.read( filename )
+        mesh, _, _ = voropy.read( filename )
         actual_values = [ 10.0,
                           3.53553390593274,
                           1.25 ]
@@ -103,7 +101,7 @@ class TestMesh(unittest.TestCase):
     # --------------------------------------------------------------------------
     def test_brick(self):
         filename = 'brick-w-hole.e'
-        mesh, point_data, field_data = voropy.read( filename )
+        mesh, _, _ = voropy.read( filename )
 
         actual_values = [ 388.68629169464117,
                           16.661401941985677,

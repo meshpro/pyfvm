@@ -19,21 +19,16 @@ def read(filename, timestep=None):
     point_data = _read_point_data( vtk_mesh )
     field_data = _read_field_data( vtk_mesh )
 
-    if len(cellsNodes[0]) == 3: # 2D
-        if all(points[:,2] == 0.0):
-           # Flat mesh.
-           # Check if there's three-dimensional point data that can be cut.
-           # Don't use iteritems() here as we want to be able to
-           # set the value in the loop.
-           for key, value in point_data.items():
-               if value.shape[1] == 3 and all(value[:,2] == 0.0):
-                   point_data[key] = value[:,:2]
-           from voropy import mesh2d
-           return mesh2d(points[:,:2], cellsNodes), point_data, field_data
-        else:
-            # shell mesh
-            from voropy import mesh2d_shell
-            return mesh2Dshell( points, cellsNodes ), point_data, field_data
+    if len(cellsNodes[0]) == 3 and all(points[:, 2] == 0.0):
+        # Flat mesh.
+        # Check if there's three-dimensional point data that can be cut.
+        # Don't use iteritems() here as we want to be able to
+        # set the value in the loop.
+        for key, value in point_data.items():
+            if value.shape[1] == 3 and all(value[:, 2] == 0.0):
+                point_data[key] = value[:, :2]
+        from voropy import mesh2d
+        return mesh2d(points[:, :2], cellsNodes), point_data, field_data
     elif len(cellsNodes[0]) == 4: # 3D
         from voropy import mesh3d
         return mesh3d( points, cellsNodes ), point_data, field_data
@@ -57,7 +52,7 @@ def _read_mesh(file_name, timestep=None):
         reader = vtk.vtkExodusIIReader()
         return _read_exodusii_mesh( reader, file_name, timestep=timestep )
     else:
-        raise RuntimeError( "Unknown file type \"%s\"." % filename )
+        raise RuntimeError( "Unknown file type \"%s\"." % file_name )
 
     return
 # ==============================================================================
@@ -151,7 +146,7 @@ def _read_cellsNodes( vtk_mesh ):
 
     num_cells = vtk_mesh.GetNumberOfCells()
     num_local_nodes = vtk_mesh.GetCell(0).GetNumberOfPoints()
-    cellsNodes = np.empty(num_cells, dtype = np.dtype((int,num_local_nodes)))
+    cellsNodes = np.empty(num_cells, dtype = np.dtype((int, num_local_nodes)))
 
     for k in xrange( vtk_mesh.GetNumberOfCells() ):
         cell = vtk_mesh.GetCell( k )
@@ -173,13 +168,13 @@ def _read_point_data( vtk_data ):
     out = {}
     for array in arrays:
         # read the array
-        arrayName = array.GetName()
+        array_name = array.GetName()
         num_entries = array.GetNumberOfTuples()
         num_components = array.GetNumberOfComponents()
-        out[arrayName] = np.empty((num_entries, num_components))
+        out[array_name] = np.empty((num_entries, num_components))
         for k in xrange( num_entries ):
             for i in xrange( num_components ):
-                out[arrayName][k][i] = array.GetComponent(k, i)
+                out[array_name][k][i] = array.GetComponent(k, i)
 
     return out
 # ==============================================================================

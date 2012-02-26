@@ -2,14 +2,14 @@
 # ==============================================================================
 __all__ = []
 
-import numpy as np
 # ==============================================================================
-class _base_mesh:
+class _base_mesh(object):
     # --------------------------------------------------------------------------
     def __init__(self,
                  nodes,
                  cellsNodes
                  ):
+        self.nodes = None
         return
     # --------------------------------------------------------------------------
     def write( self,
@@ -27,7 +27,7 @@ class _base_mesh:
         if extra_arrays:
             for key, value in extra_arrays.iteritems():
                 vtk_mesh.GetPointData() \
-                        .AddArray(self._create_vtkdoublearray(value, key))
+                        .AddArray(_create_vtkdoublearray(value, key))
 
         extension = os.path.splitext(filename)[1]
         if extension == ".vtu": # VTK XML format
@@ -83,63 +83,9 @@ class _base_mesh:
 
         # set values
         if X is not None:
-            mesh.GetPointData().AddArray(self._create_vtkdoublearray(X, name))
+            mesh.GetPointData().AddArray(_create_vtkdoublearray(X, name))
 
         return mesh
-    # --------------------------------------------------------------------------
-    def _create_vtkdoublearray(self, X, name):
-        import vtk
-
-        scalars0 = vtk.vtkDoubleArray()
-        scalars0.SetName(name)
-
-        if isinstance( X, float ):
-            scalars0.SetNumberOfComponents( 1 )
-            scalars0.InsertNextValue( X )
-        elif (len( X.shape ) == 1 or X.shape[1] == 1) and X.dtype==float:
-            # real-valued array
-            scalars0.SetNumberOfComponents( 1 )
-            for x in X:
-                scalars0.InsertNextValue( x )
-
-        elif (len( X.shape ) == 1 or X.shape[1] == 1) and X.dtype==complex:
-            # complex-valued array
-            scalars0.SetNumberOfComponents( 2 )
-            for x in X:
-                scalars0.InsertNextValue( x.real )
-                scalars0.InsertNextValue( x.imag )
-
-        elif len( X.shape ) == 2 and X.dtype==float: # 2D float field
-            m, n = X.shape
-            scalars0.SetNumberOfComponents( n )
-            for j in range(m):
-                for i in range(n):
-                    scalars0.InsertNextValue( X[j, i] )
-
-        elif len( X.shape ) == 2 and X.dtype==complex: # 2D complex field
-            scalars0.SetNumberOfComponents( 2 )
-            m, n = X.shape
-            for j in range(n):
-                for i in range(m):
-                    scalars0.InsertNextValue( X[j, i].real )
-                    scalars0.InsertNextValue( X[j, i].imag )
-
-        elif len( X.shape ) == 3: # vector values
-            m, n, d = X.shape
-            if X.dtype==complex:
-                raise "Can't handle complex-valued vector fields."
-            if d != 3:
-                raise "Can only deal with 3-dimensional vector fields."
-            scalars0.SetNumberOfComponents( 3 )
-            for j in range( n ):
-                for i in range( m ):
-                    for k in range( 3 ):
-                        scalars0.InsertNextValue( X[i,j,k] )
-
-        else:
-            raise ValueError( "Don't know what to do with array." )
-
-        return scalars0
     # --------------------------------------------------------------------------
     def recreate_cells_with_qhull(self):
         import scipy.spatial
@@ -151,4 +97,58 @@ class _base_mesh:
 
         return
     # --------------------------------------------------------------------------
+# ==============================================================================
+def _create_vtkdoublearray(X, name):
+    import vtk
+
+    scalars0 = vtk.vtkDoubleArray()
+    scalars0.SetName(name)
+
+    if isinstance( X, float ):
+        scalars0.SetNumberOfComponents( 1 )
+        scalars0.InsertNextValue( X )
+    elif (len( X.shape ) == 1 or X.shape[1] == 1) and X.dtype==float:
+        # real-valued array
+        scalars0.SetNumberOfComponents( 1 )
+        for x in X:
+            scalars0.InsertNextValue( x )
+
+    elif (len( X.shape ) == 1 or X.shape[1] == 1) and X.dtype==complex:
+        # complex-valued array
+        scalars0.SetNumberOfComponents( 2 )
+        for x in X:
+            scalars0.InsertNextValue( x.real )
+            scalars0.InsertNextValue( x.imag )
+
+    elif len( X.shape ) == 2 and X.dtype==float: # 2D float field
+        m, n = X.shape
+        scalars0.SetNumberOfComponents( n )
+        for j in range(m):
+            for i in range(n):
+                scalars0.InsertNextValue( X[j, i] )
+
+    elif len( X.shape ) == 2 and X.dtype==complex: # 2D complex field
+        scalars0.SetNumberOfComponents( 2 )
+        m, n = X.shape
+        for j in range(n):
+            for i in range(m):
+                scalars0.InsertNextValue( X[j, i].real )
+                scalars0.InsertNextValue( X[j, i].imag )
+
+    elif len( X.shape ) == 3: # vector values
+        m, n, d = X.shape
+        if X.dtype == complex:
+            raise RuntimeError('Can''t handle complex-valued vector fields.')
+        if d != 3:
+            raise RuntimeError('Can only deal with 3-dimensional vector fields.')
+        scalars0.SetNumberOfComponents( 3 )
+        for j in range( n ):
+            for i in range( m ):
+                for k in range( 3 ):
+                    scalars0.InsertNextValue(X[i, j, k])
+
+    else:
+        raise ValueError('Don''t know what to do with array.')
+
+    return scalars0
 # ==============================================================================

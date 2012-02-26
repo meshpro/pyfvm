@@ -28,6 +28,7 @@ class mesh2d(_base_mesh):
         #
         # does not seem to work for whatever reason.
         # Hence, handle cells and friends of dictionaries of np.arrays.
+        super(mesh2d, self).__init__()
         self.nodes = nodes
         self.edgesNodes = edgesNodes
         self.edgesCells = edgesCells
@@ -49,7 +50,7 @@ class mesh2d(_base_mesh):
             #edge1 = node1 - node2
             #self.cellsVolume[cell_id] = 0.5 * np.linalg.norm( np.cross( edge0, edge1 ) )
             # Append a third component.
-            z = np.zeros((3,1))
+            z = np.zeros((3, 1))
             x = np.c_[self.nodes[cellNodes], z]
             self.cellsVolume[cell_id] = \
                abs(vtk.vtkTriangle.TriangleArea(x[0], x[1], x[2]))
@@ -60,7 +61,7 @@ class mesh2d(_base_mesh):
         '''
         import vtk
         num_cells = len(self.cellsNodes)
-        self.cell_circumcenters = np.empty(num_cells, dtype=np.dtype((float,2)))
+        self.cell_circumcenters = np.empty(num_cells, dtype=np.dtype((float, 2)))
         for cell_id, cellNodes in enumerate(self.cellsNodes):
             x = self.nodes[cellNodes]
             vtk.vtkTriangle.Circumcircle(x[0], x[1], x[2],
@@ -80,10 +81,10 @@ class mesh2d(_base_mesh):
 
         # Get upper bound for number of edges; trim later.
         max_num_edges = num_local_nodes * num_cells
-        self.edgesNodes = np.empty(max_num_edges, dtype=np.dtype((int,2)))
+        self.edgesNodes = np.empty(max_num_edges, dtype=np.dtype((int, 2)))
         self.edgesCells = [[] for k in xrange(max_num_edges)]
 
-        self.cellsEdges = np.empty(num_cells, dtype=np.dtype((int,num_local_edges)))
+        self.cellsEdges = np.empty(num_cells, dtype=np.dtype((int, num_local_edges)))
 
         # The (sorted) dictionary edges keeps track of how nodes and edges
         # are connected.
@@ -133,7 +134,7 @@ class mesh2d(_base_mesh):
 
         # Record the newly added nodes.
         num_new_nodes = len(self.edgesNodes)
-        new_nodes = np.empty(num_new_nodes, dtype=np.dtype((float,2)))
+        new_nodes = np.empty(num_new_nodes, dtype=np.dtype((float, 2)))
         self.nodes = np.append(self.nodes, new_nodes, axis=0)
         new_node_gid = len(self.nodes)
 
@@ -141,26 +142,26 @@ class mesh2d(_base_mesh):
         # be obsolete, so record *all* the new edges.
         num_new_edges = 2 * len(self.edgesNodes) \
                       + 3 * len(self.cellsNodes)
-        new_edgesNodes = np.empty(num_new_edges, dtype=np.dtype((int,2)))
+        new_edgesNodes = np.empty(num_new_edges, dtype=np.dtype((int, 2)))
         new_edge_gid = 0
 
         # After the refinement step, all previous cell-node associations will
         # be obsolete, so record *all* the new cells.
         num_new_cells = 4 * len(self.cellsNodes)
-        new_cellsNodes = np.empty(num_new_cells, dtype=np.dtype((int,3)))
-        new_cellsEdges = np.empty(num_new_cells, dtype=np.dtype((int,3)))
+        new_cellsNodes = np.empty(num_new_cells, dtype=np.dtype((int, 3)))
+        new_cellsEdges = np.empty(num_new_cells, dtype=np.dtype((int, 3)))
         new_cell_gid = 0
 
         num_edges = len(self.edgesNodes)
         is_edge_divided = np.zeros(num_edges, dtype=bool)
         edge_midpoint_gids = np.empty(num_edges, dtype=int)
-        edge_newedges_gids = np.empty(num_edges, dtype=np.dtype((int,2)))
+        edge_newedges_gids = np.empty(num_edges, dtype=np.dtype((int, 2)))
         # Loop over all elements.
         cell_id = 0
-        for cellNodes, cellEdges in zip(self.cellsNodes,self.cellsEdges):
+        for cellNodes, cellEdges in zip(self.cellsNodes, self.cellsEdges):
             # Divide edges.
             local_edge_midpoint_gids = np.empty(3, dtype=int)
-            local_edge_newedges = np.empty(3, dtype=np.dtype((int,2)))
+            local_edge_newedges = np.empty(3, dtype=np.dtype((int, 2)))
             local_neighbor_midpoints = [ [], [], [] ]
             local_neighbor_newedges = [ [], [], [] ]
             for k, edge_gid in enumerate(cellEdges):
@@ -238,7 +239,7 @@ class mesh2d(_base_mesh):
     # --------------------------------------------------------------------------
     def compute_control_volumes( self ):
         num_nodes = len(self.nodes)
-        self.control_volumes = np.zeros((num_nodes,1), dtype = float)
+        self.control_volumes = np.zeros((num_nodes, 1), dtype = float)
 
         # compute cell circumcenters
         if self.cell_circumcenters is None:
@@ -300,7 +301,7 @@ class mesh2d(_base_mesh):
         # face normals points in the direction of the cell with the higher
         # cell ID.
         num_edges = len(self.edgesNodes)
-        edge_normals = np.empty(num_edges, dtype=np.dtype((float,2)))
+        edge_normals = np.empty(num_edges, dtype=np.dtype((float, 2)))
         for cell_id, cellEdges in enumerate(self.cellsEdges):
             # Loop over the local faces.
             for k in xrange(3):
@@ -344,8 +345,8 @@ class mesh2d(_base_mesh):
         col = 'k'
         for node_ids in self.edgesNodes:
             x = self.nodes[node_ids]
-            ax.plot(x[:,0],
-                    x[:,1],
+            ax.plot(x[:, 0],
+                    x[:, 1],
                     col)
 
         # Highlight covolumes.
@@ -385,8 +386,8 @@ class mesh2d(_base_mesh):
         for node_ids in self.edgesNodes:
             if node_id in node_ids:
                 x = self.nodes[node_ids]
-                ax.plot(x[:,0],
-                        x[:,1],
+                ax.plot(x[:, 0],
+                        x[:, 1],
                         col)
 
         # Highlight covolumes.
