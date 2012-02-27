@@ -16,9 +16,9 @@ class TestMesh(unittest.TestCase):
         tol = 1.0e-12
 
         # Check the volume by summing over the cell volume.
-        if mesh.cellsVolume is None:
+        if mesh.cells_volume is None:
             mesh.create_cells_volume()
-        vol2 = sum(mesh.cellsVolume)
+        vol2 = sum(mesh.cells_volume)
         self.assertAlmostEqual( actual_values[0], vol2, delta=tol )
 
         # Check the volume by summing over the absolute value of the

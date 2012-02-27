@@ -38,7 +38,7 @@ class mesh3d(_base_mesh):
         self.cellsEdges = cellsEdges
         self.cellsFaces = None
         self.cell_circumcenters = None
-        self.cellsVolume = None
+        self.cells_volume = None
         self.control_volumes = None
         return
     # --------------------------------------------------------------------------
@@ -47,7 +47,7 @@ class mesh3d(_base_mesh):
         '''
         import vtk
         num_cells = len(self.cellsNodes)
-        self.cellsVolume = np.empty(num_cells, dtype=float)
+        self.cells_volume = np.empty(num_cells, dtype=float)
         for cell_id, cellNodes in enumerate(self.cellsNodes):
             #edge0 = node0 - node1
             #edge1 = node1 - node2
@@ -65,10 +65,10 @@ class mesh3d(_base_mesh):
                           #* np.linalg.norm(edge1) \
                           #* np.linalg.norm(edge3)
 
-            #self.cellsVolume[cell_id] = abs( alpha ) / 6.0
+            #self.cells_volume[cell_id] = abs( alpha ) / 6.0
 
             x = self.nodes[cellNodes]
-            self.cellsVolume[cell_id] = \
+            self.cells_volume[cell_id] = \
                 abs(vtk.vtkTetra.ComputeVolume(x[0], x[1], x[2], x[3]))
         return
     # --------------------------------------------------------------------------
