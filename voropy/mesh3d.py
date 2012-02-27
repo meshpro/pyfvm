@@ -8,6 +8,8 @@ from base import _base_mesh
 class mesh3d(_base_mesh):
     # --------------------------------------------------------------------------
     def __init__(self, node_coords, cells):
+        '''Initialization.
+        '''
 
         super(mesh3d, self).__init__(node_coords, cells)
         self.node_coords = node_coords
@@ -59,6 +61,8 @@ class mesh3d(_base_mesh):
         return
     # --------------------------------------------------------------------------
     def create_adjacent_entities( self ):
+        '''Setup edge-node, edge-cell, edge-face, face-node, and face-cell
+        relations.'''
 
         num_cells = len(self.cells['nodes'])
 
@@ -330,56 +334,40 @@ class mesh3d(_base_mesh):
 
         return
     # --------------------------------------------------------------------------
-    def _compute_face_normals(self):
+    def compute_face_normals(self):
+        '''Compute the face normals, pointing either in the direction of the
+        cell with larger GID (for interior faces), or towards the outside of
+        the domain (for boundary faces).'''
+
         # TODO VTK has ComputeNormal() for triangles, check
         # http://www.vtk.org/doc/nightly/html/classvtkTriangle.html
 
-        # Precompute edge lengths.
-        num_edges = len(self.edges['nodes'])
-        edge_lengths = np.empty(num_edges, dtype=float)
-        for edge_id in xrange(num_edges):
-            nodes = self.node_coords[self.edges['nodes'][edge_id]]
-            edge_lengths[edge_id] = np.linalg.norm(nodes[1] - nodes[0])
-
-        # Compute face normals. Do that in such a way that the
-        # face normals points in the direction of the cell with the higher
-        # cell ID.
         num_faces = len(self.faces['nodes'])
         face_normals = np.zeros(num_faces, dtype=np.dtype((float, 3)))
-        for cell_id, cellFaces in enumerate(self.cells['faces']):
+        for cell_id, cell in enumerate(self.cells):
             # Loop over the local faces.
             for k in xrange(4):
-                face_id = cellFaces[k]
+                face_id = cell['faces'][k]
                 # Compute the normal in the direction of the higher cell ID,
                 # or if this is a boundary face, to the outside of the domain.
                 neighbor_cell_ids = self.faces['cells'][face_id]
                 if cell_id == neighbor_cell_ids[0]:
                     # The current cell is the one with the lower ID.
+                    # Compute the normal as a cross product.
                     face_nodes = self.node_coords[self.faces['nodes'][face_id]]
-                    # Get "other" node (aka the one which is not in the current
-                    # face).
+                    face_normals[face_id] = \
+                        np.cross(face_nodes[1] - face_nodes[0],
+                                 face_nodes[2] - face_nodes[0])
+                    # Normalize.
+                    face_normals[face_id] /= \
+                        np.linalg.norm(face_normals[face_id])
+
+                    # Make sure it points outwards.
                     other_node_id = self.cells['nodes'][cell_id][k]
-                    # Get any direction other_node -> face.
-                    # As reference, any point in face can be taken, e.g.,
-                    # face_nodes[0].
-                    face_normals[face_id] = face_nodes[0] \
-                                          - self.node_coords[other_node_id]
-                    # Make it orthogonal to the face by doing Gram-Schmidt
-                    # with the two edges of the face.
-                    edge_id = self.faces['edges'][face_id][0]
-                    nodes = self.node_coords[self.edges['nodes'][edge_id]]
-                    # No need to compute the norm of the first edge -- it's
-                    # already here!
-                    v0 = (nodes[1] - nodes[0]) / edge_lengths[edge_id]
-                    edge_id = self.faces['edges'][face_id][1]
-                    nodes = self.node_coords[self.edges['nodes'][edge_id]]
-                    v1 = nodes[1] - nodes[0]
-                    v1 -= np.dot(v1, v0) * v0
-                    v1 /= np.linalg.norm(v1)
-                    face_normals[face_id] -= np.dot(face_normals[face_id], v0) * v0
-                    face_normals[face_id] -= np.dot(face_normals[face_id], v1) * v1
-                    # Normalization.
-                    face_normals[face_id] /= np.linalg.norm(face_normals[face_id])
+                    other_node_coords = self.node_coords[other_node_id]
+                    if np.dot(face_nodes[0] - other_node_coords,
+                              face_normals[face_id]) < 0.0:
+                        face_normals[face_id] *= -1
 
         return face_normals
     # --------------------------------------------------------------------------

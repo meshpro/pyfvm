@@ -16,7 +16,7 @@ class _base_mesh(object):
                filename,
                extra_arrays = None
              ):
-        '''Writes data together with the mesh to a file.
+        '''Writes mesh together with data to a file.
         '''
         import os
         import vtk
@@ -88,12 +88,14 @@ class _base_mesh(object):
         return mesh
     # --------------------------------------------------------------------------
     def recreate_cells_with_qhull(self):
+        '''Remesh using scipy.spatial.Delaunay.
+        '''
         import scipy.spatial
 
         # Create a Delaunay triangulation of the given points.
         delaunay = scipy.spatial.Delaunay(self.nodes)
         # Use the new cells.
-        self.cellsNodes = delaunay.vertices
+        self.cells['nodes'] = delaunay.vertices
 
         return
     # --------------------------------------------------------------------------

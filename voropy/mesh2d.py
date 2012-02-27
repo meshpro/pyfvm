@@ -8,6 +8,8 @@ from base import _base_mesh
 class mesh2d(_base_mesh):
     # --------------------------------------------------------------------------
     def __init__(self, nodes, cells):
+        '''Initialization.
+        '''
         super(mesh2d, self).__init__(nodes, cells)
         self.node_coords = nodes
         self.edges = None
@@ -55,7 +57,8 @@ class mesh2d(_base_mesh):
         return
     # --------------------------------------------------------------------------
     def create_adjacent_entities( self ):
-
+        '''Setup edge-node and edge-cell relations.
+        '''
         if self.edges is not None:
             return
 
@@ -227,6 +230,8 @@ class mesh2d(_base_mesh):
         return
     # --------------------------------------------------------------------------
     def compute_control_volumes( self ):
+        '''Compute the control volumes.
+        '''
         num_nodes = len(self.node_coords)
         self.control_volumes = np.zeros((num_nodes, 1), dtype = float)
 
@@ -285,10 +290,10 @@ class mesh2d(_base_mesh):
 
         return
     # --------------------------------------------------------------------------
-    def _compute_edge_normals(self, edge_lengths):
-        # Precompute edge normals. Do that in such a way that the
-        # face normals points in the direction of the cell with the higher
-        # cell ID.
+    def compute_edge_normals(self):
+        '''Compute the edge normals, pointing either in the direction of the
+        cell with larger GID (for interior edges), or towards the outside of
+        the domain (for boundary edges).'''
         num_edges = len(self.edges['nodes'])
         edge_normals = np.empty(num_edges, dtype=np.dtype((float, 2)))
         for cell_id, cell in enumerate(self.cells):
@@ -300,21 +305,17 @@ class mesh2d(_base_mesh):
                 neighbor_cell_ids = self.edges['cells'][edge_id]
                 if cell_id == neighbor_cell_ids[0]:
                     edge_nodes = self.node_coords[self.edges['nodes'][edge_id]]
-                    # The current cell is the one with the lower ID.
-                    # Get "other" node (aka the one which is not in the current
-                    # "face").
+                    edge = (edge_nodes[1] - edge_node[0])
+                    edge_normals[edge_id] = np.array([-edge[1], edge[0]])
+                    edge_normals[edge_id] /= \
+                        np.linalg.norm(edge_normals[edge_id])
+
+                    # Make sure the normal points in the outward direction.
                     other_node_id = self.cells['nodes'][cell_id][k]
-                    # Get any direction other_node -> face.
-                    # As reference, any point in face can be taken, e.g.,
-                    # the first face corner point
-                    # self.edges['nodes'][edge_id][0].
-                    edge_normals[edge_id] = edge_nodes[0] \
-                                      - self.node_coords[other_node_id]
-                    # Make it orthogonal to the face.
-                    edge_dir = (edge_nodes[1] - edge_nodes[0]) / edge_lengths[edge_id]
-                    edge_normals[edge_id] -= np.dot(edge_normals[edge_id], edge_dir) * edge_dir
-                    # Normalization.
-                    edge_normals[edge_id] /= np.linalg.norm(edge_normals[edge_id])
+                    other_node_coords = self.node_coords[other_node_id]
+                    if np.dot(edge_node[0]-other_node_coords,
+                              edge_normals[edge_id]) < 0.0:
+                        edge_normals[edge_id] *= -1
 
         return edge_normals
     # --------------------------------------------------------------------------
