@@ -7,7 +7,7 @@ class _base_mesh(object):
     # --------------------------------------------------------------------------
     def __init__(self,
                  nodes,
-                 cellsNodes
+                 cells_nodes
                  ):
         self.nodes = None
         return

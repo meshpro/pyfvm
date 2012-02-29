@@ -7,6 +7,8 @@ from base import _base_mesh
 # ==============================================================================
 class mesh2d(_base_mesh):
     '''Class for handling two-dimensional triangular meshes.
+
+    .. inheritance-diagram:: mesh2d
     '''
     # --------------------------------------------------------------------------
     def __init__(self, nodes, cells):

@@ -7,6 +7,8 @@ from base import _base_mesh
 # ==============================================================================
 class mesh3d(_base_mesh):
     '''Class for handling three-dimensional tetrahedral meshes.
+
+    .. inheritance-diagram:: mesh3d
     '''
     # --------------------------------------------------------------------------
     def __init__(self, node_coords, cells):
