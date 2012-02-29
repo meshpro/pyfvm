@@ -30,5 +30,6 @@ setup( name='voropy',
        author_email = 'nico.schloemer@gmail.com',
        description = 'Delaunay meshes, Voronoi regions',
        license = 'GNU Lesser General Public License (LGPL), Version 3',
-       platforms='any'
+       platforms='any',
+       requires=['numpy','scipy','vtk']
      )
