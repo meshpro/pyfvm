@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
-"""Module for I/O of unstructured grids to/from various file formats.
-"""
+'''Module for reading unstructured grids (and related data) from various
+file formats.
+
+.. moduleauthor:: Nico Schloemer <nico.schloemer@gmail.com>
+
+'''
 # ==============================================================================
 __all__ = ['read']
 # ==============================================================================
@@ -10,16 +14,39 @@ import numpy as np
 # ==============================================================================
 def read(filename, timestep=None):
     '''Reads an unstructured mesh with added data.
+
+    :param filename: The file to read from.
+    :type filename: str
+    :param timestep: Time step to read from, in case of an Exodus input mesh.
+    :type timestep: int, optional
+    :returns mesh{2,3}d: The mesh data.
+    :returns point_data: Point data read from file.
+    :type point_data: dict
+    :returns field_data: Field data read from file.
+    :type field_data: dict
     '''
-    vtk_mesh = _read_mesh(filename, timestep=timestep)
+    extension = os.path.splitext( file_name )[1]
+
+    # setup the reader
+    if extension == '.vtu':
+        reader = vtk.vtkXMLUnstructuredGridReader()
+        vtk_mesh = _read_vtk_mesh(reader, filename)
+    elif extension == '.vtk':
+        reader = vtk.vtkUnstructuredGridReader()
+        vtk_mesh = _read_vtk_mesh(reader, filename)
+    elif extension in [ '.ex2', '.exo', '.e' ]:
+        reader = vtk.vtkExodusIIReader()
+        vtk_mesh = _read_exodusii_mesh(reader, filename, timestep=timestep)
+    else:
+        raise RuntimeError( 'Unknown file type \'%s\'.' % file_name )
 
     # read points, cells, point data, field data
     points = _read_points( vtk_mesh )
-    cellsNodes = _read_cellsNodes ( vtk_mesh )
+    cells_nodes = _read_cells_nodes ( vtk_mesh )
     point_data = _read_point_data( vtk_mesh )
     field_data = _read_field_data( vtk_mesh )
 
-    if len(cellsNodes[0]) == 3 and all(points[:, 2] == 0.0):
+    if len(cells_nodes[0]) == 3 and all(points[:, 2] == 0.0):
         # Flat mesh.
         # Check if there's three-dimensional point data that can be cut.
         # Don't use iteritems() here as we want to be able to
@@ -28,31 +55,12 @@ def read(filename, timestep=None):
             if value.shape[1] == 3 and all(value[:, 2] == 0.0):
                 point_data[key] = value[:, :2]
         from voropy import mesh2d
-        return mesh2d(points[:, :2], cellsNodes), point_data, field_data
-    elif len(cellsNodes[0]) == 4: # 3D
+        return mesh2d(points[:, :2], cells_nodes), point_data, field_data
+    elif len(cells_nodes[0]) == 4: # 3D
         from voropy import mesh3d
-        return mesh3d( points, cellsNodes ), point_data, field_data
+        return mesh3d(points, cells_nodes), point_data, field_data
     else:
         raise RuntimeError('Unknown mesh type.')
-
-    return
-# ==============================================================================
-def _read_mesh(file_name, timestep=None):
-    '''Reads an unstructured mesh an a file.'''
-    extension = os.path.splitext( file_name )[1]
-
-    # setup the reader
-    if extension == ".vtu":
-        reader = vtk.vtkXMLUnstructuredGridReader()
-        return _read_vtk_mesh( reader, file_name )
-    elif extension == ".vtk":
-        reader = vtk.vtkUnstructuredGridReader()
-        return _read_vtk_mesh( reader, file_name )
-    elif extension in [ ".ex2", ".exo", ".e" ]:
-        reader = vtk.vtkExodusIIReader()
-        return _read_exodusii_mesh( reader, file_name, timestep=timestep )
-    else:
-        raise RuntimeError( "Unknown file type \"%s\"." % file_name )
 
     return
 # ==============================================================================
@@ -64,7 +72,7 @@ def _read_vtk_mesh( reader, file_name ):
 
     return reader.GetOutput()
 # ==============================================================================
-#def _read_exodus_grid( reader, file_name ):
+#def _read_exodus_mesh( reader, file_name ):
     #'''Uses a vtkExodusIIReader to return a vtkUnstructuredGrid.
     #'''
     #reader.SetFileName( file_name )
@@ -114,19 +122,19 @@ def _read_exodusii_mesh( reader, file_name, timestep=None ):
         for j in xrange( blk.GetNumberOfBlocks() ):
             #print '  ' + blk.GetMetaData( j ).Get( vtk.vtkCompositeDataSet.NAME() )
             sub_block = blk.GetBlock( j )
-            if sub_block.IsA( "vtkUnstructuredGrid" ):
+            if sub_block.IsA( 'vtkUnstructuredGrid' ):
                 vtk_mesh.append( sub_block )
 
     if len(vtk_mesh) == 0:
-        raise IOError( "No 'vtkUnstructuredGrid' found!" )
+        raise IOError( 'No \'vtkUnstructuredGrid\' found!' )
     elif len(vtk_mesh) > 1:
-        raise IOError( "More than one 'vtkUnstructuredGrid' found!" )
+        raise IOError( 'More than one \'vtkUnstructuredGrid\' found!' )
 
-    # Cut off trailing "_".
+    # Cut off trailing '_'.
     for k in xrange( vtk_mesh[0].GetPointData().GetNumberOfArrays() ):
         array = vtk_mesh[0].GetPointData().GetArray(k)
         array_name = array.GetName()
-        if array_name[-1] == "_":
+        if array_name[-1] == '_':
             array.SetName( array_name[0:-1] )
 
     return vtk_mesh[0]
@@ -142,20 +150,20 @@ def _read_points( vtk_mesh ):
 
     return points
 # ==============================================================================
-def _read_cellsNodes( vtk_mesh ):
+def _read_cells_nodes( vtk_mesh ):
 
     num_cells = vtk_mesh.GetNumberOfCells()
+    # Assume that all cells have the same number of local nodes.
     num_local_nodes = vtk_mesh.GetCell(0).GetNumberOfPoints()
-    cellsNodes = np.empty(num_cells, dtype = np.dtype((int, num_local_nodes)))
+    cells_nodes = np.empty(num_cells, dtype = np.dtype((int, num_local_nodes)))
 
-    for k in xrange( vtk_mesh.GetNumberOfCells() ):
+    for k in xrange(num_cells):
         cell = vtk_mesh.GetCell( k )
-        # gather up the points
-        num_points = cell.GetNumberOfPoints()
-        for l in xrange( num_points ):
-            cellsNodes[k][l] = cell.GetPointId( l )
+        # Gather up the points.
+        for l in xrange( num_local_nodes ):
+            cells_nodes[k][l] = cell.GetPointId( l )
 
-    return cellsNodes
+    return cells_nodes
 # ==============================================================================
 def _read_point_data( vtk_data ):
     '''Extract point data from a VTK data set.
@@ -179,7 +187,8 @@ def _read_point_data( vtk_data ):
     return out
 # ==============================================================================
 def _read_field_data( vtk_data ):
-    '''Gather field data.'''
+    '''Gather field data.
+    '''
 
     vtk_field_data = vtk_data.GetFieldData()
     num_arrays = vtk_field_data.GetNumberOfArrays()

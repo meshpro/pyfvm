@@ -6,11 +6,12 @@ import numpy as np
 from base import _base_mesh
 # ==============================================================================
 class mesh3d(_base_mesh):
+    '''Class for handling three-dimensional tetrahedral meshes.
+    '''
     # --------------------------------------------------------------------------
     def __init__(self, node_coords, cells):
         '''Initialization.
         '''
-
         super(mesh3d, self).__init__(node_coords, cells)
         self.node_coords = node_coords
 
@@ -31,7 +32,7 @@ class mesh3d(_base_mesh):
         return
     # --------------------------------------------------------------------------
     def create_cells_volume(self):
-        '''Returns the volume of a tetrahedron given by the nodes.
+        '''Computes the volumes of the tetrahedra in the mesh.
         '''
         import vtk
         num_cells = len(self.cells['nodes'])
@@ -60,10 +61,10 @@ class mesh3d(_base_mesh):
                 abs(vtk.vtkTetra.ComputeVolume(x[0], x[1], x[2], x[3]))
         return
     # --------------------------------------------------------------------------
-    def create_adjacent_entities( self ):
+    def create_adjacent_entities(self):
         '''Setup edge-node, edge-cell, edge-face, face-node, and face-cell
-        relations.'''
-
+        relations.
+        '''
         num_cells = len(self.cells['nodes'])
 
         # Get upper bound for number of edges; trim later.
@@ -196,7 +197,12 @@ class mesh3d(_base_mesh):
         return
     # --------------------------------------------------------------------------
     def _get_face_circumcenter(self, face_id):
-        '''Computes the center of the circumcircle of each face.
+        '''Computes the center of the circumcircle of a given face.
+
+        :params face_id: Face ID for which to compute circumcenter.
+        :type face_id: int
+        :returns circumcenter: Circumcenter of the face with given face ID.
+        :type circumcenter: numpy.ndarray((float,3))
         '''
         import vtk
 
@@ -244,7 +250,7 @@ class mesh3d(_base_mesh):
         #return
     # --------------------------------------------------------------------------
     def compute_control_volumes(self):
-        '''Computes the control volumes of the mesh.'''
+        '''Computes the control volumes of all nodes in mesh.'''
 
         if self.edges is None:
             self.create_adjacent_entities()
@@ -337,7 +343,11 @@ class mesh3d(_base_mesh):
     def compute_face_normals(self):
         '''Compute the face normals, pointing either in the direction of the
         cell with larger GID (for interior faces), or towards the outside of
-        the domain (for boundary faces).'''
+        the domain (for boundary faces).
+
+        :returns face_normals: List of all face normals.
+        :type face_normals: np.ndarray(num_faces, np.dtype((float, 3)))
+        '''
 
         # TODO VTK has ComputeNormal() for triangles, check
         # http://www.vtk.org/doc/nightly/html/classvtkTriangle.html
@@ -372,7 +382,11 @@ class mesh3d(_base_mesh):
         return face_normals
     # --------------------------------------------------------------------------
     def show_edge(self, edge_id):
-        '''Displays edge with covolume.'''
+        '''Displays edge with covolume.
+
+        :param edge_id: Edge ID for which to show the covolume.
+        :type edge_id: int
+        '''
         import matplotlib as mpl
         #from mpl_toolkits.mplot3d import Axes3D
         import matplotlib.pyplot as plt

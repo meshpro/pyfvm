@@ -6,6 +6,8 @@ import numpy as np
 from base import _base_mesh
 # ==============================================================================
 class mesh2d(_base_mesh):
+    '''Class for handling two-dimensional triangular meshes.
+    '''
     # --------------------------------------------------------------------------
     def __init__(self, nodes, cells):
         '''Initialization.
@@ -28,7 +30,8 @@ class mesh2d(_base_mesh):
         return
     # --------------------------------------------------------------------------
     def create_cells_volume(self):
-        '''Returns the area of triangle spanned by the two given edges.'''
+        '''Computes the area of all triangles in the mesh.
+        '''
         import vtk
         num_cells = len(self.cells['nodes'])
         self.cells_volume = np.empty(num_cells, dtype=float)
@@ -121,7 +124,9 @@ class mesh2d(_base_mesh):
     # --------------------------------------------------------------------------
     def refine( self ):
         '''Canonically refine a mesh by inserting nodes at all edge midpoints
-        and make four triangular elements where there was one.'''
+        and make four triangular elements where there was one.
+        This is a very crude refinement; don't use for actual applications.
+        '''
         if self.edges is None:
             raise RuntimeError('Edges must be defined to do refinement.')
 
@@ -230,7 +235,7 @@ class mesh2d(_base_mesh):
         return
     # --------------------------------------------------------------------------
     def compute_control_volumes( self ):
-        '''Compute the control volumes.
+        '''Compute the control volumes of all nodes in the mesh.
         '''
         num_nodes = len(self.node_coords)
         self.control_volumes = np.zeros((num_nodes, 1), dtype = float)
@@ -293,7 +298,11 @@ class mesh2d(_base_mesh):
     def compute_edge_normals(self):
         '''Compute the edge normals, pointing either in the direction of the
         cell with larger GID (for interior edges), or towards the outside of
-        the domain (for boundary edges).'''
+        the domain (for boundary edges).
+
+        :returns edge_normals: List of all edge normals.
+        :type edge_normals: np.ndarray(num_edges, np.dtype((float, 2)))
+        '''
         num_edges = len(self.edges['nodes'])
         edge_normals = np.empty(num_edges, dtype=np.dtype((float, 2)))
         for cell_id, cell in enumerate(self.cells):
@@ -320,8 +329,12 @@ class mesh2d(_base_mesh):
         return edge_normals
     # --------------------------------------------------------------------------
     def show(self, show_covolumes = True):
-        '''Plot the mesh.'''
-        if self.edges['nodes'] is None:
+        '''Show the mesh using matplotlib.
+
+        :param show_covolumes: If true, show all covolumes of the mesh, too. 
+        :type show_covolumes: bool, optional
+        '''
+        if self.edges is None:
             self.create_adjacent_entities()
 
         import matplotlib.pyplot as plt
@@ -360,7 +373,14 @@ class mesh2d(_base_mesh):
         return
     # --------------------------------------------------------------------------
     def show_node(self, node_id, show_covolume = True):
-        '''Plot the vicinity of a node and its covolume.'''
+        '''Plot the vicinity of a node and its covolume.
+
+        :param node_id: Node ID of the node to be shown.
+        :type node_id: int
+
+        :param show_covolume: If true, shows the covolume of the node, too.
+        :type show_covolume: bool, optional
+        '''
         if self.edges['nodes'] is None:
             self.create_adjacent_entities()
 

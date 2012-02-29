@@ -12,11 +12,17 @@ class _base_mesh(object):
         self.nodes = None
         return
     # --------------------------------------------------------------------------
-    def write( self,
-               filename,
-               extra_arrays = None
-             ):
+    def write(self,
+              filename,
+              point_data = None
+              ):
         '''Writes mesh together with data to a file.
+
+        :params filename: File to write to.
+        :type filename: str
+
+        :params point_data: Named additional point data to write to the file.
+        :type point_data: dict
         '''
         import os
         import vtk
@@ -24,26 +30,26 @@ class _base_mesh(object):
         vtk_mesh = self._generate_vtk_mesh(self.nodes, self.cellsNodes)
 
         # add arrays
-        if extra_arrays:
-            for key, value in extra_arrays.iteritems():
+        if point_data:
+            for key, value in point_data.iteritems():
                 vtk_mesh.GetPointData() \
                         .AddArray(_create_vtkdoublearray(value, key))
 
         extension = os.path.splitext(filename)[1]
-        if extension == ".vtu": # VTK XML format
+        if extension == '.vtu': # VTK XML format
             writer = vtk.vtkXMLUnstructuredGridWriter()
-        elif extension == ".pvtu": # parallel VTK XML format
+        elif extension == '.pvtu': # parallel VTK XML format
             writer = vtk.vtkXMLPUnstructuredGridWriter()
-        elif extension == ".vtk": # classical VTK format
+        elif extension == '.vtk': # classical VTK format
             writer = vtk.vtkUnstructuredGridWriter()
             writer.SetFileTypeToASCII()
-        elif extension in [ ".ex2", ".exo", ".e" ]: # Exodus II format
+        elif extension in [ '.ex2', '.exo', '.e' ]: # Exodus II format
             writer = vtk.vtkExodusIIWriter()
             # If the mesh contains vtkModelData information, make use of it
             # and write out all time steps.
             writer.WriteAllTimeStepsOn()
         else:
-            raise IOError( "Unknown file type \"%s\"." % filename )
+            raise IOError( 'Unknown file type \'%s\'.' % filename )
 
         writer.SetFileName( filename )
 
