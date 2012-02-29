@@ -9,7 +9,6 @@ class _base_mesh(object):
                  nodes,
                  cells_nodes
                  ):
-        self.nodes = None
         return
     # --------------------------------------------------------------------------
     def write(self,
@@ -27,7 +26,7 @@ class _base_mesh(object):
         import os
         import vtk
 
-        vtk_mesh = self._generate_vtk_mesh(self.nodes, self.cellsNodes)
+        vtk_mesh = self._generate_vtk_mesh(self.node_coords, self.cells['nodes'])
 
         # add arrays
         if point_data:

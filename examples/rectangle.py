@@ -15,7 +15,7 @@ def _main():
     args = _parse_options()
 
     # dimensions of the rectangle
-    cc_radius = 15.0 # circumcircle radius
+    cc_radius = 5.0 # circumcircle radius
     lx = np.sqrt(2.0) * cc_radius
     l = [lx, lx]
 
@@ -33,14 +33,14 @@ def _main():
     elapsed = time.time() - start
     print 'done. (%gs)' % elapsed
 
-    num_nodes = len(mymesh.nodes)
-    print '\n%d nodes, %d elements\n' % (num_nodes, len(mymesh.cellsNodes))
+    num_nodes = len(mymesh.node_coords)
+    print '\n%d nodes, %d elements\n' % (num_nodes, len(mymesh.cells))
 
     # create values
     print 'Create values...',
     start = time.time()
     X = np.empty( num_nodes, dtype = complex )
-    for k, node in enumerate(mymesh.nodes):
+    for k, node in enumerate(mymesh.node_coords):
         #X[k] = cmath.rect( random.random(), 2.0 * pi * random.random() )
         X[k] = complex( 1.0, 0.0 )
     elapsed = time.time()-start
@@ -53,9 +53,9 @@ def _main():
     height0 = 0.1
     height1 = 1.1
     radius = 2.0
-    for k, node in enumerate(mymesh.nodes):
-        A[k] = magnetic_vector_potentials.mvp_z( node )
-        #A[k] = magnetic_vector_potentials.mvp_magnetic_dot( node, radius, height0, height1 )
+    for k, node in enumerate(mymesh.node_coords):
+        #A[k] = magnetic_vector_potentials.mvp_z( node )
+        A[k] = magnetic_vector_potentials.mvp_magnetic_dot( node, radius, height0, height1 )
     elapsed = time.time()-start
     print 'done. (%gs)' % elapsed
 
