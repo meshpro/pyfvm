@@ -8,7 +8,6 @@ file formats.
 # ==============================================================================
 __all__ = ['read']
 # ==============================================================================
-import vtk
 import os
 import numpy as np
 # ==============================================================================
@@ -25,17 +24,20 @@ def read(filename, timestep=None):
     :returns field_data: Field data read from file.
     :type field_data: dict
     '''
-    extension = os.path.splitext( file_name )[1]
+    extension = os.path.splitext(filename)[1]
 
     # setup the reader
     if extension == '.vtu':
-        reader = vtk.vtkXMLUnstructuredGridReader()
+        from vtk import vtkXMLUnstructuredGridReader
+        reader = vtkXMLUnstructuredGridReader()
         vtk_mesh = _read_vtk_mesh(reader, filename)
     elif extension == '.vtk':
-        reader = vtk.vtkUnstructuredGridReader()
+        from vtk import vtkUnstructuredGridReader
+        reader = vtkUnstructuredGridReader()
         vtk_mesh = _read_vtk_mesh(reader, filename)
     elif extension in [ '.ex2', '.exo', '.e' ]:
-        reader = vtk.vtkExodusIIReader()
+        from vtk import vtkExodusIIReader
+        reader = vtkExodusIIReader()
         vtk_mesh = _read_exodusii_mesh(reader, filename, timestep=timestep)
     else:
         raise RuntimeError( 'Unknown file type \'%s\'.' % file_name )

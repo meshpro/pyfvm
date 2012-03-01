@@ -34,7 +34,7 @@ class mesh2d(_base_mesh):
     def create_cells_volume(self):
         '''Computes the area of all triangles in the mesh.
         '''
-        import vtk
+        from vtk import vtkTriangle
         num_cells = len(self.cells['nodes'])
         self.cells_volume = np.empty(num_cells, dtype=float)
         for cell_id, cell in enumerate(self.cells):
@@ -45,19 +45,19 @@ class mesh2d(_base_mesh):
             z = np.zeros((3, 1))
             x = np.c_[self.node_coords[cell['nodes']], z]
             self.cells_volume[cell_id] = \
-               abs(vtk.vtkTriangle.TriangleArea(x[0], x[1], x[2]))
+               abs(vtkTriangle.TriangleArea(x[0], x[1], x[2]))
         return
     # --------------------------------------------------------------------------
     def create_cell_circumcenters( self ):
         '''Computes the center of the circumsphere of each cell.
         '''
-        import vtk
+        from vtk import vtkTriangle
         num_cells = len(self.cells['nodes'])
         self.cell_circumcenters = np.empty(num_cells, dtype=np.dtype((float, 2)))
         for cell_id, cell in enumerate(self.cells):
             x = self.node_coords[cell['nodes']]
-            vtk.vtkTriangle.Circumcircle(x[0], x[1], x[2],
-                                         self.cell_circumcenters[cell_id])
+            vtkTriangle.Circumcircle(x[0], x[1], x[2],
+                                     self.cell_circumcenters[cell_id])
 
         return
     # --------------------------------------------------------------------------

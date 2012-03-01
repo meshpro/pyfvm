@@ -36,7 +36,7 @@ class mesh3d(_base_mesh):
     def create_cells_volume(self):
         '''Computes the volumes of the tetrahedra in the mesh.
         '''
-        import vtk
+        from vtk import vtkTetra
         num_cells = len(self.cells['nodes'])
         self.cells_volume = np.empty(num_cells, dtype=float)
         for cell_id, cell in enumerate(self.cells):
@@ -60,7 +60,7 @@ class mesh3d(_base_mesh):
 
             x = self.node_coords[cell['nodes']]
             self.cells_volume[cell_id] = \
-                abs(vtk.vtkTetra.ComputeVolume(x[0], x[1], x[2], x[3]))
+                abs(vtkTetra.ComputeVolume(x[0], x[1], x[2], x[3]))
         return
     # --------------------------------------------------------------------------
     def create_adjacent_entities(self):
@@ -175,13 +175,13 @@ class mesh3d(_base_mesh):
     def create_cell_circumcenters( self ):
         '''Computes the center of the circumsphere of each cell.
         '''
-        import vtk
+        from vtk import vtkTetra
         num_cells = len(self.cells['nodes'])
         self.cell_circumcenters = np.empty(num_cells, dtype=np.dtype((float, 3)))
         for cell_id, cell in enumerate(self.cells):
             x = self.node_coords[cell['nodes']]
-            vtk.vtkTetra.Circumsphere(x[0], x[1], x[2], x[3],
-                                      self.cell_circumcenters[cell_id])
+            vtkTetra.Circumsphere(x[0], x[1], x[2], x[3],
+                                  self.cell_circumcenters[cell_id])
             ## http://www.cgafaq.info/wiki/Tetrahedron_Circumsphere
             #b = x[1] - x[0]
             #c = x[2] - x[0]
@@ -206,19 +206,19 @@ class mesh3d(_base_mesh):
         :returns circumcenter: Circumcenter of the face with given face ID.
         :type circumcenter: numpy.ndarray((float,3))
         '''
-        import vtk
+        from vtk import vtkTriangle
 
         x = self.node_coords[self.faces['nodes'][face_id]]
         # Project triangle to 2D.
         v = np.empty(3, dtype=np.dtype((float, 2)))
-        vtk.vtkTriangle.ProjectTo2D(x[0], x[1], x[2],
-                                    v[0], v[1], v[2])
+        vtkTriangle.ProjectTo2D(x[0], x[1], x[2],
+                                v[0], v[1], v[2])
         # Get the circumcenter in 2D.
         cc_2d = np.empty(2, dtype=float)
-        vtk.vtkTriangle.Circumcircle(v[0], v[1], v[2], cc_2d)
+        vtkTriangle.Circumcircle(v[0], v[1], v[2], cc_2d)
         # Project back to 3D by using barycentric coordinates.
         bcoords = np.empty(3, dtype=float)
-        vtk.vtkTriangle.BarycentricCoords(cc_2d, v[0], v[1], v[2], bcoords)
+        vtkTriangle.BarycentricCoords(cc_2d, v[0], v[1], v[2], bcoords)
         return bcoords[0] * x[0] + bcoords[1] * x[1] + bcoords[2] * x[2]
 
         #a = x[0] - x[1]

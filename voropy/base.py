@@ -24,7 +24,6 @@ class _base_mesh(object):
         :type point_data: dict
         '''
         import os
-        import vtk
 
         vtk_mesh = self._generate_vtk_mesh(self.node_coords, self.cells['nodes'])
 
@@ -36,14 +35,18 @@ class _base_mesh(object):
 
         extension = os.path.splitext(filename)[1]
         if extension == '.vtu': # VTK XML format
-            writer = vtk.vtkXMLUnstructuredGridWriter()
+            from vtk import vtkXMLUnstructuredGridWriter
+            writer = vtkXMLUnstructuredGridWriter()
         elif extension == '.pvtu': # parallel VTK XML format
-            writer = vtk.vtkXMLPUnstructuredGridWriter()
+            from vtk import vtkXMLPUnstructuredGridWriter
+            writer = vtkXMLPUnstructuredGridWriter()
         elif extension == '.vtk': # classical VTK format
-            writer = vtk.vtkUnstructuredGridWriter()
+            from vtk import vtkUnstructuredGridWriter
+            writer = vtkUnstructuredGridWriter()
             writer.SetFileTypeToASCII()
         elif extension in [ '.ex2', '.exo', '.e' ]: # Exodus II format
-            writer = vtk.vtkExodusIIWriter()
+            from vtk import vtkExodusIIWriter
+            writer = vtkExodusIIWriter()
             # If the mesh contains vtkModelData information, make use of it
             # and write out all time steps.
             writer.WriteAllTimeStepsOn()
@@ -59,17 +62,17 @@ class _base_mesh(object):
         return
     # --------------------------------------------------------------------------
     def _generate_vtk_mesh(self, points, cellsNodes, X = None, name = None):
-        import vtk
-        mesh = vtk.vtkUnstructuredGrid()
+        from vtk import vtkUnstructuredGrid, VTK_TRIANGLE, VTK_TETRA, vtkIdList, vtkPoints
+        mesh = vtkUnstructuredGrid()
 
         # set points
-        vtk_points = vtk.vtkPoints()
+        vtk_points = vtkPoints()
         if len(points[0]) == 2:
-            cell_type = vtk.VTK_TRIANGLE
+            cell_type = VTK_TRIANGLE
             for point in points:
                 vtk_points.InsertNextPoint(point[0], point[1], 0.0)
         elif len(points[0]) == 3:
-            cell_type = vtk.VTK_TETRA
+            cell_type = VTK_TETRA
             for point in points:
                 vtk_points.InsertNextPoint(point[0], point[1], point[2])
         else:
@@ -78,7 +81,7 @@ class _base_mesh(object):
 
         # set cells
         for cellNodes in cellsNodes:
-            pts = vtk.vtkIdList()
+            pts = vtkIdList()
             num_local_nodes = len(cellNodes)
             pts.SetNumberOfIds(num_local_nodes)
             # get the connectivity for this element
@@ -106,9 +109,9 @@ class _base_mesh(object):
     # --------------------------------------------------------------------------
 # ==============================================================================
 def _create_vtkdoublearray(X, name):
-    import vtk
+    from vtk import vtkDoubleArray
 
-    scalars0 = vtk.vtkDoubleArray()
+    scalars0 = vtkDoubleArray()
     scalars0.SetName(name)
 
     if isinstance( X, float ):
