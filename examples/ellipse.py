@@ -1,5 +1,6 @@
 import numpy as np
 from scipy import special
+import time
 
 import voropy
 # ==============================================================================
@@ -9,8 +10,8 @@ def _main():
 
     n_phi = 200
     # lengths of major and minor axes
-    a = 15.0
-    b = 15.0
+    a = 10.0
+    b = 10.0
 
     # Choose the maximum area of a triangle equal to the area of
     # an equilateral triangle on the boundary.
@@ -29,6 +30,8 @@ def _main():
         boundary_points[k] = [a * np.cos(phi),
                               b * np.sin(phi)]
 
+    print 'Create mesh...',
+    start = time.time()
     import meshpy.triangle
     info = meshpy.triangle.MeshInfo()
     info.set_points( boundary_points )
@@ -45,21 +48,51 @@ def _main():
                                         refinement_func = _needs_refinement
                                         )
     mesh = voropy.mesh2d(meshpy_mesh.points, meshpy_mesh.elements)
+    elapsed = time.time()-start
+    print 'done. (%gs)' % elapsed
+
+    num_nodes = len(mesh.node_coords)
+
+    print
+    print '%d nodes, %d cells' % (num_nodes, len(mesh.cells))
+    print
 
     # create values
-    X = np.empty(len(mesh.nodes), dtype=complex)
-    for k, x in enumerate(mesh.nodes):
+    print 'Create X...',
+    start = time.time()
+    X = np.empty(num_nodes, dtype=complex)
+    for k, x in enumerate(mesh.node_coords):
         X[k] = complex(1.0, 0.0)
+    elapsed = time.time()-start
+    print 'done. (%gs)' % elapsed
 
-    # Add values for thickness:
-    thickness = np.empty(len(mesh.nodes), dtype = float)
-    alpha = 0.5 # thickness at the center of the tube
-    beta = 2.0 # thickness at the boundary
-    t = (beta-alpha) / b**2
-    for k, x in enumerate(mesh.nodes):
-        thickness[k] = alpha + t * x[1]**2
+    # Add magnetic vector potential.
+    print 'Create mvp...',
+    start = time.time()
+    A = np.empty(num_nodes, dtype = np.dtype((float,3)))
+    height0 = 0.1
+    height1 = 1.1
+    radius = 0.5 * min(a,b)
+    import magnetic_vector_potentials
+    for k, node in enumerate(mesh.node_coords):
+        #A[k] = magnetic_vector_potentials.mvp_z( node )
+        A[k] = magnetic_vector_potentials.mvp_magnetic_dot( node, radius, height0, height1 )
+    elapsed = time.time()-start
+    print 'done. (%gs)' % elapsed
 
-    mesh.write(args.filename, {'psi': X, 'thickness': thickness})
+    ## Add values for thickness:
+    #thickness = np.empty(len(mesh.nodes), dtype = float)
+    #alpha = 0.5 # thickness at the center of the tube
+    #beta = 2.0 # thickness at the boundary
+    #t = (beta-alpha) / b**2
+    #for k, x in enumerate(mesh.nodes):
+        #thickness[k] = alpha + t * x[1]**2
+
+    print 'Write to file...',
+    start = time.time()
+    mesh.write(args.filename, {'psi': X, 'A': A})
+    elapsed = time.time()-start
+    print 'done. (%gs)' % elapsed
 
     return
 # ==============================================================================

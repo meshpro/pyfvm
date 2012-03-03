@@ -132,7 +132,7 @@ def _read_exodusii_mesh( reader, file_name, timestep=None ):
     elif len(vtk_mesh) > 1:
         raise IOError( 'More than one \'vtkUnstructuredGrid\' found!' )
 
-    # Cut off trailing '_'.
+    # Cut off trailing '_' from array names.
     for k in xrange( vtk_mesh[0].GetPointData().GetNumberOfArrays() ):
         array = vtk_mesh[0].GetPointData().GetArray(k)
         array_name = array.GetName()
