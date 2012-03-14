@@ -13,7 +13,8 @@ class _base_mesh(object):
     # --------------------------------------------------------------------------
     def write(self,
               filename,
-              point_data = None
+              point_data = None,
+              field_data = None
               ):
         '''Writes mesh together with data to a file.
 
@@ -27,10 +28,16 @@ class _base_mesh(object):
 
         vtk_mesh = self._generate_vtk_mesh(self.node_coords, self.cells['nodes'])
 
-        # add arrays
+        # add point data
         if point_data:
             for key, value in point_data.iteritems():
                 vtk_mesh.GetPointData() \
+                        .AddArray(_create_vtkdoublearray(value, key))
+
+        # add field data
+        if field_data:
+            for key, value in field_data.iteritems():
+                vtk_mesh.GetFieldData() \
                         .AddArray(_create_vtkdoublearray(value, key))
 
         extension = os.path.splitext(filename)[1]
@@ -61,7 +68,7 @@ class _base_mesh(object):
 
         return
     # --------------------------------------------------------------------------
-    def _generate_vtk_mesh(self, points, cellsNodes, X = None, name = None):
+    def _generate_vtk_mesh(self, points, cellsNodes):
         from vtk import vtkUnstructuredGrid, VTK_TRIANGLE, VTK_TETRA, vtkIdList, vtkPoints
         mesh = vtkUnstructuredGrid()
 
@@ -88,10 +95,6 @@ class _base_mesh(object):
             for k, node_index in enumerate(cellNodes):
                 pts.InsertId(k, node_index)
             mesh.InsertNextCell(cell_type, pts)
-
-        # set values
-        if X is not None:
-            mesh.GetPointData().AddArray(_create_vtkdoublearray(X, name))
 
         return mesh
     # --------------------------------------------------------------------------

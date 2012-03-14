@@ -112,6 +112,11 @@ def _read_exodusii_mesh( reader, file_name, timestep=None ):
         arr_name = reader.GetPointResultArrayName( k )
         reader.SetPointResultArrayStatus( arr_name, 1 )
 
+    # Make sure all field data is read.
+    for k in xrange( reader.GetNumberOfGlobalResultArrays() ):
+        arr_name = reader.GetGlobalResultArrayName( k )
+        reader.SetGlobalResultArrayStatus( arr_name, 1 )
+
     # Read the file.
     reader.Update()
     out = reader.GetOutput()
@@ -119,10 +124,8 @@ def _read_exodusii_mesh( reader, file_name, timestep=None ):
     # Loop through the blocks and search for a vtkUnstructuredGrid.
     vtk_mesh = []
     for i in xrange( out.GetNumberOfBlocks() ):
-        #print out.GetMetaData( i ).Get( vtk.vtkCompositeDataSet.NAME() )
         blk = out.GetBlock( i )
         for j in xrange( blk.GetNumberOfBlocks() ):
-            #print '  ' + blk.GetMetaData( j ).Get( vtk.vtkCompositeDataSet.NAME() )
             sub_block = blk.GetBlock( j )
             if sub_block.IsA( 'vtkUnstructuredGrid' ):
                 vtk_mesh.append( sub_block )
@@ -191,7 +194,6 @@ def _read_point_data( vtk_data ):
 def _read_field_data( vtk_data ):
     '''Gather field data.
     '''
-
     vtk_field_data = vtk_data.GetFieldData()
     num_arrays = vtk_field_data.GetNumberOfArrays()
 
@@ -201,9 +203,9 @@ def _read_field_data( vtk_data ):
         name   = array.GetName()
         num_values = array.GetDataSize()
         if num_values == 1:
-            values = array.GetValue( k )
+            values = array.GetValue( 0 )
         else:
-            values = np.zeros( num_values )
+            values = np.empty( num_values )
             for i in xrange( num_values ):
                 values[i] = array.GetValue(i)
         field_data[ name ] = values

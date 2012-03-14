@@ -16,7 +16,8 @@ def _main():
 
     # dimensions of the rectangle
     cc_radius = 5.0 # circumcircle radius
-    lx = np.sqrt(2.0) * cc_radius
+    #lx = np.sqrt(2.0) * cc_radius
+    lx = 10.0
     l = [lx, lx]
 
     # create the mesh data structure

@@ -17,8 +17,11 @@ class mesh3d(_base_mesh):
         super(mesh3d, self).__init__(node_coords, cells)
         self.node_coords = node_coords
 
+        if not isinstance(node_coords, np.ndarray):
+            raise TypeError('node_coords is no Numpy array.')
+
         # Wait for Numpy 1.6.1 for this
-        #     self.cells = np.array(cells, dtype=np.dtype([('nodes', (int, 3))]))
+        #     self.cells = np.array(cells, dtype=np.dtype([('nodes', (int, 4))]))
         # to work. Check out
         # http://stackoverflow.com/questions/9467547/how-to-properly-initialize-numpy-array-with-named-fields
         num_cells = len(cells)
@@ -179,10 +182,14 @@ class mesh3d(_base_mesh):
         num_cells = len(self.cells['nodes'])
         self.cell_circumcenters = np.empty(num_cells, dtype=np.dtype((float, 3)))
         for cell_id, cell in enumerate(self.cells):
+            # Explicitly cast indices to 'int' here as the array node_coords
+            # might only accept those. (This is the case with tetgen arrays,
+            # for example.)
             x = self.node_coords[cell['nodes']]
             vtkTetra.Circumsphere(x[0], x[1], x[2], x[3],
                                   self.cell_circumcenters[cell_id])
             ## http://www.cgafaq.info/wiki/Tetrahedron_Circumsphere
+            #x = self.node_coords[cell['nodes']]
             #b = x[1] - x[0]
             #c = x[2] - x[0]
             #d = x[3] - x[0]
@@ -266,6 +273,9 @@ class mesh3d(_base_mesh):
         self.control_volumes = np.zeros((num_nodes, 1), dtype = float)
         for edge_id in xrange(len(self.edges['nodes'])):
             edge_node_ids = self.edges['nodes'][edge_id]
+            # Explicitly cast indices to 'int' here as the array node_coords
+            # might only accept those. (This is the case with tetgen arrays,
+            # for example.)
             edge = self.node_coords[edge_node_ids[1]] \
                  - self.node_coords[edge_node_ids[0]]
             edge_midpoint = 0.5 * ( self.node_coords[edge_node_ids[0]]
@@ -462,7 +472,6 @@ class mesh3d(_base_mesh):
         #ax.plot([edge_midpoint[0]], [edge_midpoint[1]], [edge_midpoint[2]], 'ro')
 
         # highlight cells
-        #print self.edges['cells'][edge_id]
         highlight_cells = [] #[3]
         col = 'r'
         for k in highlight_cells:
