@@ -1,5 +1,6 @@
 '''Module that provides magnetic vector potentials.'''
-import math
+import numpy as np
+from math import sqrt, cos, sin, pi
 # ==============================================================================
 def mvp_x( X ):
     '''Magnetic vector potential corresponding to the field B=(1,0,0).'''
@@ -7,7 +8,7 @@ def mvp_x( X ):
 # ==============================================================================
 def mvp_y( X ):
     '''Magnetic vector potential corresponding to the field B=(0,1,0).'''
-    return [ 0.5*X[2], 0, -0.5*X[0] ]
+    return [ 0.5*X[2], 0.0, -0.5*X[0] ]
 # ==============================================================================
 def mvp_z( X ):
     '''Magnetic vector potential corresponding to the field B=(0,0,1).'''
@@ -26,14 +27,18 @@ def mvp_spherical( X, phi, theta ):
            mvp_x = mvp_spherical( ., 0   , 0    ),
            mvp_y = mvp_spherical( ., 0   , pi/2 ),
            mvp_z = mvp_spherical( ., pi/2, *    ).'''
-    return [ -0.5 * math.sin(theta)                 * X[1]
-             +0.5 * math.cos(theta) * math.sin(phi) * X[2],
-              0.5 * math.sin(theta)                 * X[0]
-             -0.5 * math.cos(theta) * math.cos(phi) * X[2],
-              0.5 * math.cos(theta) * math.cos(phi) * X[1]
-             -0.5 * math.cos(theta) * math.sin(phi) * X[0] ]
+    return [ -0.5 * np.sin(theta)               * X[1]
+             +0.5 * np.cos(theta) * np.sin(phi) * X[2],
+              0.5 * np.sin(theta)               * X[0]
+             -0.5 * np.cos(theta) * np.cos(phi) * X[2],
+              0.5 * np.cos(theta) * np.cos(phi) * X[1]
+             -0.5 * np.cos(theta) * np.sin(phi) * X[0] ]
 # ==============================================================================
-def mvp_magnetic_dot( X, magnet_radius, height0, height1 ):
+def mvp_magnetic_dot(double x, double y,
+                     double magnet_radius,
+                     double height0,
+                     double height1
+                     ):
     '''Magnetic vector potential corresponding to the field
           B =
        This reprepresents the potential associated with a magnetic dot
@@ -42,39 +47,39 @@ def mvp_magnetic_dot( X, magnet_radius, height0, height1 ):
     # Span a cartesian grid over the sample, and integrate over it.
 
     # For symmetry, choose a number that is divided by 4.
-    n_phi = 100
+    cdef int n_phi = 100
     # Choose such that the quads at radius/2 are approximately squares.
-    n_radius = int( round( n_phi / math.pi ) )
+    cdef int n_radius = int( round( n_phi / pi ) )
 
-    dr = magnet_radius / n_radius
+    cdef double dr = magnet_radius / n_radius
 
-    ax = 0.0
-    ay = 0.0
+    cdef double ax = 0.0
+    cdef double ay = 0.0
+    cdef double beta, rad, r, r_3D0, r_3D1, vol, alpha, x0, y0, x_dist, y_dist
     # Iterate over all all 2D 'boxes' of the magnetic dot.
-    for i_phi in xrange( 0, n_phi ):
-        x0 = math.cos( 2.0*math.pi/n_phi * i_phi  )
-        y0 = math.sin( 2.0*math.pi/n_phi * i_phi  )
-        for i_radius in xrange( 0, n_radius ):
+    for i_phi in range(n_phi):
+        beta = 2.0*pi/n_phi * i_phi
+        x0 = cos(beta)
+        y0 = sin(beta)
+        for i_radius in xrange(n_radius):
             rad = magnet_radius / n_radius * (i_radius + 0.5)
-            x = rad * x0
-            y = rad * y0
             # r = squared distance between grid point X to the
             #     point (x,y) on the magnetic dot
-            x_dist = X[0] - x
-            y_dist = X[1] - y
-            r = x_dist*x_dist + y_dist*y_dist
-            if  r > 1.0e-15:
+            x_dist = x - rad * x0
+            y_dist = y - rad * y0
+            r = x_dist * x_dist + y_dist * y_dist
+            if r > 1.0e-15:
                 # 3D distance to point on lower edge (xi,yi,height0)
-                r_3D0 = math.sqrt( r + height0*height0 )
+                r_3D0 = sqrt( r + height0*height0 )
                 # 3D distance to point on upper edge (xi,yi,height1)
-                r_3D1 = math.sqrt( r + height1*height1 )
+                r_3D1 = sqrt( r + height1*height1 )
                 # Volume of circle segment = pi*r^2 * anglar_width,
                 # so the volume of a building brick of the discretization is
                 #   pi/n_phi * [(r+dr/2)^2 - (r-dr/2)^2]
-                vol = math.pi / n_phi * (2.0*rad*dr)
+                vol = pi / n_phi * (2.0*rad*dr)
                 alpha = ( height1/r_3D1 - height0/r_3D0 ) / r * vol
-                ax = ax + y_dist * alpha
-                ay = ay - x_dist * alpha
+                ax += y_dist * alpha
+                ay -= x_dist * alpha
 
     return [ ax, ay, 0.0 ]
 # ==============================================================================

@@ -10,8 +10,8 @@ def _main():
 
     n_phi = 200
     # lengths of major and minor axes
-    a = 8.0
-    b = 8.0
+    a = 10.0
+    b = 10.0
 
     # Choose the maximum area of a triangle equal to the area of
     # an equilateral triangle on the boundary.
@@ -75,8 +75,8 @@ def _main():
     radius = 0.5 * min(a,b)
     import magnetic_vector_potentials
     for k, node in enumerate(mesh.node_coords):
-        A[k] = magnetic_vector_potentials.mvp_z( node )
-        #A[k] = magnetic_vector_potentials.mvp_magnetic_dot( node, radius, height0, height1 )
+        #A[k] = magnetic_vector_potentials.mvp_z( node )
+        A[k] = magnetic_vector_potentials.mvp_magnetic_dot( node, radius, height0, height1 )
     elapsed = time.time()-start
     print 'done. (%gs)' % elapsed
 

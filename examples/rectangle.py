@@ -15,7 +15,7 @@ def _main():
     args = _parse_options()
 
     # dimensions of the rectangle
-    cc_radius = 5.0 # circumcircle radius
+    #cc_radius = 5.0 # circumcircle radius
     #lx = np.sqrt(2.0) * cc_radius
     lx = 10.0
     l = [lx, lx]
@@ -56,7 +56,8 @@ def _main():
     radius = 2.0
     for k, node in enumerate(mymesh.node_coords):
         #A[k] = magnetic_vector_potentials.mvp_z( node )
-        A[k] = magnetic_vector_potentials.mvp_magnetic_dot( node, radius, height0, height1 )
+        A[k] = magnetic_vector_potentials.mvp_magnetic_dot(node[0], node[1],
+                                                           radius, height0, height1)
     elapsed = time.time()-start
     print 'done. (%gs)' % elapsed
 
