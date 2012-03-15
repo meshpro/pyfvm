@@ -55,7 +55,7 @@ def mvp_magnetic_dot(double x, double y,
 
     cdef double ax = 0.0
     cdef double ay = 0.0
-    cdef double beta, rad, r, r_3D0, r_3D1, vol, alpha, x0, y0, x_dist, y_dist
+    cdef double beta, rad, r, r_3D0, r_3D1, alpha, x0, y0, x_dist, y_dist
     # Iterate over all all 2D 'boxes' of the magnetic dot.
     for i_phi in range(n_phi):
         beta = 2.0*pi/n_phi * i_phi
@@ -76,8 +76,8 @@ def mvp_magnetic_dot(double x, double y,
                 # Volume of circle segment = pi*r^2 * anglar_width,
                 # so the volume of a building brick of the discretization is
                 #   pi/n_phi * [(r+dr/2)^2 - (r-dr/2)^2]
-                vol = pi / n_phi * (2.0*rad*dr)
-                alpha = ( height1/r_3D1 - height0/r_3D0 ) / r * vol
+                alpha = ( height1/r_3D1 - height0/r_3D0 ) / r \
+                      * pi / n_phi * (2.0*rad*dr) # volume
                 ax += y_dist * alpha
                 ay -= x_dist * alpha
 
