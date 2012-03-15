@@ -76,7 +76,8 @@ def _main():
     import magnetic_vector_potentials
     for k, node in enumerate(mesh.node_coords):
         #A[k] = magnetic_vector_potentials.mvp_z( node )
-        A[k] = magnetic_vector_potentials.mvp_magnetic_dot( node, radius, height0, height1 )
+        A[k] = magnetic_vector_potentials.mvp_magnetic_dot(node[0], node[1],
+                                                           radius, height0, height1)
     elapsed = time.time()-start
     print 'done. (%gs)' % elapsed
 
