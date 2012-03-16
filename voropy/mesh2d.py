@@ -268,16 +268,19 @@ class mesh2d(_base_mesh):
             # Do it in such as a way that the control volume contribution
             # is positive if and only if the area of the triangle
             # (node, other0, edge_midpoint) (in this order) is positive.
-            # Equivalently, the triangle (node, edge_midpoint, other1) could
-            # be considered.
-            # other{0,1} refer to that one node of the adjacent.
+            # Equivalently, the triangles (node, edge_midpoint, other1)
+            # or (node, other0, other1) could  be considered.
+            # other{0,1} refers to the the node opposing the edge in the
+            # adjacent cell {0,1}.
             # Get the opposing node of the first adjacent cell.
             cell0 = self.edges['cells'][edge_id][0]
-            edge_idx = np.nonzero(self.cells['edges'][cell0] == edge_id)[0][0]
+            # This nonzero construct is an ugly replacement for the nonexisting
+            # index() method. (Compare with Python lists.)
+            edge_lid = np.nonzero(self.cells['edges'][cell0] == edge_id)[0][0]
             # This makes use of the fact that cellsEdges and cellsNodes
             # are coordinated such that in cell #i, the edge cellsEdges[i][k]
             # opposes cellsNodes[i][k].
-            other0 = self.node_coords[self.cells['nodes'][cell0][edge_idx]] \
+            other0 = self.node_coords[self.cells['nodes'][cell0][edge_lid]] \
                    - node
             node_ids = self.edges['nodes'][edge_id]
             node_coords = self.node_coords[node_ids]
