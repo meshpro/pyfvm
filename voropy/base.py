@@ -117,10 +117,10 @@ def _create_vtkdoublearray(X, name):
     scalars0 = vtkDoubleArray()
     scalars0.SetName(name)
 
-    if isinstance( X, float ):
+    if isinstance(X, (int,float)):
         scalars0.SetNumberOfComponents( 1 )
         scalars0.InsertNextValue( X )
-    elif (len( X.shape ) == 1 or X.shape[1] == 1) and X.dtype==float:
+    elif (len(X.shape) == 1 or X.shape[1] == 1) and X.dtype==float:
         # real-valued array
         scalars0.SetNumberOfComponents( 1 )
         for x in X:
