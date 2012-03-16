@@ -34,18 +34,26 @@ class mesh2d(_base_mesh):
     def create_cells_volume(self):
         '''Computes the area of all triangles in the mesh.
         '''
-        from vtk import vtkTriangle
         num_cells = len(self.cells['nodes'])
         self.cells_volume = np.empty(num_cells, dtype=float)
         for cell_id, cell in enumerate(self.cells):
+            # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+            # Shoelace formula.
+            node0, node1, node2 = self.node_coords[cell['nodes']]
+            self.cells_volume[cell_id] = 0.5 * abs( node0[0] * node1[1] - node0[1] * node1[0]
+                                                  + node1[0] * node2[1] - node1[1] * node2[0]
+                                                  + node2[0] * node0[1] - node2[1] * node0[0])
+            # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             #edge0 = node0 - node1
             #edge1 = node1 - node2
             #self.cells_volume[cell_id] = 0.5 * np.linalg.norm( np.cross( edge0, edge1 ) )
-            # Append a third component.
-            z = np.zeros((3, 1))
-            x = np.c_[self.node_coords[cell['nodes']], z]
-            self.cells_volume[cell_id] = \
-               abs(vtkTriangle.TriangleArea(x[0], x[1], x[2]))
+            # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+            ## Append a third component.
+            #from vtk import vtkTriangle
+            #x = np.c_[self.node_coords[cell['nodes']], np.zeros((3, 1))]
+            #self.cells_volume[cell_id] = \
+               #abs(vtkTriangle.TriangleArea(x[0], x[1], x[2]))
+            # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         return
     # --------------------------------------------------------------------------
     def create_cell_circumcenters( self ):
