@@ -13,7 +13,7 @@ def _main():
     args = _parse_options()
 
     # circumcirlce radius
-    cc_radius = 5.0
+    cc_radius = 10.0
     lx = 2.0/np.sqrt(3.0) * cc_radius
     l = [lx, lx, lx]
 
@@ -55,18 +55,19 @@ def _main():
     meshpy_mesh = meshpy.tet.build( info,
                                     max_volume = args.maxvol
                                   )
-    mesh = voropy.mesh3d(meshpy_mesh.points, meshpy_mesh.elements)
+    mesh = voropy.mesh3d(np.array(meshpy_mesh.points),
+                         meshpy_mesh.elements)
     elapsed = time.time() - start
     print 'done. (%gs)' % elapsed
 
-    num_nodes = len(mesh.nodes)
-    print '\n%d nodes, %d elements\n' % (num_nodes, len(mesh.cellsNodes))
+    num_nodes = len(mesh.node_coords)
+    print '\n%d nodes, %d elements\n' % (num_nodes, len(mesh.cells))
 
     print 'Create values...',
     start = time.time()
     # create values
     X = np.empty( num_nodes, dtype = complex )
-    for k, node in enumerate(mesh.nodes):
+    for k, node in enumerate(mesh.node_coords):
         X[k] = complex( 1.0, 0.0 )
         #X[k] = complex( sin( x/lx * np.pi ), sin( y/ly * np.pi ) )
     elapsed = time.time()-start
@@ -78,7 +79,7 @@ def _main():
     thickness = np.empty( num_nodes, dtype = float )
     alpha = 1.0
     beta = 2.0
-    for k, node in enumerate(mesh.nodes):
+    for k, node in enumerate(mesh.node_coords):
         #thickness[k] = alpha + (beta-alpha) * (y/(0.5*ly))**2
         thickness[k] = 1.0
     elapsed = time.time()-start
@@ -95,7 +96,7 @@ def _main():
     height1 = 1.1
     radius = 2.0
     import magnetic_vector_potentials
-    for k, node in enumerate(mesh.nodes):
+    for k, node in enumerate(mesh.node_coords):
         A[k,:] = magnetic_vector_potentials.mvp_z( node )
         #A[k,:] = magnetic_vector_potentials.mvp_magnetic_dot( node, radius, height0, height1 )
     elapsed = time.time()-start
@@ -104,7 +105,7 @@ def _main():
     # write the mesh with data
     print 'Write to file...',
     start = time.time()
-    mesh.write(args.filename, {'psi': X, 'A': A, 'thickness': thickness})
+    mesh.write(args.filename, {'psi': X, 'A': A})
     elapsed = time.time()-start
     print 'done. (%gs)' % elapsed
 
