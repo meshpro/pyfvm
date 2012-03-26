@@ -140,11 +140,13 @@ class mesh2d(_base_mesh):
         if self.edges is None:
             raise RuntimeError('Edges must be defined to do refinement.')
 
+        num_nodes = len(self.node_coords)
         # Record the newly added nodes.
-        num_new_nodes = len(self.edges['nodes'])
+        num_new_nodes = len(self.edges)
+
         new_nodes = np.empty(num_new_nodes, dtype=np.dtype((float, 2)))
-        self.node_coords = np.append(self.node_coords, new_nodes, axis=0)
-        new_node_gid = len(self.node_coords)
+        self.node_coords.resize(num_nodes+num_new_nodes, 2, refcheck=False)
+        new_node_gid = num_nodes
 
         # After the refinement step, all previous edge-node associations will
         # be obsolete, so record *all* the new edges.
@@ -239,9 +241,19 @@ class mesh2d(_base_mesh):
                               local_neighbor_newedges[k][1]])
                 new_cell_gid += 1
 
+        # Override edges.
+        num_edges = len(new_edges_nodes)
+        self.edges = np.empty(num_edges, dtype=np.dtype([('nodes', (int, 2))]))
         self.edges['nodes'] = new_edges_nodes
+
+        # Override cells.
+        num_cells = len(new_cells_nodes)
+        self.cells = np.empty(num_cells,
+                              dtype=np.dtype([('nodes', (int, 3)),('edges', (int,3))])
+                              )
         self.cells['nodes'] = new_cells_nodes
         self.cells['edges'] = new_cells_edges
+
         return
     # --------------------------------------------------------------------------
     def compute_control_volumes( self ):
