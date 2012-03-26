@@ -8,7 +8,7 @@ def _main():
 
     args = _parse_options()
 
-    n_phi = 500
+    n_phi = 275
     # lengths of major and minor axes
     a = 10.0
     b = 10.0

@@ -11,7 +11,7 @@ def _main():
     args = _parse_options()
 
     #Circumcircle radius of the triangle.
-    cc_radius = 5.0
+    cc_radius = 10.0
 
     # Create initial nodes/elements.
     #nodes = [ cc_radius * np.array([np.cos((0.5+0.0/3.0)*pi), np.sin((0.5+0.0/3.0)*pi), 0]),
@@ -35,13 +35,15 @@ def _main():
     elapsed = time.time()-start
     print 'done. (%gs)' % elapsed
 
-    num_nodes = len( mesh.nodes )
+    num_nodes = len( mesh.node_coords )
+
+    print '\n%d nodes, %d elements\n' % (num_nodes, len(mesh.cells))
 
     # create values
     print 'Create values...',
     start = time.time()
     X = np.empty( num_nodes, dtype = complex )
-    for k, node in enumerate(mesh.nodes):
+    for k, node in enumerate(mesh.node_coords):
         #import random, cmath
         #X[k] = cmath.rect( random.random(), 2.0 * pi * random.random() )
         X[k] = complex( 1.0, 0.0 )
@@ -56,7 +58,7 @@ def _main():
     height0 = 0.1
     height1 = 1.1
     radius = 2.0
-    for k, node in enumerate(mesh.nodes):
+    for k, node in enumerate(mesh.node_coords):
         A[k,:] = magnetic_vector_potentials.mvp_z( node )
         #A[k,:] = magnetic_vector_potentials.mvp_magnetic_dot( node, radius, height0, height1 )
     elapsed = time.time()-start
@@ -68,8 +70,6 @@ def _main():
     mesh.write(args.filename, {'psi':X, 'A':A})
     elapsed = time.time()-start
     print 'done. (%gs)' % elapsed
-
-    print '\n%d nodes, %d elements' % (num_nodes, len(mesh.cellsNodes))
 
     return
 # ==============================================================================
