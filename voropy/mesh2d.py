@@ -150,19 +150,19 @@ class mesh2d(_base_mesh):
 
         # After the refinement step, all previous edge-node associations will
         # be obsolete, so record *all* the new edges.
-        num_new_edges = 2 * len(self.edges['nodes']) \
-                      + 3 * len(self.cells['nodes'])
+        num_edges = len(self.edges)
+        num_cells = len(self.cells)
+        num_new_edges = 2 * num_edges + 3 * num_cells
         new_edges_nodes = np.empty(num_new_edges, dtype=np.dtype((int, 2)))
         new_edge_gid = 0
 
         # After the refinement step, all previous cell-node associations will
         # be obsolete, so record *all* the new cells.
-        num_new_cells = 4 * len(self.cells['nodes'])
+        num_new_cells = 4 * num_cells
         new_cells_nodes = np.empty(num_new_cells, dtype=np.dtype((int, 3)))
         new_cells_edges = np.empty(num_new_cells, dtype=np.dtype((int, 3)))
         new_cell_gid = 0
 
-        num_edges = len(self.edges['nodes'])
         is_edge_divided = np.zeros(num_edges, dtype=bool)
         edge_midpoint_gids = np.empty(num_edges, dtype=int)
         edge_newedges_gids = np.empty(num_edges, dtype=np.dtype((int, 2)))
@@ -260,7 +260,7 @@ class mesh2d(_base_mesh):
         '''Compute the control volumes of all nodes in the mesh.
         '''
         num_nodes = len(self.node_coords)
-        self.control_volumes = np.zeros((num_nodes, 1), dtype = float)
+        self.control_volumes = np.zeros(num_nodes, dtype = float)
 
         # compute cell circumcenters
         if self.cell_circumcenters is None:

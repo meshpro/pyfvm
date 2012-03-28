@@ -270,7 +270,7 @@ class mesh3d(_base_mesh):
 
         # Compute covolumes and control volumes.
         num_nodes = len(self.node_coords)
-        self.control_volumes = np.zeros((num_nodes, 1), dtype = float)
+        self.control_volumes = np.zeros(num_nodes, dtype = float)
         for edge_id in xrange(len(self.edges['nodes'])):
             edge_node_ids = self.edges['nodes'][edge_id]
             # Explicitly cast indices to 'int' here as the array node_coords
