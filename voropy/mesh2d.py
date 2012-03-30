@@ -141,11 +141,11 @@ class mesh2d(_base_mesh):
             raise RuntimeError('Edges must be defined to do refinement.')
 
         num_nodes = len(self.node_coords)
-        # Record the newly added nodes.
         num_new_nodes = len(self.edges)
 
         new_nodes = np.empty(num_new_nodes, dtype=np.dtype((float, 2)))
         self.node_coords.resize(num_nodes+num_new_nodes, 2, refcheck=False)
+        # Set starting index for new nodes.
         new_node_gid = num_nodes
 
         # After the refinement step, all previous edge-node associations will
@@ -180,7 +180,7 @@ class mesh2d(_base_mesh):
                     # for the cell creation.
                     local_edge_midpoint_gids[k] = \
                         edge_midpoint_gids[edge_gid]
-                    local_edge_newedges[k] = edge_midpoint_gids[edge_gid]
+                    local_edge_newedges[k] = edge_newedges_gids[edge_gid]
                 else:
                     # Create new node at the edge midpoint.
                     self.node_coords[new_node_gid] = \
@@ -207,7 +207,8 @@ class mesh2d(_base_mesh):
                 # Keep a record of the new neighbors of the old nodes.
                 # Get local node IDs.
                 edgenodes_lids = [np.nonzero(cell['nodes'] == edgenodes_gids[0])[0][0],
-                                  np.nonzero(cell['nodes'] == edgenodes_gids[1])[0][0]]
+                                  np.nonzero(cell['nodes'] == edgenodes_gids[1])[0][0]
+                                  ]
                 local_neighbor_midpoints[edgenodes_lids[0]] \
                     .append( local_edge_midpoint_gids[k] )
                 local_neighbor_midpoints[edgenodes_lids[1]]\
@@ -353,7 +354,7 @@ class mesh2d(_base_mesh):
 
         return edge_normals
     # --------------------------------------------------------------------------
-    def show(self, show_covolumes = True):
+    def show(self, show_covolumes = True, save_as=None):
         '''Show the mesh using matplotlib.
 
         :param show_covolumes: If true, show all covolumes of the mesh, too. 
@@ -381,7 +382,7 @@ class mesh2d(_base_mesh):
         if show_covolumes:
             if self.cell_circumcenters is None:
                 self.create_cell_circumcenters()
-            covolume_col = '0.5'
+            covolume_col = '0.6'
             for edge_id in xrange(len(self.edges['cells'])):
                 ccs = self.cell_circumcenters[self.edges['cells'][edge_id]]
                 if len(ccs) == 2:
@@ -394,7 +395,12 @@ class mesh2d(_base_mesh):
                     raise RuntimeError('An edge has to have either 1 or 2 adjacent cells.')
                 ax.plot(p[0], p[1], color = covolume_col)
 
-        plt.show()
+        if save_as:
+            import matplotlib2tikz
+            matplotlib2tikz.save(save_as)
+        else:
+            plt.show()
+      
         return
     # --------------------------------------------------------------------------
     def show_node(self, node_id, show_covolume = True):
