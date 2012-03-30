@@ -10,8 +10,8 @@ def _main():
 
     n_phi = 275
     # lengths of major and minor axes
-    a = 10.0
-    b = 10.0
+    a = 5.0
+    b = 5.0
 
     # Choose the maximum area of a triangle equal to the area of
     # an equilateral triangle on the boundary.
@@ -57,41 +57,10 @@ def _main():
     print '%d nodes, %d cells' % (num_nodes, len(mesh.cells))
     print
 
-    # create values
-    print 'Create X...',
-    start = time.time()
-    X = np.empty(num_nodes, dtype=complex)
-    for k, x in enumerate(mesh.node_coords):
-        X[k] = complex(1.0, 0.0)
-    elapsed = time.time()-start
-    print 'done. (%gs)' % elapsed
-
-    # Add magnetic vector potential.
-    print 'Create mvp...',
-    start = time.time()
-    A = np.empty(num_nodes, dtype = np.dtype((float,3)))
-    height0 = 0.1
-    height1 = 1.1
-    radius = 0.5 * min(a,b)
-    import magnetic_vector_potentials
-    for k, node in enumerate(mesh.node_coords):
-        #A[k] = magnetic_vector_potentials.mvp_z( node )
-        A[k] = magnetic_vector_potentials.mvp_magnetic_dot(node[0], node[1],
-                                                           radius, height0, height1)
-    elapsed = time.time()-start
-    print 'done. (%gs)' % elapsed
-
-    ## Add values for thickness:
-    #thickness = np.empty(len(mesh.nodes), dtype = float)
-    #alpha = 0.5 # thickness at the center of the tube
-    #beta = 2.0 # thickness at the boundary
-    #t = (beta-alpha) / b**2
-    #for k, x in enumerate(mesh.nodes):
-        #thickness[k] = alpha + t * x[1]**2
 
     print 'Write to file...',
     start = time.time()
-    mesh.write(args.filename, {'psi': X, 'A': A})
+    mesh.write(args.filename)
     elapsed = time.time()-start
     print 'done. (%gs)' % elapsed
 

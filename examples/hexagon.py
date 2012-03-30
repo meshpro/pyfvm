@@ -56,7 +56,9 @@ def _main():
     mymesh = mesh.Mesh(nodes, cellNodes,
                        edgesNodes = edgesNodes, cellsEdges = cellEdges)
 
-    # Refine..
+    print '\n%d nodes, %d elements' % (num_nodes, len(mymesh.cellsNodes))
+
+    # Refine.
     print 'Mesh refinement...',
     start = time.time()
     for k in xrange(args.ref_steps):
@@ -66,39 +68,12 @@ def _main():
 
     num_nodes = len( mymesh.nodes )
 
-    # create values
-    print 'Create values...',
-    start = time.time()
-    import random, cmath
-    X = np.empty( num_nodes, dtype = complex )
-    for k, node in enumerate(mymesh.nodes):
-        #X[k] = cmath.rect( random.random(), 2.0 * pi * random.random() )
-        X[k] = complex(1.0, 0.0)
-    elapsed = time.time()-start
-    print 'done. (%gs)' % elapsed
-
-    # Add magnetic vector potential.
-    print 'Create mvp...',
-    start = time.time()
-    A = np.empty(num_nodes, dtype = np.dtype((float,3)))
-    from mesh import magnetic_vector_potentials
-    height0 = 0.1
-    height1 = 1.1
-    radius = 2.0
-    for k, node in enumerate(mymesh.nodes):
-        A[k] = magnetic_vector_potentials.mvp_z( node )
-        #A[k] = magnetic_vector_potentials.mvp_magnetic_dot( node, radius, height0, height1 )
-    elapsed = time.time()-start
-    print 'done. (%gs)' % elapsed
-
     # write the mesh
     print 'Write mesh...',
     start = time.time()
-    mymesh.write( args.filename, {'psi':X, 'A':A} )
+    mymesh.write( args.filename )
     elapsed = time.time()-start
     print 'done. (%gs)' % elapsed
-
-    print '\n%d nodes, %d elements' % (num_nodes, len(mymesh.cellsNodes))
 
     return
 # ==============================================================================

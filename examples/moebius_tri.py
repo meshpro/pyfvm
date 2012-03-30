@@ -98,34 +98,12 @@ def _main():
             elem_nodes = [ (nl-1)*nw + j, (nw-1) - j     , (nw-1)    - (j+1) ]
             elems.append( mesh.Cell( elem_nodes) )
 
-    # add values
-    num_nodes = len( nodes )
-    X = np.empty( num_nodes, dtype = complex )
-    for k, node in enumerate(nodes):
-        X[k] = complex( 1.0, 0.0 )
-
-    # Add thickness values in such a way as to increase
-    # the thickness towards the boundaries.
-    thickness = np.empty( num_nodes, dtype = float )
-    alpha = 1.0    # thickness at the center of the tube
-    beta  = 1024.0 # thickness at the boundary
-    p     = 8      # steepness of the thickness function towards the boundary
-    t = (beta-alpha) / (0.5*width)**p
-    for k, node in enumerate(nodes):
-        thickness[k] = alpha + t * abs(v)**p
-
-    # Add magnetic vector potential corresponding to
-    # B = ( 0, 1, 0 ).
-    import magnetic_vector_potentials
-    A = np.empty( (num_nodes,3), dtype = float )
-    for k, node in enumerate(nodes):
-        A[k,:] = magnetic_vector_potentials.mvp_z( node )
 
     # create the mesh data structure
     mymesh = mesh.Mesh( nodes, elems )
 
     # create the mesh
-    mymesh.write(file_name, {'psi': psi, 'A': A, 'thickness': thickness })
+    mymesh.write(file_name)
 
     return
 # ==============================================================================

@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 '''
-Creates a simplistic triangular mesh on a M\"obius strip.
+Creates a tetrahedral mesh on a ball.
 '''
 from mesh import mesh
 import numpy as np
@@ -41,23 +41,8 @@ def _main():
     mymesh = mesh.Mesh(nodes, elems)
     num_nodes = len(mymesh.nodes)
 
-    # add values
-    X = np.empty(num_nodes, dtype = complex)
-    for k, node in enumerate(mymesh.nodes):
-        X[k] = complex(1.0, 0.0)
-
-    # Add values for thickness:
-    # Make it somewhat thicker at the boundaries.
-    thickness = np.empty( num_nodes, dtype = float )
-    alpha = 0.5 # thickness at the center of the tube
-    beta = 2.0 # thickness at the boundary
-    t = (beta-alpha) / (0.5*args.width)**2
-    for k, node in enumerate(mymesh.nodes):
-        thickness[k] = 1.0
-        #thickness[k] = alpha + t * nodes[k].coords[2]**2
-
     # create the mesh
-    mymesh.write(args.filename, {'psi': X, 'thickness': thickness})
+    mymesh.write(args.filename)
 
     return
 # ==============================================================================

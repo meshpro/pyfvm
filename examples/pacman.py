@@ -44,39 +44,14 @@ def _main():
     elapsed = time.time()-start
     print 'done. (%gs)' % elapsed
 
-    num_nodes = len( mymesh.nodes )
-
-    # create values
-    X = np.empty( num_nodes, dtype = complex )
-    for k, x in enumerate( mymesh.nodes ):
-        X[k] = complex( 1.0, 0.0 )
-
-    # add thickness value
-    thickness = np.empty( num_nodes, dtype = float )
-    for k, x in enumerate( mymesh.nodes ):
-        thickness[k] = 1.0
-
-    # Add magnetic vector potential.
-    print 'Create mvp...',
-    start = time.time()
-    A = np.empty(num_nodes, dtype=np.dtype((float,3)))
-    height0 = 0.1
-    height1 = 1.1
-    radius = 2.0
-    for k, node in enumerate(mymesh.nodes):
-        A[k] = magnetic_vector_potentials.mvp_z( node )
-        #A[k,:] = magnetic_vector_potentials.mvp_magnetic_dot( node, radius, height0, height1 )
-    elapsed = time.time()-start
-    print 'done. (%gs)' % elapsed
+    print '\n%d nodes, %d elements' % (len(mymesh.nodes), len(mymesh.cellsNodes))
 
     # write the mesh
     print 'Write mesh...',
     start = time.time()
-    mymesh.write( args.filename, {'psi':X, 'A':A, 'thickness':thickness} )
+    mymesh.write( args.filename )
     elapsed = time.time()-start
     print 'done. (%gs)' % elapsed
-
-    print '\n%d nodes, %d elements' % (len(mymesh.nodes), len(mymesh.cellsNodes))
 
     return
 # ==============================================================================

@@ -50,41 +50,14 @@ def _main():
     # Fill the data into a voropy mesh object.
     mesh = voropy.mesh3d(meshpy_mesh.points, meshpy_mesh.elements)
 
-    num_nodes = len( mesh.nodes )
-
-    # create values
-    print 'Create values...',
-    start = time.time()
-    import random, cmath
-    X = np.empty(num_nodes, dtype = complex)
-    for k, node in enumerate(mesh.nodes):
-        #X[k] = cmath.rect( random.random(), 2.0 * pi * random.random() )
-        X[k] = complex( 1.0, 0.0 )
-    elapsed = time.time()-start
-    print 'done. (%gs)' % elapsed
-
-    # Add magnetic vector potential.
-    print 'Create mvp...',
-    start = time.time()
-    A = np.empty(num_nodes, dtype = np.dtype((float,3)))
-    height0 = 0.1
-    height1 = 1.1
-    radius = 2.0
-    import magnetic_vector_potentials
-    for k, node in enumerate(mesh.nodes):
-        A[k] = magnetic_vector_potentials.mvp_z( node )
-        #A[k] = mesh.magnetic_vector_potentials.mvp_magnetic_dot( node, radius, height0, height1 )
-    elapsed = time.time()-start
-    print 'done. (%gs)' % elapsed
+    print '\n%d nodes, %d elements' % (len(mesh.nodes), len(mesh.cellsNodes))
 
     # write the mesh
     print 'Write mesh...',
     start = time.time()
-    mesh.write(args.filename, {'psi': X, 'A': A})
+    mesh.write(args.filename)
     elapsed = time.time()-start
     print 'done. (%gs)' % elapsed
-
-    print '\n%d nodes, %d elements' % (num_nodes, len(mesh.cellsNodes))
 
     return
 # ==============================================================================

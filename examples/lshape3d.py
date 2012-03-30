@@ -63,49 +63,10 @@ def _main():
     num_nodes = len(mesh.node_coords)
     print '\n%d nodes, %d elements\n' % (num_nodes, len(mesh.cells))
 
-    print 'Create values...',
-    start = time.time()
-    # create values
-    X = np.empty( num_nodes, dtype = complex )
-    for k, node in enumerate(mesh.node_coords):
-        X[k] = complex( 1.0, 0.0 )
-        #X[k] = complex( sin( x/lx * np.pi ), sin( y/ly * np.pi ) )
-    elapsed = time.time()-start
-    print 'done. (%gs)' % elapsed
-
-    print 'Create thickness values...',
-    start = time.time()
-    # add thickness value
-    thickness = np.empty( num_nodes, dtype = float )
-    alpha = 1.0
-    beta = 2.0
-    for k, node in enumerate(mesh.node_coords):
-        #thickness[k] = alpha + (beta-alpha) * (y/(0.5*ly))**2
-        thickness[k] = 1.0
-    elapsed = time.time()-start
-    print 'done. (%gs)' % elapsed
-
-    print 'Create mvp...',
-    start = time.time()
-    # add magnetic vector potential
-    A = np.empty( (num_nodes,3), dtype = float )
-    # exact corner of a cube
-    phi = np.pi/4.0 # azimuth
-    theta = np.arctan( 1.0/np.sqrt(2.0) ) # altitude
-    height0 = 0.1
-    height1 = 1.1
-    radius = 2.0
-    import magnetic_vector_potentials
-    for k, node in enumerate(mesh.node_coords):
-        A[k,:] = magnetic_vector_potentials.mvp_z( node )
-        #A[k,:] = magnetic_vector_potentials.mvp_magnetic_dot( node, radius, height0, height1 )
-    elapsed = time.time()-start
-    print 'done. (%gs)' % elapsed
-
     # write the mesh with data
     print 'Write to file...',
     start = time.time()
-    mesh.write(args.filename, {'psi': X, 'A': A})
+    mesh.write(args.filename)
     elapsed = time.time()-start
     print 'done. (%gs)' % elapsed
 

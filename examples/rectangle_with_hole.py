@@ -45,33 +45,11 @@ def _main():
     num_nodes = len(mymesh.nodes)
     print '\n%d nodes, %d elements\n' % (num_nodes, len(mymesh.cells))
 
-    # create values
-    print 'Create values...',
-    start = time.time()
-    X = np.empty( num_nodes, dtype = complex )
-    for k, node in enumerate(mymesh.nodes):
-        #X[k] = cmath.rect( random.random(), 2.0 * pi * random.random() )
-        X[k] = complex( 1.0, 0.0 )
-    elapsed = time.time()-start
-    print 'done. (%gs)' % elapsed
-
-    # Add magnetic vector potential.
-    print 'Create mvp...',
-    start = time.time()
-    A = np.empty( (num_nodes,3), dtype = float )
-    height0 = 0.1
-    height1 = 1.1
-    radius = 2.0
-    for k, node in enumerate(mymesh.nodes):
-        A[k,:] = magnetic_vector_potentials.mvp_z( node )
-        #A[k,:] = magnetic_vector_potentials.mvp_magnetic_dot( node, radius, height0, height1 )
-    elapsed = time.time()-start
-    print 'done. (%gs)' % elapsed
 
     # write the mesh
     print 'Write mesh...',
     start = time.time()
-    mymesh.write( args.filename, {'psi':X, 'A':A} )
+    mymesh.write( args.filename )
     elapsed = time.time()-start
     print 'done. (%gs)' % elapsed
 
