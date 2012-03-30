@@ -40,7 +40,7 @@ def read(filename, timestep=None):
         reader = vtkExodusIIReader()
         vtk_mesh = _read_exodusii_mesh(reader, filename, timestep=timestep)
     else:
-        raise RuntimeError( 'Unknown file type \'%s\'.' % file_name )
+        raise RuntimeError( 'Unknown file type \'%s\'.' % filename )
 
     # read points, cells, point data, field data
     points = _read_points( vtk_mesh )
