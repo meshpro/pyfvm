@@ -16,11 +16,10 @@ def _main():
     args = _parse_options()
 
     radius = 5.0
-    points = args.p
 
-    radial_subdiv = 2 * points
+    radial_subdiv = 2 * args.num_longi_points
 
-    dphi = np.pi / points
+    dphi = np.pi / args.num_longi_points
 
     # Make sure the nodes meet at the poles of the ball.
     def truncate(r):
@@ -29,9 +28,14 @@ def _main():
         else:
             return r
 
+    # Compute the volume of a canonical tetrahedron
+    # with edgelength radius*dphi.
+    a = radius * dphi
+    canonical_tet_volume = np.sqrt(2.0) / 12 * a**3
+
     # Build outline for surface of revolution.
     rz = [(truncate(radius * np.sin(i*dphi)), radius * np.cos(i*dphi))
-          for i in xrange(points+1)
+          for i in xrange(args.num_longi_points+1)
          ]
 
     print 'Build mesh...',
@@ -43,14 +47,14 @@ def _main():
                      )
     mesh_info = MeshInfo()
     geob.set(mesh_info)
-    meshpy_mesh = build(mesh_info)
+    meshpy_mesh = build(mesh_info, max_volume = canonical_tet_volume)
     elapsed = time.time()-start
     print 'done. (%gs)' % elapsed
 
     # Fill the data into a voropy mesh object.
     mesh = voropy.mesh3d(meshpy_mesh.points, meshpy_mesh.elements)
 
-    print '\n%d nodes, %d elements' % (len(mesh.nodes), len(mesh.cellsNodes))
+    print '\n%d nodes, %d elements' % (len(mesh.node_coords), len(mesh.cells))
 
     # write the mesh
     print 'Write mesh...',
@@ -76,7 +80,7 @@ def _parse_options():
 
     parser.add_argument( '--numpoints', '-p',
                          metavar = 'N',
-                         dest='p',
+                         dest='num_longi_points',
                          nargs='?',
                          type=int,
                          const=10,

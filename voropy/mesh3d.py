@@ -17,9 +17,6 @@ class mesh3d(_base_mesh):
         super(mesh3d, self).__init__(node_coords, cells)
         self.node_coords = node_coords
 
-        if not isinstance(node_coords, np.ndarray):
-            raise TypeError('node_coords is no Numpy array.')
-
         # Wait for Numpy 1.6.1 for this
         #     self.cells = np.array(cells, dtype=np.dtype([('nodes', (int, 4))]))
         # to work. Check out
