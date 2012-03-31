@@ -32,13 +32,13 @@ class _base_mesh(object):
         if point_data:
             for key, value in point_data.iteritems():
                 vtk_mesh.GetPointData() \
-                        .AddArray(_create_vtkdoublearray(value, key))
+                        .AddArray(_create_vtkarray(value, key))
 
         # add field data
         if field_data:
             for key, value in field_data.iteritems():
                 vtk_mesh.GetFieldData() \
-                        .AddArray(_create_vtkdoublearray(value, key))
+                        .AddArray(_create_vtkarray(value, key))
 
         extension = os.path.splitext(filename)[1]
         if extension == '.vtu': # VTK XML format
@@ -111,29 +111,34 @@ class _base_mesh(object):
         return
     # --------------------------------------------------------------------------
 # ==============================================================================
-def _create_vtkdoublearray(X, name):
-    from vtk import vtkDoubleArray
+def _create_vtkarray(X, name):
+    from vtk import vtkDoubleArray, vtkIntArray
 
-    scalars0 = vtkDoubleArray()
-    scalars0.SetName(name)
-
-    if isinstance(X, (int,float)):
+    if isinstance(X, int):
+        scalars0 = vtkIntArray()
+        scalars0.SetNumberOfComponents( 1 )
+        scalars0.InsertNextValue( X )
+    elif isinstance(X, float):
+        scalars0 = vtkDoubleArray()
         scalars0.SetNumberOfComponents( 1 )
         scalars0.InsertNextValue( X )
     elif (len(X.shape) == 1 or X.shape[1] == 1) and X.dtype==float:
         # real-valued array
+        scalars0 = vtkDoubleArray()
         scalars0.SetNumberOfComponents( 1 )
         for x in X:
             scalars0.InsertNextValue( x )
 
     elif (len( X.shape ) == 1 or X.shape[1] == 1) and X.dtype==complex:
         # complex-valued array
+        scalars0 = vtkDoubleArray()
         scalars0.SetNumberOfComponents( 2 )
         for x in X:
             scalars0.InsertNextValue( x.real )
             scalars0.InsertNextValue( x.imag )
 
     elif len( X.shape ) == 2 and X.dtype==float: # 2D float field
+        scalars0 = vtkDoubleArray()
         m, n = X.shape
         scalars0.SetNumberOfComponents( n )
         for j in range(m):
@@ -141,6 +146,7 @@ def _create_vtkdoublearray(X, name):
                 scalars0.InsertNextValue( X[j, i] )
 
     elif len( X.shape ) == 2 and X.dtype==complex: # 2D complex field
+        scalars0 = vtkDoubleArray()
         scalars0.SetNumberOfComponents( 2 )
         m, n = X.shape
         for j in range(n):
@@ -149,6 +155,7 @@ def _create_vtkdoublearray(X, name):
                 scalars0.InsertNextValue( X[j, i].imag )
 
     elif len( X.shape ) == 3: # vector values
+        scalars0 = vtkDoubleArray()
         m, n, d = X.shape
         if X.dtype == complex:
             raise RuntimeError('Can''t handle complex-valued vector fields.')
@@ -162,6 +169,8 @@ def _create_vtkdoublearray(X, name):
 
     else:
         raise ValueError('Don''t know what to do with array.')
+
+    scalars0.SetName(name)
 
     return scalars0
 # ==============================================================================
