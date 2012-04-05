@@ -8,10 +8,9 @@ def _main():
 
     args = _parse_options()
 
-    n_phi = 275
     # lengths of major and minor axes
-    a = 5.0
-    b = 5.0
+    a = 10.0
+    b = 10.0
 
     # Choose the maximum area of a triangle equal to the area of
     # an equilateral triangle on the boundary.
@@ -19,16 +18,12 @@ def _main():
     # http://en.wikipedia.org/wiki/Ellipse#Circumference
     eccentricity = np.sqrt( 1.0 - (b/a)**2 )
     length_boundary = float(4 * a * special.ellipe(eccentricity))
-    a_boundary = length_boundary / n_phi
+    a_boundary = length_boundary / args.num_boundary_points
     max_area = a_boundary**2 * np.sqrt(3) / 4
 
     # generate points on the circle
-    Phi = np.linspace(0, 2*np.pi, n_phi, endpoint = False)
-    num_boundary_points = len(Phi)
-    boundary_points = np.empty(num_boundary_points, dtype=((float,2)))
-    for k, phi in enumerate(Phi):
-        boundary_points[k] = [a * np.cos(phi),
-                              b * np.sin(phi)]
+    Phi = np.linspace(0, 2*np.pi, args.num_boundary_points, endpoint = False)
+    boundary_points = np.column_stack((a * np.cos(Phi), b * np.sin(Phi)))
 
     print 'Create mesh...',
     start = time.time()
@@ -77,6 +72,12 @@ def _parse_options():
                          metavar = 'FILE',
                          type    = str,
                          help    = 'file to be written to'
+                       )
+
+    parser.add_argument( '-num-boundary-points', '-b',
+                         required = True,
+                         type    = int,
+                         help    = 'number of nodes on the ellipse boundary'
                        )
 
     return parser.parse_args()
