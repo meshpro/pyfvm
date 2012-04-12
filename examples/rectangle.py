@@ -6,7 +6,6 @@ Creates a mesh on a rectangle in the x-y-plane.
 import numpy as np
 import time
 
-import magnetic_vector_potentials
 import voropy
 # ==============================================================================
 def _main():
@@ -15,13 +14,10 @@ def _main():
     args = _parse_options()
 
     # dimensions of the rectangle
-    cc_radius = 5.0 # circumcircle radius
-    lx = np.sqrt(2.0) * cc_radius
-    #lx = 10.0
-    l = [lx, lx]
+    l = [args.edgelength, args.edgelength]
 
     # create the mesh data structure
-    print 'Create mesh...',
+    print 'Create mesh for rectangle (dimensions: %g x %g)...' % (l[0], l[1]),
     start = time.time()
     if args.cnx != 0:
         mymesh = _canonical(l, [args.cnx, args.cnx])
@@ -121,11 +117,19 @@ def _parse_options():
 
     parser = argparse.ArgumentParser( description = 'Construct a triangulation of a rectangle.' )
 
-
     parser.add_argument( 'filename',
                          metavar = 'FILE',
                          type    = str,
                          help    = 'file to be written to'
+                       )
+
+    cc_radius = 5.0 # circumcircle radius
+    lx = np.sqrt(2.0) * cc_radius
+    parser.add_argument( '--edgelength', '-e',
+                         metavar = 'EDGELENGTH',
+                         type    = float,
+                         default = lx,
+                         help    = 'edgelength of the square (default: %g)' % lx
                        )
 
     parser.add_argument( '--canonical', '-c',
