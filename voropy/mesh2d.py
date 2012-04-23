@@ -56,7 +56,7 @@ class mesh2d(_base_mesh):
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         return
     # --------------------------------------------------------------------------
-    def create_cell_circumcenters( self ):
+    def compute_cell_circumcenters( self ):
         '''Computes the center of the circumsphere of each cell.
         '''
         from vtk import vtkTriangle
@@ -265,7 +265,7 @@ class mesh2d(_base_mesh):
 
         # compute cell circumcenters
         if self.cell_circumcenters is None:
-            self.create_cell_circumcenters()
+            self.compute_cell_circumcenters()
 
         if self.edges is None:
             self.create_adjacent_entities()
@@ -354,6 +354,86 @@ class mesh2d(_base_mesh):
 
         return edge_normals
     # --------------------------------------------------------------------------
+    def compute_gradient(self, u):
+        '''Computes an approximation to the gradient \nabla u of a given
+        scalar valued function u, defined in the node points.
+        This is taken from
+         [1] Discrete gradient method in solid mechanics,
+             Jia Lu, Jin Qian, Weimin Han,
+             International Journal for Numerical Methods in Engineering,
+             2008, 74:619--641.
+        '''
+        num_nodes = len(self.node_coords)
+        assert len(u) == num_nodes
+        gradient = np.zeros((num_nodes, 2), dtype = u.dtype)
+
+        # Compute everything we need.
+        if self.edges is None:
+            self.create_adjacent_entities()
+        if self.control_volumes is None:
+            self.compute_control_volumes()
+        if self.cell_circumcenters is None:
+            self.compute_cell_circumcenters()
+
+        # Create an empty 2x2 matrix for the boundary nodes to hold the
+        # edge correction ((17) in [1]).
+        boundary_matrices = {}
+        for edge_id, edge in enumerate(self.edges):
+            if len(edge['cells']) == 1:
+                if edge['nodes'][0] not in boundary_matrices:
+                    boundary_matrices[edge['nodes'][0]] = np.zeros((2,2))
+                if edge['nodes'][1] not in boundary_matrices:
+                    boundary_matrices[edge['nodes'][1]] = np.zeros((2,2))
+
+        for edge_id, edge in enumerate(self.edges):
+            # Compute edge length.
+            edge_length = np.linalg.norm(self.node_coords[edge['nodes'][0]]
+                                        -self.node_coords[edge['nodes'][1]])
+            # Compute coedge length.
+            if len(edge['cells']) == 1:
+                # Boundary edge.
+                edge_midpoint = 0.5 * (self.node_coords[edge['nodes'][0]]
+                                      +self.node_coords[edge['nodes'][1]])
+                coedge_length = np.linalg.norm(self.cell_circumcenters[edge['cells'][0]]
+                                              -edge_midpoint)
+                coedge_midpoint = 0.5 * (self.cell_circumcenters[edge['cells'][0]]
+                                        +edge_midpoint)
+            elif len(edge['cells']) == 2:
+                # Interior edge.
+                coedge_length = np.linalg.norm(self.cell_circumcenters[edge['cells'][0]]
+                                              -self.cell_circumcenters[edge['cells'][1]])
+                coedge_midpoint = 0.5 * (self.cell_circumcenters[edge['cells'][0]]
+                                        +self.cell_circumcenters[edge['cells'][1]])
+            else:
+                raise RuntimeError('Edge needs to have either one or two neighbors.')
+
+            # Compute the coefficient r for both contributions
+            coeffs = coedge_length / (edge_length * self.control_volumes[edge['nodes']])
+
+            # Compute R*_{IJ} ((11) in [1]).
+            # np.array * np.vector does column-scaling, so apply the transposes
+            # for row-scaling.
+            r = ((coedge_midpoint - self.node_coords[edge['nodes']]).T * coeffs).T
+
+            diff = u[edge['nodes'][1]] - u[edge['nodes'][0]]
+
+            gradient[edge['nodes'][0]] += r[0] * diff
+            gradient[edge['nodes'][1]] -= r[1] * diff
+
+            # Store the boundary correction matrices.
+            edge_coords = self.node_coords[edge['nodes'][1]] \
+                        - self.node_coords[edge['nodes'][0]]
+            if edge['nodes'][0] in boundary_matrices:
+                boundary_matrices[edge['nodes'][0]] += np.outer(r[0], edge_coords)
+            if edge['nodes'][1] in boundary_matrices:
+                boundary_matrices[edge['nodes'][1]] += np.outer(r[1], -edge_coords)
+
+        # Apply corrections to the gradients on the boundary.
+        for k, value in boundary_matrices.items():
+            gradient[k] = np.linalg.solve(value, gradient[k])
+
+        return gradient
+    # --------------------------------------------------------------------------
     def show(self, show_covolumes = True, save_as=None):
         '''Show the mesh using matplotlib.
 
@@ -381,7 +461,7 @@ class mesh2d(_base_mesh):
         # Highlight covolumes.
         if show_covolumes:
             if self.cell_circumcenters is None:
-                self.create_cell_circumcenters()
+                self.compute_cell_circumcenters()
             covolume_col = '0.6'
             for edge_id in xrange(len(self.edges['cells'])):
                 ccs = self.cell_circumcenters[self.edges['cells'][edge_id]]
@@ -434,7 +514,7 @@ class mesh2d(_base_mesh):
         # Highlight covolumes.
         if show_covolume:
             if self.cell_circumcenters is None:
-                self.create_cell_circumcenters()
+                self.compute_cell_circumcenters()
             covolume_boundary_col = '0.5'
             covolume_area_col = '0.7'
             for edge_id in xrange(len(self.edges['cells'])):

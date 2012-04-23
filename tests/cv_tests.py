@@ -3,7 +3,7 @@ import unittest
 
 import voropy
 # ==============================================================================
-class TestMesh(unittest.TestCase):
+class TestControlVolumes(unittest.TestCase):
     # --------------------------------------------------------------------------
     def setUp(self):
         return
