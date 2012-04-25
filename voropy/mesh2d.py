@@ -387,46 +387,45 @@ class mesh2d(_base_mesh):
 
         for edge_id, edge in enumerate(self.edges):
             # Compute edge length.
-            edge_length = np.linalg.norm(self.node_coords[edge['nodes'][0]]
-                                        -self.node_coords[edge['nodes'][1]])
+            edge_coords = self.node_coords[edge['nodes'][1]] \
+                        - self.node_coords[edge['nodes'][0]]
+
             # Compute coedge length.
             if len(edge['cells']) == 1:
                 # Boundary edge.
                 edge_midpoint = 0.5 * (self.node_coords[edge['nodes'][0]]
                                       +self.node_coords[edge['nodes'][1]])
-                coedge_length = np.linalg.norm(self.cell_circumcenters[edge['cells'][0]]
-                                              -edge_midpoint)
+                coedge = self.cell_circumcenters[edge['cells'][0]] \
+                       - edge_midpoint
                 coedge_midpoint = 0.5 * (self.cell_circumcenters[edge['cells'][0]]
                                         +edge_midpoint)
             elif len(edge['cells']) == 2:
                 # Interior edge.
-                coedge_length = np.linalg.norm(self.cell_circumcenters[edge['cells'][0]]
-                                              -self.cell_circumcenters[edge['cells'][1]])
+                coedge = self.cell_circumcenters[edge['cells'][0]] \
+                       - self.cell_circumcenters[edge['cells'][1]]
                 coedge_midpoint = 0.5 * (self.cell_circumcenters[edge['cells'][0]]
                                         +self.cell_circumcenters[edge['cells'][1]])
             else:
                 raise RuntimeError('Edge needs to have either one or two neighbors.')
 
             # Compute the coefficient r for both contributions
-            coeffs = coedge_length / (edge_length * self.control_volumes[edge['nodes']])
+            coeffs = np.sqrt(np.dot(coedge, coedge) / np.dot(edge_coords, edge_coords)) \
+                   / self.control_volumes[edge['nodes']]
 
             # Compute R*_{IJ} ((11) in [1]).
-            # np.array * np.vector does column-scaling, so apply the transposes
-            # for row-scaling.
-            r = ((coedge_midpoint - self.node_coords[edge['nodes']]).T * coeffs).T
+            r0 = (coedge_midpoint - self.node_coords[edge['nodes'][0]])* coeffs[0]
+            r1 = (coedge_midpoint - self.node_coords[edge['nodes'][1]])* coeffs[1]
 
             diff = u[edge['nodes'][1]] - u[edge['nodes'][0]]
 
-            gradient[edge['nodes'][0]] += r[0] * diff
-            gradient[edge['nodes'][1]] -= r[1] * diff
+            gradient[edge['nodes'][0]] += r0 * diff
+            gradient[edge['nodes'][1]] -= r1 * diff
 
             # Store the boundary correction matrices.
-            edge_coords = self.node_coords[edge['nodes'][1]] \
-                        - self.node_coords[edge['nodes'][0]]
             if edge['nodes'][0] in boundary_matrices:
-                boundary_matrices[edge['nodes'][0]] += np.outer(r[0], edge_coords)
+                boundary_matrices[edge['nodes'][0]] += np.outer(r0, edge_coords)
             if edge['nodes'][1] in boundary_matrices:
-                boundary_matrices[edge['nodes'][1]] += np.outer(r[1], -edge_coords)
+                boundary_matrices[edge['nodes'][1]] += np.outer(r1, -edge_coords)
 
         # Apply corrections to the gradients on the boundary.
         for k, value in boundary_matrices.items():
