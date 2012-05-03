@@ -390,6 +390,77 @@ class mesh3d(_base_mesh):
 
         return face_normals
     # --------------------------------------------------------------------------
+    def show_control_volume(self, node_id):
+        '''Displays a node with its surrounding control volume.
+
+        :param node_id: Node ID for which to show the control volume.
+        :type node_id: int
+        '''
+        import matplotlib as mpl
+        from mpl_toolkits.mplot3d import Axes3D
+        import matplotlib.pyplot as plt
+        import mpl_toolkits.mplot3d as mpl3
+
+        fig = plt.figure()
+        ax = fig.gca(projection='3d')
+        # 3D axis aspect ratio isn't implemented in matplotlib yet (2012-02-21).
+        #plt.axis('equal')
+
+        if self.edges is None:
+            self.create_adjacent_entities()
+
+        # get cell circumcenters
+        if self.cell_circumcenters is None:
+            self.create_cell_circumcenters()
+        cell_ccs = self.cell_circumcenters
+
+	# There are not node->edge relations so manually build the list.
+	adjacent_edge_ids = []
+	for edge_id, edge in enumerate(self.edges):
+	    if node_id in edge['nodes']:
+	        adjacent_edge_ids.append(edge_id)
+
+        # Loop over all adjacent edges and plot the edges and their
+	# covolumes.
+	for k, edge_id in enumerate(adjacent_edge_ids):
+	    # get rainbow color
+	    h = float(k) / len(adjacent_edge_ids)
+	    hsv_face_col = np.array([[[h, 1.0, 1.0]]])
+	    col = mpl.colors.hsv_to_rgb(hsv_face_col)[0][0]
+
+	    edge_nodes = self.node_coords[self.edges['nodes'][edge_id]]
+
+	    # highlight edge
+	    ax.plot(edge_nodes[:, 0], edge_nodes[:, 1], edge_nodes[:, 2],
+		    color=col, linewidth=3.0 )
+
+            edge_midpoint = 0.5 * (edge_nodes[0] + edge_nodes[1])
+
+	    # Plot covolume.
+	    #face_col = '0.7'
+	    edge_col = 'k'
+	    for k, face_id in enumerate(self.edges['faces'][edge_id]):
+		ccs = cell_ccs[ self.faces['cells'][face_id] ]
+		if len(ccs) == 2:
+		    ax.plot(ccs[:, 0], ccs[:, 1], ccs[:, 2], color=edge_col)
+		    #tri = mpl3.art3d.Poly3DCollection([np.vstack((ccs, edge_midpoint))])
+		    #tri.set_color(face_col)
+		    #ax.add_collection3d( tri )
+		elif len(ccs) == 1:
+                    face_cc = self._get_face_circumcenter(face_id)
+		    #tri = mpl3.art3d.Poly3DCollection([np.vstack((ccs[0], face_cc, edge_midpoint))])
+		    #tri.set_color(face_col)
+		    #ax.add_collection3d( tri )
+		    ax.plot([ccs[0][0], face_cc[0]],
+			    [ccs[0][1], face_cc[1]],
+			    [ccs[0][2], face_cc[2]],
+			    color=edge_col)
+		else:
+		    raise RuntimeError('???')
+
+        plt.show()
+	return
+    # --------------------------------------------------------------------------
     def show_edge(self, edge_id):
         '''Displays edge with covolume.
 
@@ -397,7 +468,7 @@ class mesh3d(_base_mesh):
         :type edge_id: int
         '''
         import matplotlib as mpl
-        #from mpl_toolkits.mplot3d import Axes3D
+        from mpl_toolkits.mplot3d import Axes3D
         import matplotlib.pyplot as plt
         fig = plt.figure()
         ax = fig.gca(projection='3d')
@@ -427,7 +498,7 @@ class mesh3d(_base_mesh):
 
         edge_midpoint = 0.5 * (edge_nodes[0] + edge_nodes[1])
 
-        # plot covolume and highlight faces in matching colors
+        # plot faces in matching colors
         num_local_faces = len(self.edges['faces'][edge_id])
         for k, face_id in enumerate(self.edges['faces'][edge_id]):
             # get rainbow color
@@ -448,7 +519,10 @@ class mesh3d(_base_mesh):
             ax.plot([face_cc[0]], [face_cc[1]], [face_cc[2]],
                     marker='o', color=col)
 
-            face_col = '0.7'
+        # plot covolume
+        face_col = '0.7'
+        col = 'k'
+        for k, face_id in enumerate(self.edges['faces'][edge_id]):
             ccs = cell_ccs[ self.faces['cells'][face_id] ]
             if len(ccs) == 2:
                 tri = mpl3.art3d.Poly3DCollection([np.vstack((ccs, edge_midpoint))])
