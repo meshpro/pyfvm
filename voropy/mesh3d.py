@@ -347,6 +347,10 @@ class mesh3d(_base_mesh):
             #   0.25 * alpha / 3.
             self.control_volumes[edge_node_ids] += 0.25 * alpha / 3
 
+        # Sanity check.
+        if any(self.control_volumes < 0.0):
+            raise ValueError('Not all control volumes are positive. Abort.')
+
         return
     # --------------------------------------------------------------------------
     def compute_face_normals(self):
