@@ -349,7 +349,9 @@ class mesh3d(_base_mesh):
 
         # Sanity check.
         if any(self.control_volumes < 0.0):
-            raise ValueError('Not all control volumes are positive. Abort.')
+	    msg = 'Not all control volumes are positive. This is likely due do ' \
+	        + 'the triangulation not being Delaunay. Abort.'
+            raise RuntimeError(msg)
 
         return
     # --------------------------------------------------------------------------
@@ -393,6 +395,32 @@ class mesh3d(_base_mesh):
                         face_normals[face_id] *= -1
 
         return face_normals
+    # --------------------------------------------------------------------------
+    def is_delaunay(self):
+        # This approach here is pretty brute-force. For more sophisticated
+        # algorithms, see
+        # http://en.wikipedia.org/wiki/Delaunay_triangulation#Algorithms.
+	from vtk import vtkTetra
+
+        is_delaunay = True
+        for cell in self.cells:
+            # Calculate the circumsphere.
+            cc = np.empty(3,float)
+            x = self.node_coords[cell['nodes']]
+            r_squared = vtkTetra.Circumsphere(x[0], x[1], x[2], x[3], cc)
+
+            # Check if any node sits inside the circumsphere.
+            for node in self.node_coords:
+                d = cc - node
+                alpha = np.dot(d, d)
+                # Add a bit of a tolerance here to make sure that
+                # the current cell's nodes aren't counted in.
+                if alpha < r_squared - 1.0e-10:
+                    print 'The point', node, 'sits inside the circumsphere of the cell given by cell', \
+                          + cell['nodes'], '.', np.sqrt(alpha) - np.sqrt(r_squared)
+                    is_delaunay = False
+
+        return is_delaunay
     # --------------------------------------------------------------------------
     def show_control_volume(self, node_id):
         '''Displays a node with its surrounding control volume.
