@@ -319,6 +319,23 @@ class mesh2d(_base_mesh):
             else:
                 raise RuntimeError('An edge should have either 1 or two adjacent cells.')
 
+        # Sanity checks.
+        if self.cells_volume is None:
+            self.create_cells_volume()
+        sum_cv = sum(self.control_volumes)
+        sum_cells = sum(self.cells_volume)
+        alpha = sum_cv - sum_cells
+        if abs(alpha) > 1.0e-10:
+            msg = ('Sum of control volumes sum does not coincide with the sum of ' +
+                   'the cell volumes (|cv|-|cells| = %g - %g = %g.') \
+                  % (sum_cv, sum_cells, alpha)
+            raise RuntimeError(msg)
+
+        if any(self.control_volumes < 0.0):
+            msg = 'Not all control volumes are positive. This is likely due do ' \
+                + 'the triangulation not being Delaunay. Abort.'
+            raise RuntimeError(msg)
+
         return
     # --------------------------------------------------------------------------
     def compute_edge_normals(self):
@@ -472,7 +489,7 @@ class mesh2d(_base_mesh):
     def show(self, show_covolumes = True, save_as=None):
         '''Show the mesh using matplotlib.
 
-        :param show_covolumes: If true, show all covolumes of the mesh, too. 
+        :param show_covolumes: If true, show all covolumes of the mesh, too.
         :type show_covolumes: bool, optional
         '''
         if self.edges is None:
@@ -515,7 +532,7 @@ class mesh2d(_base_mesh):
             matplotlib2tikz.save(save_as)
         else:
             plt.show()
-      
+
         return
     # --------------------------------------------------------------------------
     def show_node(self, node_id, show_covolume = True):

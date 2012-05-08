@@ -347,10 +347,21 @@ class mesh3d(_base_mesh):
             #   0.25 * alpha / 3.
             self.control_volumes[edge_node_ids] += 0.25 * alpha / 3
 
-        # Sanity check.
+        # Sanity checks.
+        if self.cells_volume is None:
+            self.create_cells_volume()
+        sum_cv = sum(self.control_volumes)
+        sum_cells = sum(self.cells_volume)
+        alpha = sum_cv - sum_cells
+        if abs(alpha) > 1.0e-10:
+            msg = ('Sum of control volumes sum does not coincide with the sum of ' +
+                   'the cell volumes (|cv|-|cells| = %g - %g = %g.') \
+                  % (sum_cv, sum_cells, alpha)
+            raise RuntimeError(msg)
+
         if any(self.control_volumes < 0.0):
-	    msg = 'Not all control volumes are positive. This is likely due do ' \
-	        + 'the triangulation not being Delaunay. Abort.'
+            msg = 'Not all control volumes are positive. This is likely due do ' \
+                + 'the triangulation not being Delaunay. Abort.'
             raise RuntimeError(msg)
 
         return
@@ -400,7 +411,7 @@ class mesh3d(_base_mesh):
         # This approach here is pretty brute-force. For more sophisticated
         # algorithms, see
         # http://en.wikipedia.org/wiki/Delaunay_triangulation#Algorithms.
-	from vtk import vtkTetra
+        from vtk import vtkTetra
 
         is_delaunay = True
         for cell in self.cells:
@@ -446,52 +457,52 @@ class mesh3d(_base_mesh):
             self.create_cell_circumcenters()
         cell_ccs = self.cell_circumcenters
 
-	# There are not node->edge relations so manually build the list.
-	adjacent_edge_ids = []
-	for edge_id, edge in enumerate(self.edges):
-	    if node_id in edge['nodes']:
-	        adjacent_edge_ids.append(edge_id)
+        # There are not node->edge relations so manually build the list.
+        adjacent_edge_ids = []
+        for edge_id, edge in enumerate(self.edges):
+            if node_id in edge['nodes']:
+                adjacent_edge_ids.append(edge_id)
 
         # Loop over all adjacent edges and plot the edges and their
-	# covolumes.
-	for k, edge_id in enumerate(adjacent_edge_ids):
-	    # get rainbow color
-	    h = float(k) / len(adjacent_edge_ids)
-	    hsv_face_col = np.array([[[h, 1.0, 1.0]]])
-	    col = mpl.colors.hsv_to_rgb(hsv_face_col)[0][0]
+        # covolumes.
+        for k, edge_id in enumerate(adjacent_edge_ids):
+            # get rainbow color
+            h = float(k) / len(adjacent_edge_ids)
+            hsv_face_col = np.array([[[h, 1.0, 1.0]]])
+            col = mpl.colors.hsv_to_rgb(hsv_face_col)[0][0]
 
-	    edge_nodes = self.node_coords[self.edges['nodes'][edge_id]]
+            edge_nodes = self.node_coords[self.edges['nodes'][edge_id]]
 
-	    # highlight edge
-	    ax.plot(edge_nodes[:, 0], edge_nodes[:, 1], edge_nodes[:, 2],
-		    color=col, linewidth=3.0 )
+            # highlight edge
+            ax.plot(edge_nodes[:, 0], edge_nodes[:, 1], edge_nodes[:, 2],
+                    color=col, linewidth=3.0 )
 
             edge_midpoint = 0.5 * (edge_nodes[0] + edge_nodes[1])
 
-	    # Plot covolume.
-	    #face_col = '0.7'
-	    edge_col = 'k'
-	    for k, face_id in enumerate(self.edges['faces'][edge_id]):
-		ccs = cell_ccs[ self.faces['cells'][face_id] ]
-		if len(ccs) == 2:
-		    ax.plot(ccs[:, 0], ccs[:, 1], ccs[:, 2], color=edge_col)
-		    #tri = mpl3.art3d.Poly3DCollection([np.vstack((ccs, edge_midpoint))])
-		    #tri.set_color(face_col)
-		    #ax.add_collection3d( tri )
-		elif len(ccs) == 1:
+            # Plot covolume.
+            #face_col = '0.7'
+            edge_col = 'k'
+            for k, face_id in enumerate(self.edges['faces'][edge_id]):
+                ccs = cell_ccs[ self.faces['cells'][face_id] ]
+                if len(ccs) == 2:
+                    ax.plot(ccs[:, 0], ccs[:, 1], ccs[:, 2], color=edge_col)
+                    #tri = mpl3.art3d.Poly3DCollection([np.vstack((ccs, edge_midpoint))])
+                    #tri.set_color(face_col)
+                    #ax.add_collection3d( tri )
+                elif len(ccs) == 1:
                     face_cc = self._get_face_circumcenter(face_id)
-		    #tri = mpl3.art3d.Poly3DCollection([np.vstack((ccs[0], face_cc, edge_midpoint))])
-		    #tri.set_color(face_col)
-		    #ax.add_collection3d( tri )
-		    ax.plot([ccs[0][0], face_cc[0]],
-			    [ccs[0][1], face_cc[1]],
-			    [ccs[0][2], face_cc[2]],
-			    color=edge_col)
-		else:
-		    raise RuntimeError('???')
+                    #tri = mpl3.art3d.Poly3DCollection([np.vstack((ccs[0], face_cc, edge_midpoint))])
+                    #tri.set_color(face_col)
+                    #ax.add_collection3d( tri )
+                    ax.plot([ccs[0][0], face_cc[0]],
+                            [ccs[0][1], face_cc[1]],
+                            [ccs[0][2], face_cc[2]],
+                            color=edge_col)
+                else:
+                    raise RuntimeError('???')
 
         plt.show()
-	return
+        return
     # --------------------------------------------------------------------------
     def show_edge(self, edge_id):
         '''Displays edge with covolume.
