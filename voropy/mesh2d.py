@@ -11,7 +11,7 @@ class mesh2d(_base_mesh):
     .. inheritance-diagram:: mesh2d
     '''
     # --------------------------------------------------------------------------
-    def __init__(self, nodes, cells):
+    def __init__(self, nodes, cells=None):
         '''Initialization.
         '''
         super(mesh2d, self).__init__(nodes, cells)
@@ -22,6 +22,12 @@ class mesh2d(_base_mesh):
         #     self.cells = np.array(cells, dtype=np.dtype([('nodes', (int, 3))]))
         # to work. Check out
         # http://stackoverflow.com/questions/9467547/how-to-properly-initialize-numpy-array-with-named-fields
+        if cells is None:
+            # Compute the Delaunay triangulation if no cells were given.
+            from scipy.spatial import Delaunay
+            tri = Delaunay(nodes)
+            cells = tri.vertices
+
         num_cells = len(cells)
         self.cells = np.empty(num_cells, dtype=np.dtype([('nodes', (int, 3))]))
         self.cells['nodes'] = cells
@@ -85,7 +91,7 @@ class mesh2d(_base_mesh):
         filler = np.frompyfunc(lambda x: list(), 1, 1)
         self.edges['cells'] = filler(self.edges['cells'])
 
-        # Extend the self.cells array by the 'edges' "keyword".
+        # Extend the self.cells array by the 'edges' 'keyword'.
         dt = np.dtype([('nodes', (int, 3)), ('edges', (int, 3))])
         cells = self.cells['nodes']
         self.cells = np.empty(len(cells), dtype=dt)
@@ -450,39 +456,28 @@ class mesh2d(_base_mesh):
 
         return gradient
     # --------------------------------------------------------------------------
-    def is_delaunay():
+    def is_delaunay(self):
         # This approach here is pretty brute-force. For more sophisticated
         # algorithms, see
         # http://en.wikipedia.org/wiki/Delaunay_triangulation#Algorithms.
+        from vtk import vtkTriangle
 
         is_delaunay = True
         for cell in self.cells:
-            # Calculate the circumsphere.
-            # Project triangle to 2D.
-            v = np.empty(3, dtype=np.dtype((float,2)))
-            x = self.node_coords[cell['nodes']]
-            vtk.vtkTriangle.ProjectTo2D(x[0], x[1], x[2],
-                                        v[0], v[1], v[2])
+            v = self.node_coords[cell['nodes']]
             # Get the circumcenter in 2D.
-            cc_2d = np.empty(2,dtype=float)
-            r_squared = vtk.vtkTriangle.Circumcircle(v[0], v[1], v[2], cc_2d)
-            # Project back to 3D by using barycentric coordinates.
-            bcoords = np.empty(3,dtype=float)
-            vtk.vtkTriangle.BarycentricCoords(cc_2d, v[0], v[1], v[2], bcoords)
-            cc = bcoords[0] * x[0] \
-               + bcoords[1] * x[1] \
-               + bcoords[2] * x[2]
+            cc = np.empty(2, dtype=float)
+            r_squared = vtkTriangle.Circumcircle(v[0], v[1], v[2], cc)
 
-            # Check if any node sits inside the circumsphere.
-            for node in self.node_coords:
-                d = cc - node
-                alpha = np.dot(d, d)
-                # Add a bit of a tolerance here to make sure that
-                # the current cell's nodes aren't counted in.
-                if alpha < r_squared - 1.0e-10:
-                    print ('The point', node, 'sits inside the circumsphere of the cell given by cell', \
-                          cellNodes, '.', np.sqrt(alpha) - np.sqrt(r_squared))
-                    is_delaunay = False
+            # Check if any other node sits inside the circumsphere.
+            for k, node in enumerate(self.node_coords):
+                if k not in cell['nodes']:
+                    d = cc - node
+                    alpha = np.dot(d, d)
+                    if alpha < r_squared - 1.0e-5:
+                        print 'The point', node, 'sits inside the circumsphere of the cell given by cell', \
+                              + cell['nodes'], ' (%g).' % abs(np.sqrt(alpha) - np.sqrt(r_squared))
+                        is_delaunay = False
 
         return is_delaunay
     # --------------------------------------------------------------------------

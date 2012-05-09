@@ -420,16 +420,15 @@ class mesh3d(_base_mesh):
             x = self.node_coords[cell['nodes']]
             r_squared = vtkTetra.Circumsphere(x[0], x[1], x[2], x[3], cc)
 
-            # Check if any node sits inside the circumsphere.
-            for node in self.node_coords:
-                d = cc - node
-                alpha = np.dot(d, d)
-                # Add a bit of a tolerance here to make sure that
-                # the current cell's nodes aren't counted in.
-                if alpha < r_squared - 1.0e-10:
-                    print 'The point', node, 'sits inside the circumsphere of the cell given by cell', \
-                          + cell['nodes'], '.', np.sqrt(alpha) - np.sqrt(r_squared)
-                    is_delaunay = False
+            # Check if any other node sits inside the circumsphere.
+            for k, node in enumerate(self.node_coords):
+                if k not in cell['nodes']:
+                    d = cc - node
+                    alpha = np.dot(d, d)
+                    if alpha < r_squared - 1.0e-5:
+                        print 'The point', node, 'sits inside the circumsphere of the cell given by cell', \
+                              + cell['nodes'], ' (%g).' % abs(np.sqrt(alpha) - np.sqrt(r_squared))
+                        is_delaunay = False
 
         return is_delaunay
     # --------------------------------------------------------------------------

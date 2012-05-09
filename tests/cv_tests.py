@@ -34,6 +34,24 @@ class TestControlVolumes(unittest.TestCase):
 
         return
     # --------------------------------------------------------------------------
+    def test_degenerate_small(self):
+        points = np.array([[0,0], [1,0], [0.5,0.1], [0.5,-0.1]])
+        # Manually compute the volumes.
+        total_vol = 2 * 0.5 * 0.1
+        cv0 = 0.25 * 0.1/0.5 * (0.5**2 + 0.1**2)
+        cv = [cv0, cv0, 0.5*(total_vol-2*cv0), 0.5 * (total_vol-2*cv0)]
+
+        #cells = np.array([[0, 1, 2], [0, 1, 3]])
+        mesh = voropy.mesh2d(points, cells=None)
+
+        actual_values = [np.linalg.norm(cv, ord=1),
+                         np.linalg.norm(cv, ord=2),
+                         np.linalg.norm(cv, ord=np.Inf)
+                         ]
+
+        self._run_test(mesh, actual_values)
+        return
+    # --------------------------------------------------------------------------
     def test_rectanglesmall(self):
         filename = 'rectanglesmall.e'
         mesh, _, _ = voropy.read( filename )
