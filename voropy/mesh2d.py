@@ -457,27 +457,64 @@ class mesh2d(_base_mesh):
         return gradient
     # --------------------------------------------------------------------------
     def is_delaunay(self):
-        # This approach here is pretty brute-force. For more sophisticated
-        # algorithms, see
-        # http://en.wikipedia.org/wiki/Delaunay_triangulation#Algorithms.
-        from vtk import vtkTriangle
+
+        if self.edges is None:
+            self.create_adjacent_entities()
+        if self.cell_circumcenters is None:
+            self.compute_cell_circumcenters()
 
         is_delaunay = True
-        for cell in self.cells:
-            v = self.node_coords[cell['nodes']]
-            # Get the circumcenter in 2D.
-            cc = np.empty(2, dtype=float)
-            r_squared = vtkTriangle.Circumcircle(v[0], v[1], v[2], cc)
+        num_edges = len(self.edges['nodes'])
+        for edge_id in xrange(num_edges):
+            # Boundary edges don't need to be checked.
+            if len(self.edges['cells'][edge_id]) != 2:
+                continue
+            # Each interior edge divides the domain into to half-planes.
+            # The Delaunay condition is fulfilled if and only if
+            # the circumcenters of the adjacent cells are in "the right order",
+            # i.e., line between the nodes of the cells which do not sit
+            # on the hyperplane have the same orientation as the line
+            # between the circumcenters.
 
-            # Check if any other node sits inside the circumsphere.
-            for k, node in enumerate(self.node_coords):
-                if k not in cell['nodes']:
-                    d = cc - node
-                    alpha = np.dot(d, d)
-                    if alpha < r_squared - 1.0e-5:
-                        print 'The point', node, 'sits inside the circumsphere of the cell given by cell', \
-                              + cell['nodes'], ' (%g).' % abs(np.sqrt(alpha) - np.sqrt(r_squared))
-                        is_delaunay = False
+            # Move the system such that one of the two end points is in the
+            # origin. Deliberately take self.edges['nodes'][edge_id][0].
+            node = self.node_coords[self.edges['nodes'][edge_id][0]]
+
+            # The orientation of the coedge needs gauging.
+            # Do it in such as a way that the control volume contribution
+            # is positive if and only if the area of the triangle
+            # (node, other0, edge_midpoint) (in this order) is positive.
+            # Equivalently, the triangles (node, edge_midpoint, other1)
+            # or (node, other0, other1) could  be considered.
+            # other{0,1} refers to the the node opposing the edge in the
+            # adjacent cell {0,1}.
+            # Get the opposing node of the first adjacent cell.
+            cell0 = self.edges['cells'][edge_id][0]
+            # This nonzero construct is an ugly replacement for the nonexisting
+            # index() method. (Compare with Python lists.)
+            edge_lid = np.nonzero(self.cells['edges'][cell0] == edge_id)[0][0]
+            # This makes use of the fact that cellsEdges and cellsNodes
+            # are coordinated such that in cell #i, the edge cellsEdges[i][k]
+            # opposes cellsNodes[i][k].
+            other0 = self.node_coords[self.cells['nodes'][cell0][edge_lid]] \
+                   - node
+            node_ids = self.edges['nodes'][edge_id]
+            node_coords = self.node_coords[node_ids]
+            edge_midpoint = 0.5 * (node_coords[0] + node_coords[1]) \
+                          - node
+            # Computing the triangle volume like this is called the shoelace
+            # formula and can be interpreted as the z-component of the
+            # cross-product of other0 and edge_midpoint.
+            gauge = other0[0] * edge_midpoint[1] \
+                  - other0[1] * edge_midpoint[0]
+
+            # Get the circumcenters of the adjacent cells.
+            cc = self.cell_circumcenters[self.edges['cells'][edge_id]] \
+               - node
+            alpha = gauge * (cc[0][0]*cc[1][1] - cc[0][1]*cc[1][0])
+            if alpha < 0.0:
+                is_delaunay = False
+                break
 
         return is_delaunay
     # --------------------------------------------------------------------------
