@@ -1,9 +1,6 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
-'''
-Creates a mesh on a rectangle in the x-y-plane.
-'''
-from mesh import mesh, magnetic_vector_potentials, meshpy_interface
+import voropy
 import numpy as np
 import time
 # ==============================================================================
@@ -17,12 +14,6 @@ def _main():
     lx = np.sqrt(2.0) * cc_radius
     l = [lx, lx]
 
-    # Mesh parameters
-    # Number of nodes along the length of the strip
-
-    # create the mesh data structure
-    print 'Create mesh...',
-    start = time.time()
     # corner points
     points = [ ( -0.5*l[0], -0.5*l[1] ),
                (  0.5*l[0], -0.5*l[1] ),
@@ -30,17 +21,35 @@ def _main():
                (  0.0, 0.0 ),
                (  0.0, 0.5*l[1] ),
                ( -0.5*l[0],  0.5*l[1] ) ]
-    mymesh = meshpy_interface.create_mesh(args.maxarea, points)
-    elapsed = time.time() - start
+
+    print 'Creating mesh...',
+    start = time.time()
+    import meshpy.triangle
+    info = meshpy.triangle.MeshInfo()
+    info.set_points( points )
+    def _round_trip_connect(start, end):
+        result = []
+        for i in xrange(start, end):
+            result.append((i, i+1))
+        result.append((end, start))
+        return result
+    info.set_facets(_round_trip_connect(0, len(points)-1))
+    def _needs_refinement(vertices, area):
+        return bool(area > args.maxarea)
+    meshpy_mesh = meshpy.triangle.build(info,
+                                        refinement_func = _needs_refinement
+                                        )
+    mesh = voropy.mesh2d(meshpy_mesh.points, meshpy_mesh.elements)
+    elapsed = time.time()-start
     print 'done. (%gs)' % elapsed
 
-    num_nodes = len(mymesh.nodes)
-    print '\n%d nodes, %d elements\n' % (num_nodes, len(mymesh.cells))
+    num_nodes = len(mesh.node_coords)
+    print '\n%d nodes, %d elements\n' % (num_nodes, len(mesh.cells))
 
     # write the mesh
-    print 'Write mesh...',
+    print 'Writing mesh...',
     start = time.time()
-    mymesh.write( args.filename )
+    mesh.write( args.filename )
     elapsed = time.time()-start
     print 'done. (%gs)' % elapsed
 
@@ -50,7 +59,7 @@ def _parse_options():
     '''Parse input options.'''
     import argparse
 
-    parser = argparse.ArgumentParser( description = 'Construct a triangulation of a rectangle.' )
+    parser = argparse.ArgumentParser( description = 'Construct a triangulation of an L-shaped domain.' )
 
 
     parser.add_argument( 'filename',

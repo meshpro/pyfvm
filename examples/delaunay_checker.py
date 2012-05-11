@@ -16,6 +16,8 @@ def _main():
 
     if mesh.is_delaunay():
         print 'The given mesh is a Delaunay mesh.'
+    else:
+        print 'The given mesh is NOT a Delaunay mesh.'
 
     return
 # ==============================================================================
