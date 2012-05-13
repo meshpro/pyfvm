@@ -407,7 +407,7 @@ class mesh3d(_base_mesh):
 
         return face_normals
     # --------------------------------------------------------------------------
-    def is_delaunay(self):
+    def check_delaunay(self):
 
         if self.faces is None:
             self.create_adjacent_entities()
@@ -461,10 +461,7 @@ class mesh3d(_base_mesh):
             if np.dot(edge_midpoint-other0, cc[1]-cc[0]) < 0.0:
                 num_delaunay_violations += 1
 
-        alpha = float(num_delaunay_violations) / num_interior_faces
-        print 'Delaunay condition NOT fulfilled on %d of %d interior faces (%g%%).' \
-            % (num_delaunay_violations, num_interior_faces, alpha*100)
-        return num_delaunay_violations == 0
+        return num_delaunay_violations, num_interior_faces
     # --------------------------------------------------------------------------
     def show_control_volume(self, node_id):
         '''Displays a node with its surrounding control volume.

@@ -55,8 +55,7 @@ def _main():
     meshpy_mesh = meshpy.tet.build( info,
                                     max_volume = args.maxvol
                                   )
-    mesh = voropy.mesh3d(np.array(meshpy_mesh.points),
-                         meshpy_mesh.elements)
+    mesh = voropy.mesh3d(np.array(meshpy_mesh.points), meshpy_mesh.elements)
     elapsed = time.time() - start
     print 'done. (%gs)' % elapsed
 

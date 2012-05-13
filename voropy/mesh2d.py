@@ -456,7 +456,7 @@ class mesh2d(_base_mesh):
 
         return gradient
     # --------------------------------------------------------------------------
-    def is_delaunay(self):
+    def check_delaunay(self):
 
         if self.edges is None:
             self.create_adjacent_entities()
@@ -511,10 +511,7 @@ class mesh2d(_base_mesh):
             if np.dot(edge_midpoint-other0, cc[1]-cc[0]) < 0.0:
                 num_delaunay_violations += 1
 
-        alpha = float(num_delaunay_violations) / num_interior_edges
-        print 'Delaunay condition NOT fulfilled on %d of %d interior edges (%g%%).' \
-            % (num_delaunay_violations, num_interior_edges, alpha*100)
-        return num_delaunay_violations == 0
+        return num_delaunay_violations, num_interior_edges
     # --------------------------------------------------------------------------
     def show(self, show_covolumes = True, save_as=None):
         '''Show the mesh using matplotlib.
