@@ -172,7 +172,7 @@ class mesh3d(_base_mesh):
 
         return
     # --------------------------------------------------------------------------
-    def create_cell_circumcenters( self ):
+    def compute_cell_circumcenters( self ):
         '''Computes the center of the circumsphere of each cell.
         '''
         from vtk import vtkTetra
@@ -263,7 +263,7 @@ class mesh3d(_base_mesh):
 
         # Get cell circumcenters.
         if self.cell_circumcenters is None:
-            self.create_cell_circumcenters()
+            self.compute_cell_circumcenters()
 
         # Compute covolumes and control volumes.
         num_nodes = len(self.node_coords)
@@ -408,29 +408,63 @@ class mesh3d(_base_mesh):
         return face_normals
     # --------------------------------------------------------------------------
     def is_delaunay(self):
-        # This approach here is pretty brute-force. For more sophisticated
-        # algorithms, see
-        # http://en.wikipedia.org/wiki/Delaunay_triangulation#Algorithms.
-        from vtk import vtkTetra
+
+        if self.faces is None:
+            self.create_adjacent_entities()
+        if self.cell_circumcenters is None:
+            self.compute_cell_circumcenters()
 
         is_delaunay = True
-        for cell in self.cells:
-            # Calculate the circumsphere.
-            cc = np.empty(3,float)
-            x = self.node_coords[cell['nodes']]
-            r_squared = vtkTetra.Circumsphere(x[0], x[1], x[2], x[3], cc)
+        num_faces = len(self.faces['nodes'])
+        num_interior_faces = 0
+        num_delaunay_violations = 0
+        for face_id in xrange(num_faces):
+            # Boundary faces don't need to be checked.
+            if len(self.faces['cells'][face_id]) != 2:
+                continue
 
-            # Check if any other node sits inside the circumsphere.
-            for k, node in enumerate(self.node_coords):
-                if k not in cell['nodes']:
-                    d = cc - node
-                    alpha = np.dot(d, d)
-                    if alpha < r_squared - 1.0e-5:
-                        print 'The point', node, 'sits inside the circumsphere of the cell given by cell', \
-                              + cell['nodes'], ' (%g).' % abs(np.sqrt(alpha) - np.sqrt(r_squared))
-                        is_delaunay = False
+            num_interior_faces += 1
+            # Each interior edge divides the domain into to half-planes.
+            # The Delaunay condition is fulfilled if and only if
+            # the circumcenters of the adjacent cells are in "the right order",
+            # i.e., line between the nodes of the cells which do not sit
+            # on the hyperplane have the same orientation as the line
+            # between the circumcenters.
 
-        return is_delaunay
+            # The orientation of the coedge needs gauging.
+            # Do it in such as a way that the control volume contribution
+            # is positive if and only if the area of the triangle
+            # (node, other0, edge_midpoint) (in this order) is positive.
+            # Equivalently, the triangles (node, edge_midpoint, other1)
+            # or (node, other0, other1) could  be considered.
+            # other{0,1} refers to the the node opposing the edge in the
+            # adjacent cell {0,1}.
+            # Get the opposing node of the first adjacent cell.
+            cell0 = self.faces['cells'][face_id][0]
+            # This nonzero construct is an ugly replacement for the nonexisting
+            # index() method. (Compare with Python lists.)
+            face_lid = np.nonzero(self.cells['faces'][cell0] == face_id)[0][0]
+            # This makes use of the fact that cellsEdges and cellsNodes
+            # are coordinated such that in cell #i, the edge cellsEdges[i][k]
+            # opposes cellsNodes[i][k].
+            other0 = self.node_coords[self.cells['nodes'][cell0][face_lid]]
+
+            # Get the edge midpoint.
+            node_ids = self.faces['nodes'][face_id]
+            node_coords = self.node_coords[node_ids]
+            edge_midpoint = 0.5 * (node_coords[0] + node_coords[1])
+
+            # Get the circumcenters of the adjacent cells.
+            cc = self.cell_circumcenters[self.faces['cells'][face_id]]
+            # Check if cc[1]-cc[0] and the gauge point
+            # in the "same" direction.
+            if np.dot(edge_midpoint-other0, cc[1]-cc[0]) < 0.0:
+                num_delaunay_violations += 1
+
+        alpha = float(num_delaunay_violations) / num_interior_faces
+        print 'Delaunay condition NOT fulfilled on %d of %d interior faces (%g%%).' \
+            % (num_delaunay_violations, num_interior_faces, alpha*100)
+        return num_delaunay_violations == 0
     # --------------------------------------------------------------------------
     def show_control_volume(self, node_id):
         '''Displays a node with its surrounding control volume.
@@ -453,7 +487,7 @@ class mesh3d(_base_mesh):
 
         # get cell circumcenters
         if self.cell_circumcenters is None:
-            self.create_cell_circumcenters()
+            self.compute_cell_circumcenters()
         cell_ccs = self.cell_circumcenters
 
         # There are not node->edge relations so manually build the list.
@@ -535,7 +569,7 @@ class mesh3d(_base_mesh):
 
         # get cell circumcenters
         if self.cell_circumcenters is None:
-            self.create_cell_circumcenters()
+            self.compute_cell_circumcenters()
         cell_ccs = self.cell_circumcenters
 
         edge_midpoint = 0.5 * (edge_nodes[0] + edge_nodes[1])

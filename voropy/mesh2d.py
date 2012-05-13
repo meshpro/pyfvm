@@ -463,12 +463,16 @@ class mesh2d(_base_mesh):
         if self.cell_circumcenters is None:
             self.compute_cell_circumcenters()
 
-        is_delaunay = True
+        num_interior_edges = 0
+        num_delaunay_violations = 0
+        
         num_edges = len(self.edges['nodes'])
         for edge_id in xrange(num_edges):
             # Boundary edges don't need to be checked.
             if len(self.edges['cells'][edge_id]) != 2:
                 continue
+
+            num_interior_edges += 1
 
             # Each interior edge divides the domain into to half-planes.
             # The Delaunay condition is fulfilled if and only if
@@ -505,10 +509,12 @@ class mesh2d(_base_mesh):
             # Check if cc[1]-cc[0] and the gauge point
             # in the "same" direction.
             if np.dot(edge_midpoint-other0, cc[1]-cc[0]) < 0.0:
-                is_delaunay = False
-                break
+                num_delaunay_violations += 1
 
-        return is_delaunay
+        alpha = float(num_delaunay_violations) / num_interior_edges
+        print 'Delaunay condition NOT fulfilled on %d of %d interior edges (%g%%).' \
+            % (num_delaunay_violations, num_interior_edges, alpha*100)
+        return num_delaunay_violations == 0
     # --------------------------------------------------------------------------
     def show(self, show_covolumes = True, save_as=None):
         '''Show the mesh using matplotlib.
