@@ -3,6 +3,7 @@
 __all__ = ['mesh2d']
 
 import numpy as np
+import warnings
 from base import _base_mesh
 # ==============================================================================
 class mesh2d(_base_mesh):
@@ -338,9 +339,9 @@ class mesh2d(_base_mesh):
             raise RuntimeError(msg)
 
         if any(self.control_volumes < 0.0):
-            msg = 'Not all control volumes are positive. This is likely due do ' \
-                + 'the triangulation not being Delaunay. Abort.'
-            raise RuntimeError(msg)
+            msg = 'Not all control volumes are positive. This is due do ' \
+                + 'the triangulation not being Delaunay.'
+            warnings.warn(msg)
 
         return
     # --------------------------------------------------------------------------
@@ -465,7 +466,7 @@ class mesh2d(_base_mesh):
 
         num_interior_edges = 0
         num_delaunay_violations = 0
-        
+
         num_edges = len(self.edges['nodes'])
         for edge_id in xrange(num_edges):
             # Boundary edges don't need to be checked.
