@@ -11,11 +11,11 @@ __all__ = ['read']
 import os
 import numpy as np
 # ==============================================================================
-def read(filename, timestep=None):
+def read(filenames, timestep=None):
     '''Reads an unstructured mesh with added data.
 
-    :param filename: The file to read from.
-    :type filename: str
+    :param filenames: The files to read from.
+    :type filenames: str
     :param timestep: Time step to read from, in case of an Exodus input mesh.
     :type timestep: int, optional
     :returns mesh{2,3}d: The mesh data.
@@ -24,23 +24,42 @@ def read(filename, timestep=None):
     :returns field_data: Field data read from file.
     :type field_data: dict
     '''
-    extension = os.path.splitext(filename)[1]
+    if len(filenames) == 1:
+        # serial files
+        extension = os.path.splitext(filenames[0])[1]
 
-    # setup the reader
-    if extension == '.vtu':
-        from vtk import vtkXMLUnstructuredGridReader
-        reader = vtkXMLUnstructuredGridReader()
-        vtk_mesh = _read_vtk_mesh(reader, filename)
-    elif extension == '.vtk':
-        from vtk import vtkUnstructuredGridReader
-        reader = vtkUnstructuredGridReader()
-        vtk_mesh = _read_vtk_mesh(reader, filename)
-    elif extension in [ '.ex2', '.exo', '.e' ]:
-        from vtk import vtkExodusIIReader
-        reader = vtkExodusIIReader()
-        vtk_mesh = _read_exodusii_mesh(reader, filename, timestep=timestep)
+        import re
+        # setup the reader
+        if extension == '.vtu':
+            from vtk import vtkXMLUnstructuredGridReader
+            reader = vtkXMLUnstructuredGridReader()
+            vtk_mesh = _read_vtk_mesh(reader, filename)
+        elif extension == '.vtk':
+            from vtk import vtkUnstructuredGridReader
+            reader = vtkUnstructuredGridReader()
+            vtk_mesh = _read_vtk_mesh(reader, filenames[0])
+        elif extension in [ '.ex2', '.exo', '.e' ]:
+            from vtk import vtkExodusIIReader
+            reader = vtkExodusIIReader()
+            reader.SetFileName( filenames[0] )
+            vtk_mesh = _read_exodusii_mesh(reader, timestep=timestep)
+        elif re.match('[^\.]*\.e\.\d+\.\d+', filenames[0]):
+            # Parallel Exodus files.
+            # TODO handle with vtkPExodusIIReader
+            from vtk import vtkExodusIIReader
+            reader = vtkExodusIIReader()
+            reader.SetFileName( filenames[0] )
+            vtk_mesh = _read_exodusii_mesh(reader, timestep=timestep)
+        else:
+            raise RuntimeError( 'Unknown file type \'%s\'.' % filenames[0] )
     else:
-        raise RuntimeError( 'Unknown file type \'%s\'.' % filename )
+        # Parallel files.
+        # Assume Exodus format as we don't know anything else yet.
+        from vtk import vtkPExodusIIReader
+        # TODO Guess the file pattern or whatever.
+        reader = vtkPExodusIIReader()
+        reader.SetFileNames( filenames )
+        vtk_mesh = _read_exodusii_mesh(reader, filename, timestep=timestep)
 
     # read points, cells, point data, field data
     points = _read_points( vtk_mesh )
@@ -52,7 +71,7 @@ def read(filename, timestep=None):
         # Flat mesh.
         # Check if there's three-dimensional point data that can be cut.
         # Don't use iteritems() here as we want to be able to
-        # set the value in the loop.
+        i# set the value in the loop.
         for key, value in point_data.items():
             if value.shape[1] == 3 and all(value[:, 2] == 0.0):
                 point_data[key] = value[:, :2]
@@ -95,11 +114,9 @@ def _read_vtk_mesh( reader, file_name ):
 
     #return reader.GetOutput()
 # ==============================================================================
-def _read_exodusii_mesh( reader, file_name, timestep=None ):
+def _read_exodusii_mesh( reader, timestep=None ):
     '''Uses a vtkExodusIIReader to return a vtkUnstructuredGrid.
     '''
-    reader.SetFileName( file_name )
-
     # Fetch metadata.
     reader.UpdateInformation()
 

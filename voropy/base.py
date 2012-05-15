@@ -40,6 +40,7 @@ class _base_mesh(object):
                 vtk_mesh.GetFieldData() \
                         .AddArray(_create_vtkarray(value, key))
 
+        import re
         extension = os.path.splitext(filename)[1]
         if extension == '.vtu': # VTK XML format
             from vtk import vtkXMLUnstructuredGridWriter
@@ -52,6 +53,13 @@ class _base_mesh(object):
             writer = vtkUnstructuredGridWriter()
             writer.SetFileTypeToASCII()
         elif extension in [ '.ex2', '.exo', '.e' ]: # Exodus II format
+            from vtk import vtkExodusIIWriter
+            writer = vtkExodusIIWriter()
+            # If the mesh contains vtkModelData information, make use of it
+            # and write out all time steps.
+            writer.WriteAllTimeStepsOn()
+        elif re.match('[^\.]*\.e\.\d+\.\d+', filename):
+            # TODO handle parallel I/O with vtkPExodusIIWriter
             from vtk import vtkExodusIIWriter
             writer = vtkExodusIIWriter()
             # If the mesh contains vtkModelData information, make use of it
