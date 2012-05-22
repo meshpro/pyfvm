@@ -24,12 +24,14 @@ def read(filenames, timestep=None):
     :returns field_data: Field data read from file.
     :type field_data: dict
     '''
-    if len(filenames) == 1:
+    if isinstance(filenames, basestring):
+        filename = filenames
         # serial files
-        extension = os.path.splitext(filenames[0])[1]
+        extension = os.path.splitext(filename)[1]
 
         import re
         # setup the reader
+        # TODO Most readers have CanReadFile() -- use that.
         if extension == '.vtu':
             from vtk import vtkXMLUnstructuredGridReader
             reader = vtkXMLUnstructuredGridReader()
@@ -37,13 +39,13 @@ def read(filenames, timestep=None):
         elif extension == '.vtk':
             from vtk import vtkUnstructuredGridReader
             reader = vtkUnstructuredGridReader()
-            vtk_mesh = _read_vtk_mesh(reader, filenames[0])
+            vtk_mesh = _read_vtk_mesh(reader, filename)
         elif extension in [ '.ex2', '.exo', '.e' ]:
             from vtk import vtkExodusIIReader
             reader = vtkExodusIIReader()
-            reader.SetFileName( filenames[0] )
+            reader.SetFileName( filename )
             vtk_mesh = _read_exodusii_mesh(reader, timestep=timestep)
-        elif re.match('[^\.]*\.e\.\d+\.\d+', filenames[0]):
+        elif re.match('[^\.]*\.e\.\d+\.\d+', filename):
             # Parallel Exodus files.
             # TODO handle with vtkPExodusIIReader
             from vtk import vtkExodusIIReader
@@ -51,7 +53,7 @@ def read(filenames, timestep=None):
             reader.SetFileName( filenames[0] )
             vtk_mesh = _read_exodusii_mesh(reader, timestep=timestep)
         else:
-            raise RuntimeError( 'Unknown file type \'%s\'.' % filenames[0] )
+            raise RuntimeError( 'Unknown file type \'%s\'.' % filename )
     else:
         # Parallel files.
         # Assume Exodus format as we don't know anything else yet.
@@ -71,7 +73,7 @@ def read(filenames, timestep=None):
         # Flat mesh.
         # Check if there's three-dimensional point data that can be cut.
         # Don't use iteritems() here as we want to be able to
-        i# set the value in the loop.
+        # set the value in the loop.
         for key, value in point_data.items():
             if value.shape[1] == 3 and all(value[:, 2] == 0.0):
                 point_data[key] = value[:, :2]
