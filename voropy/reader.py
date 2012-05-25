@@ -24,6 +24,9 @@ def read(filenames, timestep=None):
     :returns field_data: Field data read from file.
     :type field_data: dict
     '''
+    if isinstance(filenames, (list, tuple)) and len(filenames)==1:
+        filenames = filenames[0]
+
     if isinstance(filenames, basestring):
         filename = filenames
         # serial files
