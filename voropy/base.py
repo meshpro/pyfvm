@@ -120,72 +120,72 @@ class _base_mesh(object):
     # --------------------------------------------------------------------------
 # ==============================================================================
 def _create_vtkarray(X, name):
-    from vtk import vtkDoubleArray, vtkIntArray, vtkCharArray
+    from vtk import vtkDoubleArray, vtkIntArray, vtkStringArray
 
     # This could be a lot more fine-grained:
     # vtkLongLongArray, vtkFloatArray,...
     if isinstance(X, int):
-        scalars0 = vtkIntArray()
-        scalars0.SetNumberOfComponents( 1 )
-        scalars0.InsertNextValue( X )
+        array = vtkIntArray()
+        array.SetNumberOfComponents( 1 )
+        array.InsertNextValue( X )
     elif isinstance(X, float):
-        scalars0 = vtkDoubleArray()
-        scalars0.SetNumberOfComponents( 1 )
-        scalars0.InsertNextValue( X )
+        array = vtkDoubleArray()
+        array.SetNumberOfComponents( 1 )
+        array.InsertNextValue( X )
     elif isinstance(X, str):
-        scalars0 = vtkCharArray()
-        scalars0.SetNumberOfComponents( 1 )
+        array = vtkStringArray()
+        array.SetNumberOfComponents( 1 )
         for letter in X:
-            scalars0.InsertNextValue( letter )
+            array.InsertNextValue( letter )
     elif (len(X.shape) == 1 or X.shape[1] == 1) and X.dtype==float:
         # real-valued array
-        scalars0 = vtkDoubleArray()
-        scalars0.SetNumberOfComponents( 1 )
+        array = vtkDoubleArray()
+        array.SetNumberOfComponents( 1 )
         for x in X:
-            scalars0.InsertNextValue( x )
+            array.InsertNextValue( x )
 
     elif (len( X.shape ) == 1 or X.shape[1] == 1) and X.dtype==complex:
         # complex-valued array
-        scalars0 = vtkDoubleArray()
-        scalars0.SetNumberOfComponents( 2 )
+        array = vtkDoubleArray()
+        array.SetNumberOfComponents( 2 )
         for x in X:
-            scalars0.InsertNextValue( x.real )
-            scalars0.InsertNextValue( x.imag )
+            array.InsertNextValue( x.real )
+            array.InsertNextValue( x.imag )
 
     elif len( X.shape ) == 2 and X.dtype==float: # 2D float field
-        scalars0 = vtkDoubleArray()
+        array = vtkDoubleArray()
         m, n = X.shape
-        scalars0.SetNumberOfComponents( n )
+        array.SetNumberOfComponents( n )
         for j in range(m):
             for i in range(n):
-                scalars0.InsertNextValue( X[j, i] )
+                array.InsertNextValue( X[j, i] )
 
     elif len( X.shape ) == 2 and X.dtype==complex: # 2D complex field
-        scalars0 = vtkDoubleArray()
-        scalars0.SetNumberOfComponents( 2 )
+        array = vtkDoubleArray()
+        array.SetNumberOfComponents( 2 )
         m, n = X.shape
         for j in range(n):
             for i in range(m):
-                scalars0.InsertNextValue( X[j, i].real )
-                scalars0.InsertNextValue( X[j, i].imag )
+                array.InsertNextValue( X[j, i].real )
+                array.InsertNextValue( X[j, i].imag )
 
     elif len( X.shape ) == 3: # vector values
-        scalars0 = vtkDoubleArray()
+        array = vtkDoubleArray()
         m, n, d = X.shape
         if X.dtype == complex:
             raise RuntimeError('Can''t handle complex-valued vector fields.')
         if d != 3:
             raise RuntimeError('Can only deal with 3-dimensional vector fields.')
-        scalars0.SetNumberOfComponents( 3 )
+        array.SetNumberOfComponents( 3 )
         for j in range( n ):
             for i in range( m ):
                 for k in range( 3 ):
-                    scalars0.InsertNextValue(X[i, j, k])
+                    array.InsertNextValue(X[i, j, k])
 
     else:
         raise ValueError('Don''t know what to do with array.')
 
-    scalars0.SetName(name)
+    array.SetName(name)
 
-    return scalars0
+    return array
 # ==============================================================================
