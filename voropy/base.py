@@ -120,70 +120,48 @@ class _base_mesh(object):
     # --------------------------------------------------------------------------
 # ==============================================================================
 def _create_vtkarray(X, name):
-    from vtk import vtkDoubleArray, vtkIntArray, vtkCharArray
+    import numpy as np
+    from vtk import vtkBitArray, vtkIntArray, vtkDoubleArray, vtkCharArray
+
+    # If something isn't a Numpy array already, try to make it one.
+    if not isinstance(X, np.ndarray):
+        X = np.array(X)
+
+    # Convert complex arrays to double first.
+    if X.dtype == complex:
+        X = np.vstack([X.real, X.imag])
 
     # This could be a lot more fine-grained:
     # vtkLongLongArray, vtkFloatArray,...
-    if isinstance(X, int):
+    if X.dtype == bool:
+        array = vtkBitArray()
+    elif X.dtype == int:
         array = vtkIntArray()
-        array.SetNumberOfComponents( 1 )
-        array.InsertNextValue( X )
-    elif isinstance(X, float):
+    elif X.dtype == float:
         array = vtkDoubleArray()
-        array.SetNumberOfComponents( 1 )
-        array.InsertNextValue( X )
-    elif isinstance(X, str):
+    elif X.dtype in [str, np.dtype('|S1|')]:
         array = vtkCharArray()
-        array.SetNumberOfComponents(len(X))
-        array.SetNumberOfTuples(1)
-        array.SetTupleValue(0, X)
-    elif (len(X.shape) == 1 or X.shape[1] == 1) and X.dtype==float:
-        # real-valued array
-        array = vtkDoubleArray()
-        array.SetNumberOfComponents( 1 )
-        for x in X:
-            array.InsertNextValue( x )
-
-    elif (len( X.shape ) == 1 or X.shape[1] == 1) and X.dtype==complex:
-        # complex-valued array
-        array = vtkDoubleArray()
-        array.SetNumberOfComponents( 2 )
-        for x in X:
-            array.InsertNextValue( x.real )
-            array.InsertNextValue( x.imag )
-
-    elif len( X.shape ) == 2 and X.dtype==float: # 2D float field
-        array = vtkDoubleArray()
-        m, n = X.shape
-        array.SetNumberOfComponents( n )
-        for j in range(m):
-            for i in range(n):
-                array.InsertNextValue( X[j, i] )
-
-    elif len( X.shape ) == 2 and X.dtype==complex: # 2D complex field
-        array = vtkDoubleArray()
-        array.SetNumberOfComponents( 2 )
-        m, n = X.shape
-        for j in range(n):
-            for i in range(m):
-                array.InsertNextValue( X[j, i].real )
-                array.InsertNextValue( X[j, i].imag )
-
-    elif len( X.shape ) == 3: # vector values
-        array = vtkDoubleArray()
-        m, n, d = X.shape
-        if X.dtype == complex:
-            raise RuntimeError('Can''t handle complex-valued vector fields.')
-        if d != 3:
-            raise RuntimeError('Can only deal with 3-dimensional vector fields.')
-        array.SetNumberOfComponents( 3 )
-        for j in range( n ):
-            for i in range( m ):
-                for k in range( 3 ):
-                    array.InsertNextValue(X[i, j, k])
-
     else:
-        raise ValueError('Don''t know what to do with array.')
+        raise TypeError('Unknown VTK data type', X.dtype, '.')
+
+    # For some reason, setting the number of tuples and then using
+    # SetNextTuple() or similar doesn't seem to work:
+    # The application segfaults or, worse, yields an irrecoverable
+    # glibc memory corruption.
+    #array.SetNumberOfTuples(X.shape[0])
+    if len(X.shape) == 1:
+        array.SetNumberOfComponents(1)
+        # Set values.
+        for k in xrange(X.shape[0]):
+            array.InsertNextValue(X[k])
+    elif len(X.shape) == 2:
+        array.SetNumberOfComponents(X.shape[1])
+        # Set values.
+        for k in xrange(X.shape[0]):
+            for k2 in xrange(X.shape[1]):
+                array.InsertNextValue(X[k][k2])
+    else:
+        raise ValueError('Don''t know what to do with many-dimensional array ''%s''.' % name)
 
     array.SetName(name)
 
