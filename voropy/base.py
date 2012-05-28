@@ -120,7 +120,7 @@ class _base_mesh(object):
     # --------------------------------------------------------------------------
 # ==============================================================================
 def _create_vtkarray(X, name):
-    from vtk import vtkDoubleArray, vtkIntArray, vtkStringArray
+    from vtk import vtkDoubleArray, vtkIntArray, vtkCharArray
 
     # This could be a lot more fine-grained:
     # vtkLongLongArray, vtkFloatArray,...
@@ -133,10 +133,10 @@ def _create_vtkarray(X, name):
         array.SetNumberOfComponents( 1 )
         array.InsertNextValue( X )
     elif isinstance(X, str):
-        array = vtkStringArray()
-        array.SetNumberOfComponents( 1 )
-        for letter in X:
-            array.InsertNextValue( letter )
+        array = vtkCharArray()
+        array.SetNumberOfComponents(len(X))
+        array.SetNumberOfTuples(1)
+        array.SetTupleValue(0, X)
     elif (len(X.shape) == 1 or X.shape[1] == 1) and X.dtype==float:
         # real-valued array
         array = vtkDoubleArray()

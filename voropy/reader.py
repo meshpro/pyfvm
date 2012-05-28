@@ -224,36 +224,22 @@ def _read_field_data( vtk_data ):
         array  = vtk_field_data.GetArray(k)
         name   = array.GetName()
         num_values = array.GetDataSize()
-        if num_values == 1:
-            field_data[ name ] = array.GetValue( 0 )
+        # Data type as specified in vtkSetGet.h.
+        data_type = array.GetDataType()
+        if data_type == 1:
+            dtype = np.bool
+        elif data_type in [2,3]:
+            dtype = np.str
+        elif data_type in [4, 5, 6, 7, 8, 9]:
+            dtype = np.int
+        elif data_type in [10, 11]:
+            dtype = np.float
         else:
-            # Data type as specified in vtkSetGet.h.
-            data_type = array.GetDataType()
-            if data_type == 1:
-                # bool
-                values = np.empty( num_values, dtype=bool )
-                for i in xrange( num_values ):
-                    values[i] = array.GetValue(i)
-            elif data_type in [2,3]:
-                # str
-                values = []
-                for i in xrange( num_values ):
-                    values.append( array.GetValue(i) )
-                #values = ''.join('%02x' % ord(c) for c in values)
-                values = ''.join(values)
-            elif data_type in [4, 5, 6, 7, 8, 9]:
-                # int
-                values = np.empty(num_values, dtype=int)
-                for i in xrange( num_values ):
-                    values[i] = array.GetValue(i)
-            elif data_type in [10, 11]:
-                # double
-                values = np.empty(num_values, dtype=float)
-                for i in xrange( num_values ):
-                    values[i] = array.GetValue(i)
-            else:
-                raise TypeError('Unknown VTK data type %d.' % data_type)
-            field_data[ name ] = values
+            raise TypeError('Unknown VTK data type %d.' % data_type)
+        values = np.empty( num_values, dtype=dtype )
+        for i in xrange( num_values ):
+            values[i] = array.GetValue(i)
+        field_data[ name ] = values
 
     return field_data
 # ==============================================================================
