@@ -124,23 +124,32 @@ def _create_vtkarray(X, name):
     from vtk import vtkBitArray, vtkIntArray, vtkDoubleArray, vtkCharArray
 
     # If something isn't a Numpy array already, try to make it one.
-    if not isinstance(X, np.ndarray):
+    if not isinstance(X, np.ndarray) and not isinstance(X, str):
         X = np.array(X)
-
-    # Convert complex arrays to double first.
-    if X.dtype == complex:
-        X = np.vstack([X.real, X.imag])
 
     # This could be a lot more fine-grained:
     # vtkLongLongArray, vtkFloatArray,...
-    if X.dtype == bool:
+    if isinstance(X, str):
+        array = vtkCharArray()
+    elif X.dtype == bool:
         array = vtkBitArray()
     elif X.dtype == int:
         array = vtkIntArray()
     elif X.dtype == float:
         array = vtkDoubleArray()
-    elif X.dtype in [str, np.dtype('|S1|')]:
-        array = vtkCharArray()
+    elif X.dtype == complex:
+        # Convert complex arrays to double.
+        Y = np.empty((len(X),2), dtype=float)
+        if len(X.shape) == 1:
+            Y[:,0] = X.real
+            Y[:,1] = X.imag
+        elif len(X.shape) == 2:
+            Y[:,0] = X[:,0].real
+            Y[:,1] = X[:,0].imag
+        else:
+            raise RuntimeError()
+        X = Y
+        array = vtkDoubleArray()
     else:
         raise TypeError('Unknown VTK data type', X.dtype, '.')
 
@@ -148,8 +157,19 @@ def _create_vtkarray(X, name):
     # SetNextTuple() or similar doesn't seem to work:
     # The application segfaults or, worse, yields an irrecoverable
     # glibc memory corruption.
+    # Most likely the cause: You have to call SetNumberOfTuples()
+    # AFTER SetNumberOfComponents().
     #array.SetNumberOfTuples(X.shape[0])
-    if len(X.shape) == 1:
+    # Special treatment for strings:
+    if isinstance(X, str):
+        array.SetNumberOfComponents(len(X))
+        array.SetNumberOfTuples(1)
+        array.SetTupleValue(0, X)
+    elif len(X.shape) == 0:
+        array.SetNumberOfComponents(1)
+        # Set values.
+        array.InsertNextValue(X)
+    elif len(X.shape) == 1:
         array.SetNumberOfComponents(1)
         # Set values.
         for k in xrange(X.shape[0]):
