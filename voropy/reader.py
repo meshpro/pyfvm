@@ -181,11 +181,13 @@ def _read_cells_nodes( vtk_mesh ):
 
     num_cells = vtk_mesh.GetNumberOfCells()
     # Assume that all cells have the same number of local nodes.
-    num_local_nodes = vtk_mesh.GetCell(0).GetNumberOfPoints()
-    cells_nodes = np.empty(num_cells, dtype = np.dtype((int, num_local_nodes)))
+    max_num_local_nodes = vtk_mesh.GetCell(0).GetNumberOfPoints()
+    cells_nodes = np.empty(num_cells, dtype = np.dtype((int, max_num_local_nodes)))
 
     for k in xrange(num_cells):
-        cell = vtk_mesh.GetCell( k )
+        cell = vtk_mesh.GetCell(k)
+        num_local_nodes = cell.GetNumberOfPoints()
+        assert num_local_nodes == max_num_local_nodes
         # Gather up the points.
         for l in xrange( num_local_nodes ):
             cells_nodes[k][l] = cell.GetPointId( l )

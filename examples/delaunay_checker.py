@@ -23,6 +23,16 @@ def _main():
         print 'Delaunay condition NOT fulfilled on %d of %d interior edges/faces (%g%%).' \
             % (num_delaunay_violations, num_interior_edges, alpha*100)
 
+    # Try and compute the control volumes.
+    mesh.compute_control_volumes()
+    num_negative_vols = np.count_nonzero(mesh.control_volumes < 0.0)
+    if num_negative_vols > 0:
+        alpha = float(num_negative_vols) / len(mesh.control_volumes)
+        print 'Number of negative control volumes: %d/%d (%g%%).' \
+            % (num_negative_vols, len(mesh.control_volumes), alpha*100)
+    else:
+        print 'All control volumes positive.'
+
     return
 # ==============================================================================
 def _parse_input_arguments():
