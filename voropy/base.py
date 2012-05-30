@@ -129,7 +129,7 @@ def _create_vtkarray(X, name):
 
     # This could be a lot more fine-grained:
     # vtkLongLongArray, vtkFloatArray,...
-    if isinstance(X, str):
+    if isinstance(X, str) or X.dtype.kind == 'S':
         array = vtkCharArray()
     elif X.dtype == bool:
         array = vtkBitArray()

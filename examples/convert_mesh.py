@@ -10,7 +10,7 @@ def _main():
     args = _parse_options()
 
     # read mesh data
-    mesh, point_data, field_data = voropy.read(args.in_filename, timestep=args.timestep)
+    mesh, point_data, field_data = voropy.read(args.in_filename, timestep=args.timesteps)
 
     # write it out
     mesh.write(args.out_filename, point_data, field_data)
@@ -35,15 +35,13 @@ def _parse_options():
                          help    = 'mesh file to be written to'
                        )
 
-    parser.add_argument( '--timestep', '-t',
+    parser.add_argument('--timesteps', '-t',
                          metavar='TIMESTEP',
-                         dest='timestep',
-                         nargs='?',
                          type=int,
-                         const=0,
-                         default=0,
-                         help='read a particular time step (default: 0)'
-                       )
+                         nargs = '+',
+                         default=None,
+                         help='read a particular time step/range (default: all)'
+                        )
 
     return parser.parse_args()
 # ==============================================================================
