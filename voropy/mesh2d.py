@@ -33,32 +33,32 @@ class mesh2d(_base_mesh):
         self.cells = np.empty(num_cells, dtype=np.dtype([('nodes', (int, 3))]))
         self.cells['nodes'] = cells
 
-        self.cells_volume = None
+        self.cell_volumes = None
         self.cell_circumcenters = None
         self.control_volumes = None
         return
     # --------------------------------------------------------------------------
-    def create_cells_volume(self):
+    def create_cell_volumes(self):
         '''Computes the area of all triangles in the mesh.
         '''
         num_cells = len(self.cells['nodes'])
-        self.cells_volume = np.empty(num_cells, dtype=float)
+        self.cell_volumes = np.empty(num_cells, dtype=float)
         for cell_id, cell in enumerate(self.cells):
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             # Shoelace formula.
             node0, node1, node2 = self.node_coords[cell['nodes']]
-            self.cells_volume[cell_id] = 0.5 * abs( node0[0] * node1[1] - node0[1] * node1[0]
+            self.cell_volumes[cell_id] = 0.5 * abs( node0[0] * node1[1] - node0[1] * node1[0]
                                                   + node1[0] * node2[1] - node1[1] * node2[0]
                                                   + node2[0] * node0[1] - node2[1] * node0[0])
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             #edge0 = node0 - node1
             #edge1 = node1 - node2
-            #self.cells_volume[cell_id] = 0.5 * np.linalg.norm( np.cross( edge0, edge1 ) )
+            #self.cell_volumes[cell_id] = 0.5 * np.linalg.norm( np.cross( edge0, edge1 ) )
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             ## Append a third component.
             #from vtk import vtkTriangle
             #x = np.c_[self.node_coords[cell['nodes']], np.zeros((3, 1))]
-            #self.cells_volume[cell_id] = \
+            #self.cell_volumes[cell_id] = \
                #abs(vtkTriangle.TriangleArea(x[0], x[1], x[2]))
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         return
@@ -264,9 +264,19 @@ class mesh2d(_base_mesh):
 
         return
     # --------------------------------------------------------------------------
-    def compute_control_volumes( self ):
+    def compute_control_volumes(self, variant='voronoi'):
         '''Compute the control volumes of all nodes in the mesh.
         '''
+        if variant == 'voronoi':
+            self._compute_voronoi_volumes()
+        elif variant == 'barycentric':
+            self._compute_barycentric_volumes()
+        else:
+            raise ValueError('Unknown volume variant ''%s''.' % variant)
+
+        return
+    # --------------------------------------------------------------------------
+    def _compute_voronoi_volumes(self):
         num_nodes = len(self.node_coords)
         self.control_volumes = np.zeros(num_nodes, dtype = float)
 
@@ -327,10 +337,10 @@ class mesh2d(_base_mesh):
                 raise RuntimeError('An edge should have either 1 or two adjacent cells.')
 
         # Sanity checks.
-        if self.cells_volume is None:
-            self.create_cells_volume()
+        if self.cell_volumes is None:
+            self.create_cell_volumes()
         sum_cv = sum(self.control_volumes)
-        sum_cells = sum(self.cells_volume)
+        sum_cells = sum(self.cell_volumes)
         alpha = sum_cv - sum_cells
         if abs(alpha) > 1.0e-10:
             msg = ('Sum of control volumes sum does not coincide with the sum of ' +
@@ -342,6 +352,22 @@ class mesh2d(_base_mesh):
             msg = 'Not all control volumes are positive. This is due do ' \
                 + 'the triangulation not being Delaunay.'
             warnings.warn(msg)
+
+        return
+    # --------------------------------------------------------------------------
+    def _compute_barycentric_volumes(self):
+        '''Control volumes based on barycentric splitting.'''
+
+        # The barycentric midpoint "divides the triangle" into three
+        # areas of equal volume. Hence, just assign one third of the
+        # volumes to the corner points of each cell.
+        if self.cell_volumes is None:
+            self.create_cell_volumes()
+
+        num_nodes = len(self.node_coords)
+        self.control_volumes = np.zeros(num_nodes, dtype = float)
+        for k, cell in enumerate(self.cells):
+            self.control_volumes[cell['nodes']] += self.cell_volumes[k] / 3.0
 
         return
     # --------------------------------------------------------------------------

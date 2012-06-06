@@ -187,10 +187,11 @@ def _read_cells_nodes( vtk_mesh ):
     for k in xrange(num_cells):
         cell = vtk_mesh.GetCell(k)
         num_local_nodes = cell.GetNumberOfPoints()
-        assert num_local_nodes == max_num_local_nodes
-        # Gather up the points.
-        for l in xrange( num_local_nodes ):
-            cells_nodes[k][l] = cell.GetPointId( l )
+        assert num_local_nodes == max_num_local_nodes, 'Cells not uniform.'
+        if num_local_nodes == max_num_local_nodes:
+            # Gather up the points.
+            for l in xrange( num_local_nodes ):
+                cells_nodes[k][l] = cell.GetPointId( l )
 
     return cells_nodes
 # ==============================================================================
