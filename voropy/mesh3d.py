@@ -255,8 +255,11 @@ class mesh3d(_base_mesh):
                           #-(alpha * b[1] - beta * a[1]) * w[0]) / omega
         #return
     # --------------------------------------------------------------------------
-    def compute_control_volumes(self):
-        '''Computes the control volumes of all nodes in mesh.'''
+    def compute_control_volumes(self, variant='voronoi'):
+        '''Compute the control volumes of all nodes in the mesh.
+        '''
+        if variant != 'voronoi':
+            raise ValueError('Unknown volume variant ''%s''.' % variant)
 
         if self.edges is None:
             self.create_adjacent_entities()
