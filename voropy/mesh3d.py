@@ -29,16 +29,16 @@ class mesh3d(_base_mesh):
         self.faces = None
 
         self.cell_circumcenters = None
-        self.cells_volume = None
+        self.cell_volumes = None
         self.control_volumes = None
         return
     # --------------------------------------------------------------------------
-    def create_cells_volume(self):
+    def create_cell_volumes(self):
         '''Computes the volumes of the tetrahedra in the mesh.
         '''
         from vtk import vtkTetra
         num_cells = len(self.cells['nodes'])
-        self.cells_volume = np.empty(num_cells, dtype=float)
+        self.cell_volumes = np.empty(num_cells, dtype=float)
         for cell_id, cell in enumerate(self.cells):
             #edge0 = node0 - node1
             #edge1 = node1 - node2
@@ -56,10 +56,10 @@ class mesh3d(_base_mesh):
                           #* np.linalg.norm(edge1) \
                           #* np.linalg.norm(edge3)
 
-            #self.cells_volume[cell_id] = abs( alpha ) / 6.0
+            #self.cell_volumes[cell_id] = abs( alpha ) / 6.0
 
             x = self.node_coords[cell['nodes']]
-            self.cells_volume[cell_id] = \
+            self.cell_volumes[cell_id] = \
                 abs(vtkTetra.ComputeVolume(x[0], x[1], x[2], x[3]))
         return
     # --------------------------------------------------------------------------
@@ -348,10 +348,10 @@ class mesh3d(_base_mesh):
             self.control_volumes[edge_node_ids] += 0.25 * alpha / 3
 
         # Sanity checks.
-        if self.cells_volume is None:
-            self.create_cells_volume()
+        if self.cell_volumes is None:
+            self.create_cell_volumes()
         sum_cv = sum(self.control_volumes)
-        sum_cells = sum(self.cells_volume)
+        sum_cells = sum(self.cell_volumes)
         alpha = sum_cv - sum_cells
         if abs(alpha) > 1.0e-8:
             msg = ('Sum of control volumes sum does not coincide with the sum of ' +
