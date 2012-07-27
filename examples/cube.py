@@ -30,8 +30,8 @@ def _main():
     elapsed = time.time() - start
     print 'done. (%gs)' % elapsed
 
-    num_nodes = len(mesh.nodes)
-    print '\n%d nodes, %d elements\n' % (num_nodes, len(mesh.cellsNodes))
+    num_nodes = len(mesh.node_coords)
+    print '\n%d nodes, %d elements\n' % (num_nodes, len(mesh.cells))
 
     # write the mesh with data
     print 'Write to file...',
