@@ -342,7 +342,7 @@ class mesh2d(_base_mesh):
         sum_cv = sum(self.control_volumes)
         sum_cells = sum(self.cell_volumes)
         alpha = sum_cv - sum_cells
-        if abs(alpha) > 1.0e-10:
+        if abs(alpha) > 1.0e-9:
             msg = ('Sum of control volumes sum does not coincide with the sum of ' +
                    'the cell volumes (|cv|-|cells| = %g - %g = %g.') \
                   % (sum_cv, sum_cells, alpha)
