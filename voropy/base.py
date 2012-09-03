@@ -14,6 +14,7 @@ class _base_mesh(object):
     def write(self,
               filename,
               point_data = None,
+              cell_data = None,
               field_data = None
               ):
         '''Writes mesh together with data to a file.
@@ -32,6 +33,12 @@ class _base_mesh(object):
         if point_data:
             for key, value in point_data.iteritems():
                 vtk_mesh.GetPointData() \
+                        .AddArray(_create_vtkarray(value, key))
+
+        # add cell data
+        if cell_data:
+            for key, value in cell_data.iteritems():
+                vtk_mesh.GetCellData() \
                         .AddArray(_create_vtkarray(value, key))
 
         # add field data

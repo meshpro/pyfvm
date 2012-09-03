@@ -290,7 +290,7 @@ class mesh3d(_base_mesh):
                 # Make sure that the edge orientation is such that the covolume
                 # contribution is positive if and only if the the vector
                 # p[0]->p[1] is oriented like the face normal
-                # (which is oriented cell[0]->cell[1]).
+                # cell[0]->cell[1].
                 # We need to make sure to gauge the edge orientation using
                 # the face normal and one point *in* the face, e.g., the one
                 # corner point that is not part of the edge. This makes sure
@@ -348,7 +348,7 @@ class mesh3d(_base_mesh):
             #   covolume = 0.5 * alpha / edge_length
             # is just
             #   0.25 * alpha / 3.
-            self.control_volumes[edge_node_ids] += 0.25 * alpha / 3
+            self.control_volumes[edge_node_ids] += alpha / 12.0
 
         # Sanity checks.
         if self.cell_volumes is None:

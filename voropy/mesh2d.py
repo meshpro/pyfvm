@@ -483,6 +483,31 @@ class mesh2d(_base_mesh):
 
         return gradient
     # --------------------------------------------------------------------------
+    def compute_curl(self, vector_field):
+        '''Computes the curl of a vector field.
+        While the vector field is point-based, the curl will be cell-based.
+        The approximation is based on
+            lim_{A->0} n.curl(F) = int_dA F.dr / |A|;
+        see http://en.wikipedia.org/wiki/Curl_(mathematics).
+        Actually, to approximate the integral, one would only need the
+        projection of the vector field onto the edges at the midpoint
+        of the edges.'''
+        if self.edges is None:
+            self.create_adjacent_entities()
+
+        curl = np.zeros((len(self.cells),3), dtype = vector_field.dtype)
+        for edge in self.edges:
+            edge_coords = self.node_coords[edge['nodes'][1]] \
+                        - self.node_coords[edge['nodes'][0]]
+            # Calculate A at the edge midpoint.
+            A = 0.5 * ( vector_field[edge['nodes'][0]]
+                      + vector_field[edge['nodes'][1]] )
+            print curl[edge['cells'],:]
+            print edge_coords
+            curl[edge['cells'],:] += edge_coords * np.dot(edge_coords, A)
+
+        return curl
+    # --------------------------------------------------------------------------
     def check_delaunay(self):
 
         if self.edges is None:
