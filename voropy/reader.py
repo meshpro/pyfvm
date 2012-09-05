@@ -24,6 +24,34 @@ def read(filenames, timestep=None):
     :returns field_data: Field data read from file.
     :type field_data: dict
     '''
+    vtk_mesh = read_raw(filenames, timestep)
+
+    # Explicitly extract points, cells, point data, field data
+    points = _read_points( vtk_mesh )
+    cells_nodes = _read_cells_nodes ( vtk_mesh )
+    point_data = _read_point_data( vtk_mesh )
+    field_data = _read_field_data( vtk_mesh )
+
+    if len(cells_nodes[0]) == 3 and all(points[:, 2] == 0.0):
+        # Flat mesh.
+        # Check if there's three-dimensional point data that can be cut.
+        # Don't use iteritems() here as we want to be able to
+        # set the value in the loop.
+        for key, value in point_data.items():
+            if value.shape[1] == 3 and all(value[:, 2] == 0.0):
+                point_data[key] = value[:, :2]
+        from voropy import mesh2d
+        return mesh2d(points[:, :2], cells_nodes), point_data, field_data
+    elif len(cells_nodes[0]) == 4: # 3D
+        from voropy import mesh3d
+        return mesh3d(points, cells_nodes), point_data, field_data
+    else:
+        raise RuntimeError('Unknown mesh type.')
+
+    return
+# ==============================================================================
+def read_raw(filenames, timestep):
+    '''Read the data in raw VTK format.'''
     if isinstance(filenames, (list, tuple)) and len(filenames)==1:
         filenames = filenames[0]
 
@@ -66,29 +94,7 @@ def read(filenames, timestep=None):
         reader.SetFileNames( filenames )
         vtk_mesh = _read_exodusii_mesh(reader, filename, timestep=timestep)
 
-    # read points, cells, point data, field data
-    points = _read_points( vtk_mesh )
-    cells_nodes = _read_cells_nodes ( vtk_mesh )
-    point_data = _read_point_data( vtk_mesh )
-    field_data = _read_field_data( vtk_mesh )
-
-    if len(cells_nodes[0]) == 3 and all(points[:, 2] == 0.0):
-        # Flat mesh.
-        # Check if there's three-dimensional point data that can be cut.
-        # Don't use iteritems() here as we want to be able to
-        # set the value in the loop.
-        for key, value in point_data.items():
-            if value.shape[1] == 3 and all(value[:, 2] == 0.0):
-                point_data[key] = value[:, :2]
-        from voropy import mesh2d
-        return mesh2d(points[:, :2], cells_nodes), point_data, field_data
-    elif len(cells_nodes[0]) == 4: # 3D
-        from voropy import mesh3d
-        return mesh3d(points, cells_nodes), point_data, field_data
-    else:
-        raise RuntimeError('Unknown mesh type.')
-
-    return
+    return vtk_mesh
 # ==============================================================================
 def _read_vtk_mesh( reader, file_name ):
     '''Uses a vtkReader to return a vtkUnstructuredGrid.

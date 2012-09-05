@@ -11,8 +11,12 @@ def _main():
     args = _parse_options()
 
     # lengths of major and minor axes
-    a = 10.0
-    b = 10.0
+    if args.axes[0] > args.axes[1]:
+        a = args.axes[0]
+        b = args.axes[1]
+    else:
+        a = args.axes[1]
+        b = args.axes[0]
 
     # Choose the maximum area of a triangle equal to the area of
     # an equilateral triangle on the boundary.
@@ -70,17 +74,25 @@ def _parse_options():
     parser = argparse.ArgumentParser( description = 'Construct a triangulation of an ellipse.' )
 
 
-    parser.add_argument( 'filename',
-                         metavar = 'FILE',
-                         type    = str,
-                         help    = 'file to be written to'
-                       )
+    parser.add_argument('filename',
+                        metavar = 'FILE',
+                        type    = str,
+                        help    = 'file to be written to'
+                        )
 
-    parser.add_argument( '-num-boundary-points', '-b',
-                         required = True,
-                         type    = int,
-                         help    = 'number of nodes on the ellipse boundary'
-                       )
+    parser.add_argument('--num-boundary-points', '-b',
+                        required = True,
+                        type    = int,
+                        help    = 'number of nodes on the ellipse boundary'
+                        )
+
+    parser.add_argument('--axes', '-a',
+                        required = True,
+                        type = float,
+                        nargs = 2,
+                        default = [10,10],
+                        help = 'axis lengths of the ellipse (default: [10,10])'
+                        )
 
     return parser.parse_args()
 # ==============================================================================
