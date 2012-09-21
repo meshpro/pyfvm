@@ -1,5 +1,6 @@
 from mesh2d import *
-from mesh3d import *
+from meshTri import *
+from meshTetra import *
 from reader import *
 
 __version__ = '0.0.2'

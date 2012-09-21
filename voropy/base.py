@@ -29,11 +29,24 @@ class _base_mesh(object):
 
         vtk_mesh = self._generate_vtk_mesh(self.node_coords, self.cells['nodes'])
 
+        extension = os.path.splitext(filename)[1]
         # add point data
+        is_exodus_format = extension in [ '.ex2', '.exo', '.e' ]
         if point_data:
             for key, value in point_data.iteritems():
+                name = key
+                X = value
+                # There is a naming inconsistency in VTK when it comes to multivectors
+                # in Exodus files:
+                # If a vector 'v' has two components, they are called 'v_r', 'v_z' (note
+                # the underscore), if it has three, then they are called 'vx', 'vy', 'vz'.
+                # Make this consistent by appending an underscore if needed.
+                # Note that for VTK files, this problem does not occur since the label
+                # of a vector is always stored as a string.
+                if is_exodus_format and len(X.shape) == 2 and X.shape[1] == 3 and name[-1] != '_':
+                    name += '_'
                 vtk_mesh.GetPointData() \
-                        .AddArray(_create_vtkarray(value, key))
+                        .AddArray(_create_vtkarray(X, name))
 
         # add cell data
         if cell_data:
@@ -48,7 +61,6 @@ class _base_mesh(object):
                         .AddArray(_create_vtkarray(value, key))
 
         import re
-        extension = os.path.splitext(filename)[1]
         if extension == '.vtu': # VTK XML format
             from vtk import vtkXMLUnstructuredGridWriter
             writer = vtkXMLUnstructuredGridWriter()
@@ -89,12 +101,10 @@ class _base_mesh(object):
 
         # set points
         vtk_points = vtkPoints()
-        if len(points[0]) == 2:
-            cell_type = VTK_TRIANGLE
+        if points.shape[1] == 2:
             for point in points:
                 vtk_points.InsertNextPoint(point[0], point[1], 0.0)
-        elif len(points[0]) == 3:
-            cell_type = VTK_TETRA
+        elif points.shape[1] == 3:
             for point in points:
                 vtk_points.InsertNextPoint(point[0], point[1], point[2])
         else:
@@ -106,9 +116,17 @@ class _base_mesh(object):
             pts = vtkIdList()
             num_local_nodes = len(cellNodes)
             pts.SetNumberOfIds(num_local_nodes)
-            # get the connectivity for this element
+            # Get the connectivity for this element.
             for k, node_index in enumerate(cellNodes):
                 pts.InsertId(k, node_index)
+
+            if num_local_nodes == 3:
+                cell_type = VTK_TRIANGLE
+            elif num_local_nodes == 4:
+                cell_type = VTK_TETRA
+            else:
+                raise RuntimeError('???')
+
             mesh.InsertNextCell(cell_type, pts)
 
         return mesh

@@ -3,110 +3,143 @@
 '''
 Creates a simplistic triangular mesh the sphere.
 '''
-import vtk
-import mesh, mesh_io
+import voropy
+import time
 import numpy as np
-from math import pi, sin, cos
-# ------------------------------------------------------------------------------
-if __name__ == "__main__":
+# ==============================================================================
+def _main():
+
+    args = _parse_options()
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     # Mesh parameters
-    n_phi   = 100 # number of points on each circle of latitude (except poles)
-    n_theta = 50 # number of theta-levels, including poles
-    radius  = 1.0
+    n_phi   = args.num_points_per_circle
+    n_theta = args.num_circles
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     # Generate suitable ranges for parametrization
-    phi_range = np.linspace( 0.0, 2*pi, num = n_phi, endpoint = False )
-    theta_range = np.linspace( -pi/2  + pi/(n_theta-1), pi/2 - pi/(n_theta-1), num = n_theta-2 )
+    phi_range = np.linspace(0.0, 2*np.pi, num = n_phi, endpoint = False)
+    theta_range = np.linspace(-np.pi/2  + np.pi/(n_theta-1), np.pi/2 - np.pi/(n_theta-1), num = n_theta-2)
 
-    # Create the vertices.
-    nodes = []
-
+    print 'Creating nodes...',
+    start = time.time()
+    num_nodes = len(theta_range) * len(phi_range) + 2
+    nodes = np.empty(num_nodes, dtype=np.dtype((float, 3)))
     # south pole
     south_pole_index = 0
-    nodes.append( mesh.Node( [ 0.0, 0.0, -radius ] ) )
-
+    k = 0
+    nodes[k] = np.array([0.0, 0.0, -1.0])
+    k += 1
     # nodes in the circles of latitude (except poles)
     for theta in theta_range:
         for phi in phi_range:
-            nodes.append( mesh.Node( [ radius * cos(theta) * sin(phi),
-                                       radius * cos(theta) * cos(phi),
-                                       radius * sin(theta)
-                                     ]
-                                   )
-                       )
+            nodes[k] = np.array([np.cos(theta) * np.sin(phi),
+                                 np.cos(theta) * np.cos(phi),
+                                 np.sin(theta)
+                               ])
+            k += 1
     # north pole
-    north_pole_index = len( nodes )
-    nodes.append( mesh.Node( [ 0.0, 0.0, radius ] ) )
+    north_pole_index = k
+    nodes[k] = np.array([0.0, 0.0, 1.0])
 
-    ## create the elements (cells)
-    elems = []
+    nodes *= args.radius
+    elapsed = time.time() - start
+    print 'done. (%gs)' % elapsed
+
+
+    # create the elements (cells)
+    print 'Creating cells...',
+    start = time.time()
+    num_elems = 2 * (n_theta-2) * n_phi
+    elems = np.empty(num_elems, dtype=np.dtype((int,3)))
+    k = 0
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     # connections to south pole
     for i in xrange(n_phi - 1):
-        elem_nodes = [ south_pole_index, i+1, i+2 ]
-        elems.append( mesh.Cell( elem_nodes, [], vtk.VTK_TRIANGLE ) )
+        elems[k] = np.array([ south_pole_index, i+1, i+2 ])
+        k += 1
     # close geometry
-    elem_nodes = [ south_pole_index, n_phi, 1]
-    elems.append( mesh.Cell( elem_nodes, [], vtk.VTK_TRIANGLE ) )
+    elems[k] = np.array([south_pole_index, n_phi, 1])
+    k += 1
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     # non-pole elements
     for i in xrange(n_theta - 3):
         for j in xrange(n_phi - 1):
-            elem_nodes = [ i*n_phi + j+1, i*n_phi + j+2, (i+1)*n_phi + j+2 ]
-            elems.append( mesh.Cell( elem_nodes, [], vtk.VTK_TRIANGLE ) )
-
-            elem_nodes = [ i*n_phi + j+1, (i+1)*n_phi + j+2, (i+1)*n_phi + j + 1 ]
-            elems.append( mesh.Cell( elem_nodes, [], vtk.VTK_TRIANGLE ) )
+            elems[k] = np.array([i*n_phi + j+1, i*n_phi + j+2, (i+1)*n_phi + j+2 ])
+            k += 1
+            elems[k] = np.array([i*n_phi + j+1, (i+1)*n_phi + j+2, (i+1)*n_phi + j + 1])
+            k += 1
 
     # close the geometry
     for i in xrange(n_theta - 3):
-        elem_nodes = [ (i+1)*n_phi, i*n_phi + 1, (i+1)*n_phi + 1 ]
-        elems.append( mesh.Cell( elem_nodes, [], vtk.VTK_TRIANGLE ) )
-        elem_nodes = [ (i+1)*n_phi, (i+1)*n_phi + 1, (i+2)*n_phi ]
-        elems.append( mesh.Cell( elem_nodes, [], vtk.VTK_TRIANGLE ) )
+        elems[k] = np.array([(i+1)*n_phi, i*n_phi + 1, (i+1)*n_phi + 1])
+        k += 1
+        elems[k] = np.array([(i+1)*n_phi, (i+1)*n_phi + 1, (i+2)*n_phi])
+        k += 1
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     # connections to the north pole
     for i in range(n_phi - 1):
-        elem_nodes = [ i+1 + n_phi*(n_theta-3) + 1,
-                       i   + n_phi*(n_theta-3) + 1,
-                       north_pole_index
-                     ]
-        elems.append( mesh.Cell( elem_nodes, [], vtk.VTK_TRIANGLE ) )
+        elems[k] = np.array([i+1 + n_phi*(n_theta-3) + 1,
+                             i   + n_phi*(n_theta-3) + 1,
+                             north_pole_index
+                           ])
+        k += 1
     # close geometry
-    elem_nodes = [ 0       + n_phi*(n_theta-3) + 1,
-                   n_phi-1 + n_phi*(n_theta-3) + 1,
-                   north_pole_index
-                 ]
-    elems.append( mesh.Cell( elem_nodes, [], vtk.VTK_TRIANGLE ) )
+    elems[k] = np.array([0       + n_phi*(n_theta-3) + 1,
+                         n_phi-1 + n_phi*(n_theta-3) + 1,
+                         north_pole_index
+                       ])
+    k += 1
+    assert k == num_elems, 'Wrong element count.'
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    elapsed = time.time() - start
+    print 'done. (%gs)' % elapsed
 
-    # add values
-    num_nodes = len( nodes )
-    X = np.empty( num_nodes, dtype = complex )
-    k = 0
-    # south pole
-    X[k] = complex( 1.0, 0.0 )
-    k += 1
-    for phi in phi_range:
-        for theta in theta_range:
-            X[k] = complex( 1.0, 0.0 )
-            k += 1
-    # north pole
-    X[k] = complex( 1.0, 0.0 )
-    k += 1
-
-    # add parameters
-    params = { "mu": 0.0 }
+    print '\n%d nodes, %d elements\n' % (num_nodes, num_elems)
 
     # create the mesh data structure
-    mymesh = mesh.Mesh( nodes, elems )
+    mymesh = voropy.meshTri(nodes, elems)
 
-    # create the mesh
-    mesh_io.write_mesh( "sphere.e",
-                        mymesh,
-                        [X], ["psi"],
-                        params
-                      )
-# ------------------------------------------------------------------------------
+    # write the mesh
+    print 'Writing mesh...',
+    start = time.time()
+    mymesh.write( args.filename )
+    elapsed = time.time()-start
+    print 'done. (%gs)' % elapsed
+
+    return
+# ==============================================================================
+def _parse_options():
+    '''Parse input options.'''
+    import argparse
+
+    parser = argparse.ArgumentParser( description = 'Construct a triangulation of a sphere.' )
+
+    parser.add_argument('filename',
+                        metavar = 'FILE',
+                        type    = str,
+                        help    = 'file to be written to'
+                        )
+
+    parser.add_argument('--radius', '-r',
+                        type=float,
+                        default=1.0,
+                        help='radius of the sphere (default: 1.0)'
+                        )
+
+    parser.add_argument('--num-circles', '-c',
+                        type=int,
+                        default=10,
+                        help='number of circles of latitude in the discretization (default: 10)'
+                        )
+
+    parser.add_argument('--num-points-per-circle', '-p',
+                        type=int,
+                        default=10,
+                        help='number of discretization points per circle of latitude (default: 10)'
+                        )
+
+    return parser.parse_args()
+# ==============================================================================
+if __name__ == "__main__":
+    _main()
+# ==============================================================================

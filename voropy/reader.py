@@ -76,6 +76,7 @@ def read_raw(filenames, timestep):
             reader = vtkExodusIIReader()
             reader.SetFileName( filename )
             vtk_mesh = _read_exodusii_mesh(reader, timestep=timestep)
+            #print time_values
         elif re.match('[^\.]*\.e\.\d+\.\d+', filename):
             # Parallel Exodus files.
             # TODO handle with vtkPExodusIIReader
@@ -170,7 +171,9 @@ def _read_exodusii_mesh( reader, timestep=None ):
         if array_name[-1] == '_':
             array.SetName( array_name[0:-1] )
 
-    return vtk_mesh[0]
+    #time_values = reader.GetOutputInformation(0).Get(vtkStreamingDemandDrivenPipeline.TIME_STEPS())
+
+    return vtk_mesh[0] #, time_values
 # ==============================================================================
 def _read_points( vtk_mesh ):
 

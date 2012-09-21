@@ -1,33 +1,23 @@
 # -*- coding: utf-8 -*-
 # ==============================================================================
-__all__ = ['mesh2d']
+__all__ = ['meshTri']
 
 import numpy as np
 import warnings
 from base import _base_mesh
 # ==============================================================================
-class mesh2d(_base_mesh):
-    '''Class for handling two-dimensional triangular meshes.
+class meshTri(_base_mesh):
+    '''Class for handling triangular meshes.
 
-    .. inheritance-diagram:: mesh2d
+    .. inheritance-diagram:: meshTri
     '''
     # --------------------------------------------------------------------------
-    def __init__(self, nodes, cells=None):
+    def __init__(self, nodes, cells):
         '''Initialization.
         '''
-        super(mesh2d, self).__init__(nodes, cells)
+        super(meshTri, self).__init__(nodes, cells)
         self.node_coords = nodes
         self.edges = None
-
-        # Wait for Numpy 1.6.1 for this
-        #     self.cells = np.array(cells, dtype=np.dtype([('nodes', (int, 3))]))
-        # to work. Check out
-        # http://stackoverflow.com/questions/9467547/how-to-properly-initialize-numpy-array-with-named-fields
-        if cells is None:
-            # Compute the Delaunay triangulation if no cells were given.
-            from scipy.spatial import Delaunay
-            tri = Delaunay(nodes)
-            cells = tri.vertices
 
         num_cells = len(cells)
         self.cells = np.empty(num_cells, dtype=np.dtype([('nodes', (int, 3))]))

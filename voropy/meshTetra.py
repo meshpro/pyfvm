@@ -1,20 +1,20 @@
 # -*- coding: utf-8 -*-
 # ==============================================================================
-__all__ = ['mesh3d']
+__all__ = ['meshTetra']
 
 import numpy as np
 from base import _base_mesh
 # ==============================================================================
-class mesh3d(_base_mesh):
-    '''Class for handling three-dimensional tetrahedral meshes.
+class meshTetra(_base_mesh):
+    '''Class for handling tetrahedral meshes.
 
-    .. inheritance-diagram:: mesh3d
+    .. inheritance-diagram:: meshTetra
     '''
     # --------------------------------------------------------------------------
     def __init__(self, node_coords, cells):
         '''Initialization.
         '''
-        super(mesh3d, self).__init__(node_coords, cells)
+        super(meshTetra, self).__init__(node_coords, cells)
         self.node_coords = node_coords
 
         # Wait for Numpy 1.6.1 for this
@@ -328,7 +328,7 @@ class mesh3d(_base_mesh):
                                                   opposing_point - edge_midpoint))
                     alpha += np.sign(gauge) \
                            * np.dot(edge, np.cross(cc[1] - edge_midpoint,
-                                                cc[0] - edge_midpoint))
+                                                   cc[0] - edge_midpoint))
                 elif len(cc) == 1:
                     # Each boundary face circumcenter is computed three times.
                     # Probably one could save a bit of CPU time by caching
