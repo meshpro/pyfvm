@@ -32,19 +32,23 @@ def read(filenames, timestep=None):
     point_data = _read_point_data( vtk_mesh )
     field_data = _read_field_data( vtk_mesh )
 
-    if len(cells_nodes[0]) == 3 and all(points[:, 2] == 0.0):
-        # Flat mesh.
-        # Check if there's three-dimensional point data that can be cut.
-        # Don't use iteritems() here as we want to be able to
-        # set the value in the loop.
-        for key, value in point_data.items():
-            if value.shape[1] == 3 and all(value[:, 2] == 0.0):
-                point_data[key] = value[:, :2]
-        from voropy import mesh2d
-        return mesh2d(points[:, :2], cells_nodes), point_data, field_data
+    if len(cells_nodes[0]) == 3:
+        if all(points[:, 2] == 0.0):
+            # Flat mesh.
+            # Check if there's three-dimensional point data that can be cut.
+            # Don't use iteritems() here as we want to be able to
+            # set the value in the loop.
+            for key, value in point_data.items():
+                if value.shape[1] == 3 and all(value[:, 2] == 0.0):
+                    point_data[key] = value[:, :2]
+            from voropy import mesh2d
+            return mesh2d(points[:, :2], cells_nodes), point_data, field_data
+        else: # 2d shell mesh
+            from voropy import meshTri
+            return meshTri(points, cells_nodes), point_data, field_data
     elif len(cells_nodes[0]) == 4: # 3D
-        from voropy import mesh3d
-        return mesh3d(points, cells_nodes), point_data, field_data
+        from voropy import meshTetra
+        return meshTetra(points, cells_nodes), point_data, field_data
     else:
         raise RuntimeError('Unknown mesh type.')
 

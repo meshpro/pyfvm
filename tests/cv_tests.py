@@ -73,7 +73,7 @@ class TestControlVolumes(unittest.TestCase):
                                [2, 3, 4, 5],
                                [0, 1, 4, 5],
                                [0, 3, 4, 5]])
-        mesh = voropy.mesh3d(nodes, cellsNodes)
+        mesh = voropy.meshTetra(nodes, cellsNodes)
 
         # pull this to see what a negative covolume looks like
         #if mesh.edgesNodes is None:
@@ -104,6 +104,26 @@ class TestControlVolumes(unittest.TestCase):
         actual_values = [ 302.52270072101,
                           15.3857579093391,
                           1.12779746704366 ]
+
+        self._run_test(mesh, actual_values)
+        return
+    # --------------------------------------------------------------------------
+    def test_shell(self):
+        filename = 'shell.e'
+        mesh, _, _ = voropy.read( filename )
+        actual_values = [ 3.46410161513775,
+                          1.63299316185545,
+                          1.15470053837925 ]
+
+        self._run_test(mesh, actual_values)
+        return
+    # --------------------------------------------------------------------------
+    def test_sphere(self):
+        filename = 'sphere.e'
+        mesh, _, _ = voropy.read( filename )
+        actual_values = [ 11.9741927059035,
+                          1.39047542328083,
+                          0.198927169088121 ]
 
         self._run_test(mesh, actual_values)
         return

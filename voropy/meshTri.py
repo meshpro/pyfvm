@@ -34,35 +34,39 @@ class meshTri(_base_mesh):
         num_cells = len(self.cells['nodes'])
         self.cell_volumes = np.empty(num_cells, dtype=float)
         for cell_id, cell in enumerate(self.cells):
-            # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-            # Shoelace formula.
-            node0, node1, node2 = self.node_coords[cell['nodes']]
-            self.cell_volumes[cell_id] = 0.5 * abs( node0[0] * node1[1] - node0[1] * node1[0]
-                                                  + node1[0] * node2[1] - node1[1] * node2[0]
-                                                  + node2[0] * node0[1] - node2[1] * node0[0])
+            x0, x1, x2 = self.node_coords[cell['nodes']]
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             #edge0 = node0 - node1
             #edge1 = node1 - node2
             #self.cell_volumes[cell_id] = 0.5 * np.linalg.norm( np.cross( edge0, edge1 ) )
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-            ## Append a third component.
-            #from vtk import vtkTriangle
-            #x = np.c_[self.node_coords[cell['nodes']], np.zeros((3, 1))]
-            #self.cell_volumes[cell_id] = \
-               #abs(vtkTriangle.TriangleArea(x[0], x[1], x[2]))
+            # Append a third component.
+            from vtk import vtkTriangle
+            self.cell_volumes[cell_id] = \
+               abs(vtkTriangle.TriangleArea(x0, x1, x2))
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         return
     # --------------------------------------------------------------------------
     def compute_cell_circumcenters( self ):
-        '''Computes the center of the circumsphere of each cell.
+        '''Computes the center of the circumcenter of each cell.
         '''
         from vtk import vtkTriangle
         num_cells = len(self.cells['nodes'])
-        self.cell_circumcenters = np.empty(num_cells, dtype=np.dtype((float, 2)))
+        self.cell_circumcenters = np.empty(num_cells, dtype=np.dtype((float, 3)))
         for cell_id, cell in enumerate(self.cells):
             x = self.node_coords[cell['nodes']]
-            vtkTriangle.Circumcircle(x[0], x[1], x[2],
-                                     self.cell_circumcenters[cell_id])
+            # Project to 2D, compute circumcenter, get its barycentric coordinates,
+            # and project those back to 3D.
+            x2d = np.empty(3, dtype=np.dtype((float, 2)))
+            vtkTriangle.ProjectTo2D(x[0], x[1], x[2],
+                                    x2d[0], x2d[1], x2d[2])
+            cc2d = np.empty(2, dtype=float)
+            vtkTriangle.Circumcircle(x2d[0], x2d[1], x2d[2], cc2d)
+            bary = np.empty(3, dtype=float)
+            vtkTriangle.BarycentricCoords(cc2d, x2d[0], x2d[1], x2d[2], bary)
+            self.cell_circumcenters[cell_id] = bary[0] * x[0] \
+                                             + bary[1] * x[1] \
+                                             + bary[2] * x[2]
 
         return
     # --------------------------------------------------------------------------
@@ -259,6 +263,8 @@ class meshTri(_base_mesh):
         '''
         if variant == 'voronoi':
             self._compute_voronoi_volumes()
+        elif variant == 'voronoi flat':
+            self._compute_flat_voronoi_volumes()
         elif variant == 'barycentric':
             self._compute_barycentric_volumes()
         else:
@@ -267,6 +273,93 @@ class meshTri(_base_mesh):
         return
     # --------------------------------------------------------------------------
     def _compute_voronoi_volumes(self):
+        from vtk import vtkTriangle
+
+        num_nodes = len(self.node_coords)
+        self.control_volumes = np.zeros(num_nodes, dtype = float)
+
+        # compute cell circumcenters
+        #if self.cell_circumcenters is None:
+            #self.compute_cell_circumcenters()
+
+        if self.edges is None:
+            self.create_adjacent_entities()
+
+        # For flat meshes, the control volume contributions on a per-edge
+        # basis by computing the distance between the circumcenters
+        # of two adjacent cells.
+        # If the mesh is not flat, however, this does not work. Hence, compute
+        # the control volume contributions for each side in a cell separately.
+
+        num_cells = len(self.cells)
+        for cell_id in xrange(num_cells):
+            # Project the triangle to 2D.
+            x = self.node_coords[self.cells['nodes'][cell_id]]
+            # Project to 2D, compute circumcenter, get its barycentric coordinates,
+            # and project those back to 3D.
+            x2d = np.empty(3, dtype=np.dtype((float, 2)))
+            vtkTriangle.ProjectTo2D(x[0], x[1], x[2],
+                                    x2d[0], x2d[1], x2d[2])
+            # Compute circumcenter.
+            cc = np.empty(2)
+            vtkTriangle.Circumcircle(x2d[0], x2d[1], x2d[2], cc)
+
+            for edge_id in self.cells['edges'][cell_id]:
+                # Move the system such that one of the two end points is in the
+                # origin. Deliberately take x2d[0].
+                node_ids = self.edges['nodes'][edge_id]
+
+                # Get the local IDs.
+                edge_lid = np.nonzero(self.cells['edges'][cell_id] == edge_id)[0][0]
+                node_lids = np.array([np.nonzero(self.cells['nodes'][cell_id] == node_ids[0])[0][0],
+                                      np.nonzero(self.cells['nodes'][cell_id] == node_ids[1])[0][0]
+                                      ])
+
+                # This makes use of the fact that cellsEdges and cellsNodes
+                # are coordinated such that in cell #i, the edge cellsEdges[i][k]
+                # opposes cellsNodes[i][k].
+                other0 = x2d[edge_lid] \
+                       - x2d[node_lids[0]]
+
+                # Compute edge midpoint.
+                edge_midpoint = 0.5 * (x2d[node_lids[0]] + x2d[node_lids[1]]) \
+                              - x2d[node_lids[0]]
+
+                cc_tmp = cc - x2d[node_lids[0]]
+
+                # Compute the area of the triangle {node[0], cc, edge_midpoint}.
+                # Gauge the sign with the sign of the area {node[0], other0, edge_midpoint}.
+
+                # Computing the triangle volume like this is called the shoelace
+                # formula and can be interpreted as the z-component of the
+                # cross-product of other0 and edge_midpoint.
+                gauge = other0[0] * edge_midpoint[1] \
+                      - other0[1] * edge_midpoint[0]
+
+                self.control_volumes[node_ids] += np.sign(gauge) \
+                                                * 0.5 * (cc_tmp[0] * edge_midpoint[1]
+                                                        -cc_tmp[1] * edge_midpoint[0])
+
+        # Sanity checks.
+        if self.cell_volumes is None:
+            self.create_cell_volumes()
+        sum_cv = sum(self.control_volumes)
+        sum_cells = sum(self.cell_volumes)
+        alpha = sum_cv - sum_cells
+        if abs(alpha) > 1.0e-9:
+            msg = ('Sum of control volumes sum does not coincide with the sum of ' +
+                   'the cell volumes (|cv|-|cells| = %g - %g = %g.') \
+                  % (sum_cv, sum_cells, alpha)
+            raise RuntimeError(msg)
+
+        if any(self.control_volumes < 0.0):
+            msg = 'Not all control volumes are positive. This is due do ' \
+                + 'the triangulation not being Delaunay.'
+            warnings.warn(msg)
+
+        return
+    # --------------------------------------------------------------------------
+    def _compute_flat_voronoi_volumes(self):
         num_nodes = len(self.node_coords)
         self.control_volumes = np.zeros(num_nodes, dtype = float)
 
@@ -326,17 +419,8 @@ class meshTri(_base_mesh):
             else:
                 raise RuntimeError('An edge should have either 1 or two adjacent cells.')
 
-        # Sanity checks.
-        if self.cell_volumes is None:
-            self.create_cell_volumes()
-        sum_cv = sum(self.control_volumes)
-        sum_cells = sum(self.cell_volumes)
-        alpha = sum_cv - sum_cells
-        if abs(alpha) > 1.0e-9:
-            msg = ('Sum of control volumes sum does not coincide with the sum of ' +
-                   'the cell volumes (|cv|-|cells| = %g - %g = %g.') \
-                  % (sum_cv, sum_cells, alpha)
-            raise RuntimeError(msg)
+        # Don't check equality with sum of triangle areas since
+        # it will generally not be equal.
 
         if any(self.control_volumes < 0.0):
             msg = 'Not all control volumes are positive. This is due do ' \
