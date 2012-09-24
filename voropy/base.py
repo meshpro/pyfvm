@@ -101,10 +101,10 @@ class _base_mesh(object):
 
         # set points
         vtk_points = vtkPoints()
-        if points.shape[1] == 2:
+        if len(points[0]) == 2:
             for point in points:
                 vtk_points.InsertNextPoint(point[0], point[1], 0.0)
-        elif points.shape[1] == 3:
+        elif len(points[0]) == 3:
             for point in points:
                 vtk_points.InsertNextPoint(point[0], point[1], point[2])
         else:
