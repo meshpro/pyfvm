@@ -5,57 +5,48 @@ import numpy as np
 import time
 from meshpy.tet import MeshInfo, build
 from meshpy.geometry import generate_surface_of_revolution, EXT_OPEN, GeometryBuilder
+from meshpy.geometry import generate_surface_of_revolution, EXT_CLOSED_IN_RZ, GeometryBuilder
 
 import voropy
-#import mesh
-#import mesh.meshpy_interface
-#import mesh.magnetic_vector_potentials
 # ==============================================================================
 def _main():
 
     args = _parse_options()
 
-    radius = 5.0
+    big_r = args.bigr
+    small_r = args.smallr
+    num_points = args.numpoints
 
-    radial_subdiv = 2 * args.num_longi_points
-
-    dphi = np.pi / args.num_longi_points
-
-    # Make sure the nodes meet at the poles of the ball.
-    def truncate(r):
-        if abs(r) < 1e-10:
-            return 0
-        else:
-            return r
+    dphi = 2*np.pi / num_points
 
     # Compute the volume of a canonical tetrahedron
-    # with edgelength radius*dphi.
-    a = radius * dphi
+    # with edgelength radius2*dphi.
+    a = small_r * dphi
     canonical_tet_volume = np.sqrt(2.0) / 12 * a**3
 
-    # Build outline for surface of revolution.
-    rz = [(truncate(radius * np.sin(i*dphi)), radius * np.cos(i*dphi))
-          for i in xrange(args.num_longi_points+1)
-         ]
+    radial_subdiv = int(2*np.pi*big_r / a)
+
+
+    rz = [(big_r + small_r*np.cos(i*dphi), small_r*np.sin(i*dphi))
+            for i in xrange(num_points)]
 
     print 'Build mesh...',
     start = time.time()
     geob = GeometryBuilder()
-    geob.add_geometry( *generate_surface_of_revolution(rz,
-                                                       closure=EXT_OPEN,
-                                                       radial_subdiv=radial_subdiv)
-                     )
+    geob.add_geometry(*generate_surface_of_revolution(rz,
+                                                      closure=EXT_CLOSED_IN_RZ,
+                                                      radial_subdiv=radial_subdiv))
     mesh_info = MeshInfo()
     geob.set(mesh_info)
     meshpy_mesh = build(mesh_info, max_volume = canonical_tet_volume)
     elapsed = time.time()-start
     print 'done. (%gs)' % elapsed
 
+    print '\n%d nodes, %d elements.\n' % (len(meshpy_mesh.points), len(meshpy_mesh.elements))
+
     # Fill the data into a voropy mesh object.
     mesh = voropy.meshTetra(meshpy_mesh.points, meshpy_mesh.elements)
 
-    print '\n%d nodes, %d elements' % (len(mesh.node_coords), len(mesh.cells))
-
     # write the mesh
     print 'Write mesh...',
     start = time.time()
@@ -69,26 +60,7 @@ def _parse_options():
     '''Parse input options.'''
     import argparse
 
-    parser = argparse.ArgumentParser( description = 'Construct tetrahedrization of a ball.' )
-
-    mesh = voropy.meshTetra(meshpy_mesh.points, meshpy_mesh.elements)
-
-    print '\n%d nodes, %d elements' % (len(mesh.node_coords), len(mesh.cells))
-
-    # write the mesh
-    print 'Write mesh...',
-    start = time.time()
-    mesh.write(args.filename)
-    elapsed = time.time()-start
-    print 'done. (%gs)' % elapsed
-
-    return
-# ==============================================================================
-def _parse_options():
-    '''Parse input options.'''
-    import argparse
-
-    parser = argparse.ArgumentParser( description = 'Construct tetrahedrization of a ball.' )
+    parser = argparse.ArgumentParser( description = 'Construct tetrahedrization of a torus.' )
 
 
     parser.add_argument( 'filename',
@@ -97,14 +69,22 @@ def _parse_options():
                          help    = 'file to be written to'
                        )
 
-    parser.add_argument( '--numpoints', '-p',
-                         metavar = 'N',
-                         dest='num_longi_points',
-                         nargs='?',
+    parser.add_argument( '--numpoints', '-n',
                          type=int,
-                         const=10,
                          default=10,
                          help    = 'number of discretization points along a logitudinal line'
+                       )
+
+    parser.add_argument( '--bigr', '-R',
+                         type=float,
+                         default = 1.0,
+                         help    = 'inner radius of the torus (default: 1.0)'
+                       )
+
+    parser.add_argument( '--smallr', '-r',
+                         type=float,
+                         default = 0.5,
+                         help    = 'radius of the torus (default: 0.5)'
                        )
 
     args = parser.parse_args()
