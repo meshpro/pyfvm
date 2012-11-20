@@ -26,8 +26,7 @@ def _main():
 
     radial_subdiv = int(2*np.pi*big_r / a)
 
-
-    rz = [(big_r + small_r*np.cos(i*dphi), small_r*np.sin(i*dphi))
+    rz = [(big_r + small_r*np.cos(i*dphi), 0.5 * small_r*np.sin(i*dphi))
             for i in xrange(num_points)]
 
     print 'Build mesh...',

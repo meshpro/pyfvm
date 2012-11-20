@@ -59,7 +59,9 @@ def read_raw(filenames, timestep):
     if isinstance(filenames, (list, tuple)) and len(filenames)==1:
         filenames = filenames[0]
 
-    if isinstance(filenames, basestring):
+    # http://stackoverflow.com/questions/4843173/how-to-check-if-a-type-of-variable-is-string-in-python
+    #if isinstance(filenames, basestring):
+    if isinstance(filenames, str):
         filename = filenames
         # serial files
         extension = os.path.splitext(filename)[1]

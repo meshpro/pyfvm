@@ -4,7 +4,7 @@ __all__ = ['mesh2d']
 
 import numpy as np
 import warnings
-from base import _base_mesh
+from voropy.base import _base_mesh
 # ==============================================================================
 class mesh2d(_base_mesh):
     '''Class for handling triangular meshes.
@@ -502,8 +502,8 @@ class mesh2d(_base_mesh):
             # Calculate A at the edge midpoint.
             A = 0.5 * ( vector_field[edge['nodes'][0]]
                       + vector_field[edge['nodes'][1]] )
-            print curl[edge['cells'],:]
-            print edge_coords
+            print(curl[edge['cells'],:])
+            print(edge_coords)
             curl[edge['cells'],:] += edge_coords * np.dot(edge_coords, A)
 
         return curl

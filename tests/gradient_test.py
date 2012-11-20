@@ -15,7 +15,9 @@ class GradientTest(unittest.TestCase):
         a_x = 7.0
         a_y = 3.0
         a0 = 1.0
-        u = np.array(a_x*mesh.node_coords[:,0] + a_y*mesh.node_coords[:,1] + a0)
+        u = a_x * mesh.node_coords[:,0] \
+          + a_y * mesh.node_coords[:,1] \
+          + a0  * np.ones(num_nodes)
 
         # Get the gradient analytically.
         sol = np.empty((num_nodes,2))
@@ -25,12 +27,12 @@ class GradientTest(unittest.TestCase):
         # Compute the gradient numerically.
         grad_u = mesh.compute_gradient(u)
 
-        mesh.write('test.e',point_data={'diff': grad_u-sol})
+        mesh.write('test.e', point_data={'diff': grad_u-sol})
 
         tol = 1.0e-13
-        for k in xrange(num_nodes):
-            self.assertAlmostEqual( grad_u[k][0], sol[k][0], delta=tol )
-            self.assertAlmostEqual( grad_u[k][1], sol[k][1], delta=tol )
+        for k in range(num_nodes):
+            self.assertAlmostEqual(grad_u[k][0], sol[k][0], delta=tol)
+            self.assertAlmostEqual(grad_u[k][1], sol[k][1], delta=tol)
 
         return
     # --------------------------------------------------------------------------
