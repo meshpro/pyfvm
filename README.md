@@ -10,3 +10,5 @@ For example, this package is for you if you want to:
 * display meshes with corresponding Voronoi meshes in matplotlib.
 
 Some of the methods in this packages are merely convenience wrappers around the VTK Python interface which needs to be installed in your system. Further dependencies include Numpy and SciPy.
+
+[![Build Status](https://travis-ci.org/nschloe/VoroPy.png?branch=master)](https://travis-ci.org/nschloe/VoroPy)
