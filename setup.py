@@ -36,8 +36,8 @@ setup( name='voropy',
        packages=['voropy', 'tests'],
        description = 'Delaunay meshes, Voronoi regions',
        long_description=read('README'),
-       url = 'https://bitbucket.org/nschloe/voropy',
-       download_url='https://bitbucket.org/nschloe/voropy/downloads',
+       url = 'https://github.com/nschloe/VoroPy',
+       download_url=None,
        license = 'GNU Lesser General Public License (LGPL), Version 3',
        platforms='any',
        requires=['numpy','scipy','vtk'],
@@ -67,6 +67,10 @@ setup( name='voropy',
                 'examples/tetrahedron',
                 'examples/triangle',
                 'examples/tube'],
-        data_files=[('tests','tests/cubesmall.e', 'tests/pacman.e',
-                      'tests/rectanglesmall.e', 'tests/test.e', 'tests/tetrahedron.e')]
      )
+# Don't install test files.
+#        data_files=[('tests', ['tests/cubesmall.e',
+#                               'tests/pacman.e',
+#                               'tests/rectanglesmall.e',
+#                               'tests/test.e',
+#                               'tests/tetrahedron.e'])]
