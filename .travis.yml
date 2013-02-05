@@ -1,7 +1,9 @@
 language: python
 python:
-  - "2.6"
-  - "2.7"
+#  - "2.6"
+    - "2.7"
+virtualenv:
+  system_site_packages: true
 # command to install dependencies
 before_install:
   # http://about.travis-ci.org/docs/user/build-configuration/#Installing-Packages-Using-apt
@@ -9,8 +11,6 @@ before_install:
   - sudo apt-get install -qq python-vtk
  - "if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]]; then ln -s /usr/lib/pymodules/python2.6/vtk ~/virtualenv/python2.6/lib/python2.6/site-packages/; fi"
  - "if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then ln -s /usr/lib/pymodules/python2.7/vtk ~/virtualenv/python2.7/lib/python2.7/site-packages/; fi"
-virtualenv:
-  system_site_packages: true
 install:
   # Alternative: setup.py install.
   # Using pip makes sure that the package is pip-compatible, too.
