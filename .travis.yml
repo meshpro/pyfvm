@@ -7,9 +7,8 @@ before_install:
   # http://about.travis-ci.org/docs/user/build-configuration/#Installing-Packages-Using-apt
   - sudo apt-get update -qq
   - sudo apt-get install -qq python-vtk
-  # TODO fix this
-#  - if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]]; then ln -s /usr/share/pythonshared/vtk ~/virtualenv/python2.6/lib/python2.6/site-packages/; fi
-#  - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then ln -s /usr/share/pythonshared/vtk ~/virtualenv/python2.7/lib/python2.7/site-packages/; fi
+ - "if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]]; then ln -s /usr/lib/pymodules/python2.6/vtk ~/virtualenv/python2.6/lib/python2.6/site-packages/; fi"
+ - "if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then ln -s /usr/lib/pymodules/python2.7/vtk ~/virtualenv/python2.7/lib/python2.7/site-packages/; fi"
 virtualenv:
   system_site_packages: true
 install:
