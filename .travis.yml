@@ -3,7 +3,8 @@ python:
   - "2.6"
   - "2.7"
 # command to install dependencies
-#install: "pip install -r requirements.txt --use-mirrors"
+before_install:
+  - sudo apt-get install python-vtk 2>&1 | tail -n 2
 install:
   # Alternative: setup.py install.
   # Using pip makes sure that the package is pip-compatible, too.
