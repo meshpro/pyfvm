@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import unittest
 
@@ -37,7 +38,8 @@ class GradientTest(unittest.TestCase):
         return
     # --------------------------------------------------------------------------
     def test_pacman(self):
-        filename = 'pacman.e'
+        filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                'pacman.e')
         mesh, _, _ = voropy.read( filename )
 
         self._run_test(mesh)

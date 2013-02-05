@@ -6,8 +6,8 @@ python:
 #install: "pip install -r requirements.txt --use-mirrors"
 # command to run tests
 script:
-    - "python -m cv_tests.py"
-    - "python -m gradient_test.py"
+    - "python tests/cv_tests.py"
+    - "python tests/gradient_test.py"
 
 #before_install:
 #    # install numpy for python 3.2 (currently not installed in travis)

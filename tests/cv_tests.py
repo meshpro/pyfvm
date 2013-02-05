@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import unittest
 
@@ -53,7 +54,8 @@ class TestControlVolumes(unittest.TestCase):
         return
     # --------------------------------------------------------------------------
     def test_rectanglesmall(self):
-        filename = 'rectanglesmall.e'
+        filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                'rectanglesmall.e')
         mesh, _, _ = voropy.read( filename )
         actual_values = [ 10.0,
                           5.0,
@@ -87,7 +89,8 @@ class TestControlVolumes(unittest.TestCase):
         return
     # --------------------------------------------------------------------------
     def test_tetrahedron(self):
-        filename = 'tetrahedron.e'
+        filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                'tetrahedron.e')
         mesh, _, _ = voropy.read( filename )
 
         #mesh.show_edge(54)
@@ -99,7 +102,8 @@ class TestControlVolumes(unittest.TestCase):
         return
     # --------------------------------------------------------------------------
     def test_pacman(self):
-        filename = 'pacman.e'
+        filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                'pacman.e')
         mesh, _, _ = voropy.read( filename )
         actual_values = [ 302.52270072101,
                           15.3857579093391,
@@ -109,7 +113,8 @@ class TestControlVolumes(unittest.TestCase):
         return
     # --------------------------------------------------------------------------
     def test_shell(self):
-        filename = 'shell.e'
+        filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                'shell.e')
         mesh, _, _ = voropy.read( filename )
         actual_values = [ 3.46410161513775,
                           1.63299316185545,
@@ -119,7 +124,8 @@ class TestControlVolumes(unittest.TestCase):
         return
     # --------------------------------------------------------------------------
     def test_sphere(self):
-        filename = 'sphere.e'
+        filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                'sphere.e')
         mesh, _, _ = voropy.read( filename )
         actual_values = [ 11.9741927059035,
                           1.39047542328083,
@@ -129,7 +135,8 @@ class TestControlVolumes(unittest.TestCase):
         return
     # --------------------------------------------------------------------------
     def test_cubesmall(self):
-        filename = 'cubesmall.e'
+        filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                'cubesmall.e')
         mesh, _, _ = voropy.read( filename )
         actual_values = [ 10.0,
                           3.53553390593274,
@@ -138,7 +145,8 @@ class TestControlVolumes(unittest.TestCase):
         return
     # --------------------------------------------------------------------------
     def test_brick(self):
-        filename = 'brick-w-hole.e'
+        filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                'brick-w-hole.e')
         mesh, _, _ = voropy.read( filename )
 
         actual_values = [ 388.68629169464117,
