@@ -4,6 +4,7 @@ python:
   - "2.7"
 # command to install dependencies
 before_install:
+  - sudo apt-get update
   - sudo apt-get install python-vtk 2>&1
 install:
   # Alternative: setup.py install.
