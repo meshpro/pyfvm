@@ -1,21 +1,21 @@
 # -*- coding: utf-8 -*-
-# ==============================================================================
+
 __all__ = []
 
-# ==============================================================================
+
 class _base_mesh(object):
-    # --------------------------------------------------------------------------
+
     def __init__(self,
                  nodes,
                  cells_nodes
                  ):
         return
-    # --------------------------------------------------------------------------
+
     def write(self,
               filename,
-              point_data = None,
-              cell_data = None,
-              field_data = None
+              point_data=None,
+              cell_data=None,
+              field_data=None
               ):
         '''Writes mesh together with data to a file.
 
@@ -27,23 +27,27 @@ class _base_mesh(object):
         '''
         import os
 
-        vtk_mesh = self._generate_vtk_mesh(self.node_coords, self.cells['nodes'])
+        vtk_mesh = self._generate_vtk_mesh(self.node_coords,
+                                           self.cells['nodes']
+                                           )
 
         extension = os.path.splitext(filename)[1]
         # add point data
-        is_exodus_format = extension in [ '.ex2', '.exo', '.e' ]
+        is_exodus_format = extension in ['.ex2', '.exo', '.e']
         if point_data:
             for key, value in point_data.iteritems():
                 name = key
                 X = value
-                # There is a naming inconsistency in VTK when it comes to multivectors
-                # in Exodus files:
-                # If a vector 'v' has two components, they are called 'v_r', 'v_z' (note
-                # the underscore), if it has three, then they are called 'vx', 'vy', 'vz'.
-                # Make this consistent by appending an underscore if needed.
-                # Note that for VTK files, this problem does not occur since the label
-                # of a vector is always stored as a string.
-                if is_exodus_format and len(X.shape) == 2 and X.shape[1] == 3 and name[-1] != '_':
+                # There is a naming inconsistency in VTK when it comes to
+                # multivectors in Exodus files:
+                # If a vector 'v' has two components, they are called 'v_r',
+                # 'v_z' (note the underscore), if it has three, then they are
+                # called 'vx', 'vy', 'vz'.  Make this consistent by appending
+                # an underscore if needed.  Note that for VTK files, this
+                # problem does not occur since the label of a vector is always
+                # stored as a string.
+                if is_exodus_format and len(X.shape) == 2 \
+                    and X.shape[1] == 3 and name[-1] != '_':
                     name += '_'
                 vtk_mesh.GetPointData() \
                         .AddArray(_create_vtkarray(X, name))
@@ -61,17 +65,17 @@ class _base_mesh(object):
                         .AddArray(_create_vtkarray(value, key))
 
         import re
-        if extension == '.vtu': # VTK XML format
+        if extension == '.vtu':  # VTK XML format
             from vtk import vtkXMLUnstructuredGridWriter
             writer = vtkXMLUnstructuredGridWriter()
-        elif extension == '.pvtu': # parallel VTK XML format
+        elif extension == '.pvtu':  # parallel VTK XML format
             from vtk import vtkXMLPUnstructuredGridWriter
             writer = vtkXMLPUnstructuredGridWriter()
-        elif extension == '.vtk': # classical VTK format
+        elif extension == '.vtk':  # classical VTK format
             from vtk import vtkUnstructuredGridWriter
             writer = vtkUnstructuredGridWriter()
             writer.SetFileTypeToASCII()
-        elif extension in [ '.ex2', '.exo', '.e' ]: # Exodus II format
+        elif extension in ['.ex2', '.exo', '.e']:  # Exodus II format
             from vtk import vtkExodusIIWriter
             writer = vtkExodusIIWriter()
             # If the mesh contains vtkModelData information, make use of it
@@ -85,18 +89,15 @@ class _base_mesh(object):
             # and write out all time steps.
             writer.WriteAllTimeStepsOn()
         else:
-            raise IOError( 'Unknown file type \'%s\'.' % filename )
-
-        writer.SetFileName( filename )
-
-        writer.SetInput( vtk_mesh )
-
+            raise IOError('Unknown file type \'%s\'.' % filename)
+        writer.SetFileName(filename)
+        writer.SetInput(vtk_mesh)
         writer.Write()
-
         return
-    # --------------------------------------------------------------------------
+
     def _generate_vtk_mesh(self, points, cellsNodes):
-        from vtk import vtkUnstructuredGrid, VTK_TRIANGLE, VTK_TETRA, vtkIdList, vtkPoints
+        from vtk import vtkUnstructuredGrid, VTK_TRIANGLE, VTK_TETRA, \
+            vtkIdList, vtkPoints
         mesh = vtkUnstructuredGrid()
 
         # set points
@@ -109,7 +110,7 @@ class _base_mesh(object):
                 vtk_points.InsertNextPoint(point[0], point[1], point[2])
         else:
             raise RuntimeError('???')
-        mesh.SetPoints( vtk_points )
+        mesh.SetPoints(vtk_points)
 
         # set cells
         for cellNodes in cellsNodes:
@@ -128,22 +129,19 @@ class _base_mesh(object):
                 raise RuntimeError('???')
 
             mesh.InsertNextCell(cell_type, pts)
-
         return mesh
-    # --------------------------------------------------------------------------
+
     def recreate_cells_with_qhull(self):
         '''Remesh using scipy.spatial.Delaunay.
         '''
         import scipy.spatial
-
         # Create a Delaunay triangulation of the given points.
         delaunay = scipy.spatial.Delaunay(self.nodes)
         # Use the new cells.
         self.cells['nodes'] = delaunay.vertices
-
         return
-    # --------------------------------------------------------------------------
-# ==============================================================================
+
+
 def _create_vtkarray(X, name):
     import numpy as np
     from vtk import vtkBitArray, vtkIntArray, vtkDoubleArray, vtkCharArray
@@ -164,13 +162,13 @@ def _create_vtkarray(X, name):
         array = vtkDoubleArray()
     elif X.dtype == complex:
         # Convert complex arrays to double.
-        Y = np.empty((len(X),2), dtype=float)
+        Y = np.empty((len(X), 2), dtype=float)
         if len(X.shape) == 1:
-            Y[:,0] = X.real
-            Y[:,1] = X.imag
+            Y[:, 0] = X.real
+            Y[:, 1] = X.imag
         elif len(X.shape) == 2:
-            Y[:,0] = X[:,0].real
-            Y[:,1] = X[:,0].imag
+            Y[:, 0] = X[:, 0].real
+            Y[:, 1] = X[:, 0].imag
         else:
             raise RuntimeError()
         X = Y
@@ -206,9 +204,10 @@ def _create_vtkarray(X, name):
             for k2 in xrange(X.shape[1]):
                 array.InsertNextValue(X[k][k2])
     else:
-        raise ValueError('Don''t know what to do with many-dimensional array ''%s''.' % name)
+        raise ValueError('Don''t know what to do with '
+                         'many-dimensional array ''%s''.' % name
+                         )
 
     array.SetName(name)
 
     return array
-# ==============================================================================
