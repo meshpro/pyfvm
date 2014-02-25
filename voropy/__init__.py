@@ -1,7 +1,7 @@
-from voropy.mesh2d import *
-from voropy.meshTri import *
-from voropy.meshTetra import *
-from voropy.reader import *
+from . import mesh2d
+from . import meshTri
+from . import meshTetra
+from . import reader
 
 __version__ = '0.0.2'
 

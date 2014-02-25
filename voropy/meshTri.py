@@ -467,13 +467,9 @@ class meshTri(_base_mesh):
         return edge_normals
 
     def compute_gradient(self, u):
-        '''Computes an approximation to the gradient \nabla u of a given
-        scalar valued function u, defined in the node points.
-        This is taken from
-         [1] Discrete gradient method in solid mechanics,
-             Jia Lu, Jin Qian, Weimin Han,
-             International Journal for Numerical Methods in Engineering,
-             2008, 74:619--641.
+        '''Computes an approximation to the gradient :math:`\\nabla u` of a
+        given scalar valued function :math:`u`, defined in the node points.
+        This is taken from :cite:`NME2187`.
         '''
         num_nodes = len(self.node_coords)
         assert len(u) == num_nodes
@@ -545,14 +541,16 @@ class meshTri(_base_mesh):
         return gradient
 
     def compute_curl(self, vector_field):
-        '''Computes the curl of a vector field.
-        While the vector field is point-based, the curl will be cell-based.
-        The approximation is based on
-            lim_{A->0} n.curl(F) = int_dA F.dr / |A|;
-        see http://en.wikipedia.org/wiki/Curl_(mathematics).
-        Actually, to approximate the integral, one would only need the
-        projection of the vector field onto the edges at the midpoint
-        of the edges.'''
+        '''Computes the curl of a vector field. While the vector field is
+        point-based, the curl will be cell-based. The approximation is based on
+
+        .. math::
+            \lim_{A\\to 0} n\cdot curl(F) = |A|^{-1} \int_{dA} F dr;
+
+        see http://en.wikipedia.org/wiki/Curl_(mathematics). Actually, to
+        approximate the integral, one would only need the projection of the
+        vector field onto the edges at the midpoint of the edges.
+        '''
         if self.edges is None:
             self.create_adjacent_entities()
         curl = np.zeros((len(self.cells),3), dtype=vector_field.dtype)
@@ -639,7 +637,7 @@ class meshTri(_base_mesh):
         # plot edges
         col = 'k'
         for node_ids in self.edges['nodes']:
-            x = self.node_coords[node_ids]
+            x = self.node_coords[node_ids
             ax.plot(x[:, 0],
                     x[:, 1],
                     col)
