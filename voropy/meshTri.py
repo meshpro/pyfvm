@@ -637,10 +637,8 @@ class meshTri(_base_mesh):
         # plot edges
         col = 'k'
         for node_ids in self.edges['nodes']:
-            x = self.node_coords[node_ids
-            ax.plot(x[:, 0],
-                    x[:, 1],
-                    col)
+            x = self.node_coords[node_ids]
+            ax.plot(x[:, 0], x[:, 1], col)
 
         # Highlight covolumes.
         if show_covolumes:
