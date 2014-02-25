@@ -42,13 +42,14 @@ def read(filenames, timestep=None):
                 if value.shape[1] == 3 and all(value[:, 2] == 0.0):
                     point_data[key] = value[:, :2]
             from voropy import mesh2d
-            return mesh2d(points[:, :2], cells_nodes), point_data, field_data
+            return mesh2d.mesh2d(points[:, :2], cells_nodes), \
+                   point_data, field_data
         else:  # 2d shell mesh
             from voropy import meshTri
-            return meshTri(points, cells_nodes), point_data, field_data
+            return meshTri.meshTri(points, cells_nodes), point_data, field_data
     elif len(cells_nodes[0]) == 4:  # 3D
         from voropy import meshTetra
-        return meshTetra(points, cells_nodes), point_data, field_data
+        return meshTetra.meshTetra(points, cells_nodes), point_data, field_data
     else:
         raise RuntimeError('Unknown mesh type.')
     return
