@@ -14,6 +14,4 @@ install:
   - pip install .
 # command to run tests
 script:
-    - python tests/cv_tests.py
-# Don't run the gradient test for now: it fails. :/
-#    - python tests/gradient_test.py
+    - nosetests
