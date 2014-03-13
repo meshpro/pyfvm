@@ -47,13 +47,16 @@ class mesh2d(_base_mesh):
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             # Shoelace formula.
             node0, node1, node2 = self.node_coords[cell['nodes']]
-            self.cell_volumes[cell_id] = 0.5 * abs(node0[0] * node1[1] - node0[1] * node1[0]
-                                                 + node1[0] * node2[1] - node1[1] * node2[0]
-                                                 + node2[0] * node0[1] - node2[1] * node0[0])
+            self.cell_volumes[cell_id] = \
+                0.5 * abs(node0[0] * node1[1] - node0[1] * node1[0]
+                          + node1[0] * node2[1] - node1[1] * node2[0]
+                          + node2[0] * node0[1] - node2[1] * node0[0]
+                          )
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             #edge0 = node0 - node1
             #edge1 = node1 - node2
-            #self.cell_volumes[cell_id] = 0.5 * np.linalg.norm(np.cross(edge0, edge1))
+            #self.cell_volumes[cell_id] = \
+            #    0.5 * np.linalg.norm(np.cross(edge0, edge1))
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             ## Append a third component.
             #from vtk import vtkTriangle
@@ -118,7 +121,7 @@ class mesh2d(_base_mesh):
                 # edge is opposite of the k-th node. Useful later in
                 # in construction of edge (face) normals.
                 indices = tuple(cell['nodes'][:k]) \
-                        + tuple(cell['nodes'][k+1:])
+                    + tuple(cell['nodes'][k+1:])
                 if indices in registered_edges:
                     edge_gid = registered_edges[indices]
                     self.edges[edge_gid]['cells'].append(cell_id)
@@ -191,7 +194,8 @@ class mesh2d(_base_mesh):
                     # Create new node at the edge midpoint.
                     self.node_coords[new_node_gid] = \
                         0.5 * (self.node_coords[edgenodes_gids[0]]
-                              +self.node_coords[edgenodes_gids[1]])
+                               + self.node_coords[edgenodes_gids[1]]
+                               )
                     local_edge_midpoint_gids[k] = new_node_gid
                     new_node_gid += 1
                     edge_midpoint_gids[edge_gid] = \
@@ -214,9 +218,10 @@ class mesh2d(_base_mesh):
                     is_edge_divided[edge_gid] = True
                 # Keep a record of the new neighbors of the old nodes.
                 # Get local node IDs.
-                edgenodes_lids = [np.nonzero(cell['nodes'] == edgenodes_gids[0])[0][0],
-                                  np.nonzero(cell['nodes'] == edgenodes_gids[1])[0][0]
-                                  ]
+                edgenodes_lids = \
+                    [np.nonzero(cell['nodes'] == edgenodes_gids[0])[0][0],
+                     np.nonzero(cell['nodes'] == edgenodes_gids[1])[0][0]
+                     ]
                 local_neighbor_midpoints[edgenodes_lids[0]] \
                     .append(local_edge_midpoint_gids[k])
                 local_neighbor_midpoints[edgenodes_lids[1]]\
@@ -256,7 +261,8 @@ class mesh2d(_base_mesh):
         # Override cells.
         num_cells = len(new_cells_nodes)
         self.cells = np.empty(num_cells,
-                              dtype=np.dtype([('nodes', (int, 3)),('edges', (int,3))])
+                              dtype=np.dtype([('nodes', (int, 3)),
+                                              ('edges', (int, 3))])
                               )
         self.cells['nodes'] = new_cells_nodes
         self.cells['edges'] = new_cells_edges
@@ -317,19 +323,21 @@ class mesh2d(_base_mesh):
             # formula and can be interpreted as the z-component of the
             # cross-product of other0 and edge_midpoint.
             gauge = other0[0] * edge_midpoint[1] \
-                  - other0[1] * edge_midpoint[0]
+                - other0[1] * edge_midpoint[0]
 
             # Get the circumcenters of the adjacent cells.
             cc = self.cell_circumcenters[self.edges['cells'][edge_id]] \
                 - node
             if len(cc) == 2:  # interior edge
-                self.control_volumes[node_ids] += np.sign(gauge) \
-                                                * 0.5 * (cc[0][0] * cc[1][1] \
-                                                        -cc[0][1] * cc[1][0])
+                self.control_volumes[node_ids] += \
+                    np.sign(gauge) * 0.5 * (cc[0][0] * cc[1][1]
+                                            - cc[0][1] * cc[1][0]
+                                            )
             elif len(cc) == 1:  # boundary edge
-                self.control_volumes[node_ids] += np.sign(gauge) \
-                                                * 0.5 * (cc[0][0] * edge_midpoint[1]
-                                                        -cc[0][1] * edge_midpoint[0])
+                self.control_volumes[node_ids] += \
+                    np.sign(gauge) * 0.5 * (cc[0][0] * edge_midpoint[1]
+                                            - cc[0][1] * edge_midpoint[0]
+                                            )
             else:
                 raise RuntimeError('An edge should have either 1 '
                                    'or two adjacent cells.'
@@ -342,8 +350,8 @@ class mesh2d(_base_mesh):
         alpha = sum_cv - sum_cells
         if abs(alpha) > 1.0e-9:
             msg = ('Sum of control volumes sum does not coincide with the '
-                   'sum of the cell volumes (|cv|-|cells| = %g - %g = %g.') \
-                       % (sum_cv, sum_cells, alpha)
+                   'sum of the cell volumes (|cv|-|cells| = %g - %g = %g.'
+                   ) % (sum_cv, sum_cells, alpha)
             raise RuntimeError(msg)
 
         if any(self.control_volumes < 0.0):
@@ -353,7 +361,8 @@ class mesh2d(_base_mesh):
         return
 
     def _compute_barycentric_volumes(self):
-        '''Control volumes based on barycentric splitting.'''
+        '''Control volumes based on barycentric splitting.
+        '''
 
         # The barycentric midpoint "divides the triangle" into three
         # areas of equal volume. Hence, just assign one third of the
@@ -385,7 +394,7 @@ class mesh2d(_base_mesh):
                 neighbor_cell_ids = self.edges['cells'][edge_id]
                 if cell_id == neighbor_cell_ids[0]:
                     edge_nodes = self.node_coords[self.edges['nodes'][edge_id]]
-                    edge = (edge_nodes[1] - edge_node[0])
+                    edge = (edge_nodes[1] - edge_nodes[0])
                     edge_normals[edge_id] = np.array([-edge[1], edge[0]])
                     edge_normals[edge_id] /= \
                         np.linalg.norm(edge_normals[edge_id])
@@ -393,7 +402,7 @@ class mesh2d(_base_mesh):
                     # Make sure the normal points in the outward direction.
                     other_node_id = self.cells['nodes'][cell_id][k]
                     other_node_coords = self.node_coords[other_node_id]
-                    if np.dot(edge_node[0]-other_node_coords,
+                    if np.dot(edge_nodes[0]-other_node_coords,
                               edge_normals[edge_id]) < 0.0:
                         edge_normals[edge_id] *= -1
         return edge_normals
@@ -432,29 +441,37 @@ class mesh2d(_base_mesh):
         for edge_id, edge in enumerate(self.edges):
             # Compute edge length.
             edge_coords = self.node_coords[edge['nodes'][1]] \
-                        - self.node_coords[edge['nodes'][0]]
+                - self.node_coords[edge['nodes'][0]]
 
             # Compute coedge length.
             if len(edge['cells']) == 1:
                 # Boundary edge.
                 edge_midpoint = 0.5 * (self.node_coords[edge['nodes'][0]]
-                                      +self.node_coords[edge['nodes'][1]])
+                                       + self.node_coords[edge['nodes'][1]]
+                                       )
                 coedge = self.cell_circumcenters[edge['cells'][0]] \
-                       - edge_midpoint
-                coedge_midpoint = 0.5 * (self.cell_circumcenters[edge['cells'][0]]
-                                        +edge_midpoint)
+                    - edge_midpoint
+                coedge_midpoint = \
+                    0.5 * (self.cell_circumcenters[edge['cells'][0]]
+                           + edge_midpoint
+                           )
             elif len(edge['cells']) == 2:
                 # Interior edge.
                 coedge = self.cell_circumcenters[edge['cells'][0]] \
-                       - self.cell_circumcenters[edge['cells'][1]]
-                coedge_midpoint = 0.5 * (self.cell_circumcenters[edge['cells'][0]]
-                                        +self.cell_circumcenters[edge['cells'][1]])
+                    - self.cell_circumcenters[edge['cells'][1]]
+                coedge_midpoint = \
+                    0.5 * (self.cell_circumcenters[edge['cells'][0]]
+                           + self.cell_circumcenters[edge['cells'][1]]
+                           )
             else:
-                raise RuntimeError('Edge needs to have either one or two neighbors.')
+                raise RuntimeError('Edge needs to have either '
+                                   'one or two neighbors.'
+                                   )
 
             # Compute the coefficient r for both contributions
-            coeffs = np.sqrt(np.dot(coedge, coedge) / np.dot(edge_coords, edge_coords)) \
-                   / self.control_volumes[edge['nodes']]
+            coeffs = np.sqrt(np.dot(coedge, coedge)
+                             / np.dot(edge_coords, edge_coords)
+                             ) / self.control_volumes[edge['nodes']]
 
             # Compute R*_{IJ} ((11) in [1]).
             r0 = (coedge_midpoint - self.node_coords[edge['nodes'][0]]) \
@@ -496,10 +513,11 @@ class mesh2d(_base_mesh):
         curl = np.zeros((len(self.cells), 3), dtype=vector_field.dtype)
         for edge in self.edges:
             edge_coords = self.node_coords[edge['nodes'][1]] \
-                        - self.node_coords[edge['nodes'][0]]
+                - self.node_coords[edge['nodes'][0]]
             # Calculate A at the edge midpoint.
             A = 0.5 * (vector_field[edge['nodes'][0]]
-                      + vector_field[edge['nodes'][1]])
+                       + vector_field[edge['nodes'][1]]
+                       )
             print(curl[edge['cells'], :])
             print(edge_coords)
             curl[edge['cells'], :] += edge_coords * np.dot(edge_coords, A)
@@ -594,8 +612,10 @@ class mesh2d(_base_mesh):
                 if len(ccs) == 2:
                     p = ccs.T
                 elif len(ccs) == 1:
-                    edge_midpoint = 0.5 * (self.node_coords[self.edges['nodes'][edge_id][0]]
-                                          +self.node_coords[self.edges['nodes'][edge_id][1]])
+                    edge_midpoint = \
+                        0.5 * (self.node_coords[self.edges['nodes'][edge_id][0]]
+                               + self.node_coords[self.edges['nodes'][edge_id][1]]
+                               )
                     p = np.c_[ccs[0], edge_midpoint]
                 else:
                     raise RuntimeError('An edge has to have either 1 or 2 '
@@ -652,9 +672,15 @@ class mesh2d(_base_mesh):
                         q = np.c_[ccs[0], ccs[1], self.node_coords[node_id]]
                     elif len(ccs) == 1:
                         edge_midpoint = 0.5 * (self.node_coords[node_ids[0]]
-                                              +self.node_coords[node_ids[1]])
-                        p = np.c_[ccs[0], edge_midpoint]
-                        q = np.c_[ccs[0], edge_midpoint, self.node_coords[node_id]]
+                                               + self.node_coords[node_ids[1]]
+                                               )
+                        p = np.c_[ccs[0],
+                                  edge_midpoint
+                                  ]
+                        q = np.c_[ccs[0],
+                                  edge_midpoint,
+                                  self.node_coords[node_id]
+                                  ]
                     else:
                         raise RuntimeError('An edge has to have either 1 or 2 '
                                            'adjacent cells.'
