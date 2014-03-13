@@ -13,5 +13,4 @@ install:
   # Using pip makes sure that the package is pip-compatible, too.
   - pip install .
 # command to run tests
-script:
-    - nosetests
+script: nosetests
