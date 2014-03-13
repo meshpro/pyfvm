@@ -2,7 +2,7 @@
 
 __all__ = ['meshTri']
 
-import numpy as np
+import numpy
 import warnings
 from voropy.base import _base_mesh
 
@@ -19,7 +19,9 @@ class meshTri(_base_mesh):
         self.node_coords = nodes
         self.edges = None
         num_cells = len(cells)
-        self.cells = np.empty(num_cells, dtype=np.dtype([('nodes', (int, 3))]))
+        self.cells = numpy.empty(num_cells,
+                                 dtype=numpy.dtype([('nodes', (int, 3))])
+                                 )
         self.cells['nodes'] = cells
         self.cell_volumes = None
         self.cell_circumcenters = None
@@ -30,12 +32,13 @@ class meshTri(_base_mesh):
         '''Computes the area of all triangles in the mesh.
         '''
         num_cells = len(self.cells['nodes'])
-        self.cell_volumes = np.empty(num_cells, dtype=float)
+        self.cell_volumes = numpy.empty(num_cells, dtype=float)
         for cell_id, cell in enumerate(self.cells):
             x0, x1, x2 = self.node_coords[cell['nodes']]
             #edge0 = node0 - node1
             #edge1 = node1 - node2
-            #self.cell_volumes[cell_id] = 0.5 * np.linalg.norm(np.cross(edge0, edge1))
+            #self.cell_volumes[cell_id] = \
+            #    0.5 * numpy.linalg.norm(numpy.cross(edge0, edge1))
             # Append a third component.
             from vtk import vtkTriangle
             self.cell_volumes[cell_id] = \
@@ -47,19 +50,19 @@ class meshTri(_base_mesh):
         '''
         from vtk import vtkTriangle
         num_cells = len(self.cells['nodes'])
-        self.cell_circumcenters = np.empty(num_cells,
-                                           dtype=np.dtype((float, 3))
-                                           )
+        self.cell_circumcenters = numpy.empty(num_cells,
+                                              dtype=numpy.dtype((float, 3))
+                                              )
         for cell_id, cell in enumerate(self.cells):
             x = self.node_coords[cell['nodes']]
             # Project to 2D, compute circumcenter, get its barycentric
             # coordinates, and project those back to 3D.
-            x2d = np.empty(3, dtype=np.dtype((float, 2)))
+            x2d = numpy.empty(3, dtype=numpy.dtype((float, 2)))
             vtkTriangle.ProjectTo2D(x[0], x[1], x[2],
                                     x2d[0], x2d[1], x2d[2])
-            cc2d = np.empty(2, dtype=float)
+            cc2d = numpy.empty(2, dtype=float)
             vtkTriangle.Circumcircle(x2d[0], x2d[1], x2d[2], cc2d)
-            bary = np.empty(3, dtype=float)
+            bary = numpy.empty(3, dtype=float)
             vtkTriangle.BarycentricCoords(cc2d, x2d[0], x2d[1], x2d[2], bary)
             self.cell_circumcenters[cell_id] = \
                 bary[0] * x[0] \
@@ -75,17 +78,17 @@ class meshTri(_base_mesh):
         # Get upper bound for number of edges; trim later.
         max_num_edges = 3 * len(self.cells['nodes'])
 
-        dt = np.dtype([('nodes', (int, 2)), ('cells', np.object)])
-        self.edges = np.empty(max_num_edges, dtype=dt)
+        dt = numpy.dtype([('nodes', (int, 2)), ('cells', numpy.object)])
+        self.edges = numpy.empty(max_num_edges, dtype=dt)
         # To create an array of empty lists, do what's described at
         # http://mail.scipy.org/pipermail/numpy-discussion/2009-November/046566.html
-        filler = np.frompyfunc(lambda x: list(), 1, 1)
+        filler = numpy.frompyfunc(lambda x: list(), 1, 1)
         self.edges['cells'] = filler(self.edges['cells'])
 
         # Extend the self.cells array by the 'edges' 'keyword'.
-        dt = np.dtype([('nodes', (int, 3)), ('edges', (int, 3))])
+        dt = numpy.dtype([('nodes', (int, 3)), ('edges', (int, 3))])
         cells = self.cells['nodes']
-        self.cells = np.empty(len(cells), dtype=dt)
+        self.cells = numpy.empty(len(cells), dtype=dt)
         self.cells['nodes'] = cells
 
         # The (sorted) dictionary edges keeps track of how nodes and edges
@@ -100,13 +103,14 @@ class meshTri(_base_mesh):
             # We're treating simplices so loop over all combinations of
             # local nodes.
             # Make sure cellNodes are sorted.
-            self.cells['nodes'][cell_id] = np.sort(self.cells['nodes'][cell_id])
+            self.cells['nodes'][cell_id] = \
+                numpy.sort(self.cells['nodes'][cell_id])
             for k in xrange(len(cell['nodes'])):
                 # Remove the k-th element. This makes sure that the k-th
                 # edge is opposite of the k-th node. Useful later in
                 # in construction of edge (face) normals.
                 indices = tuple(cell['nodes'][:k]) \
-                        + tuple(cell['nodes'][k+1:])
+                    + tuple(cell['nodes'][k+1:])
                 if indices in registered_edges:
                     edge_gid = registered_edges[indices]
                     self.edges[edge_gid]['cells'].append(cell_id)
@@ -138,7 +142,7 @@ class meshTri(_base_mesh):
         num_nodes = len(self.node_coords)
         num_new_nodes = len(self.edges)
 
-        #new_nodes = np.empty(num_new_nodes, dtype=np.dtype((float, 2)))
+        #new_nodes = numpy.empty(num_new_nodes, dtype=numpy.dtype((float, 2)))
         self.node_coords.resize(num_nodes+num_new_nodes, 2, refcheck=False)
         # Set starting index for new nodes.
         new_node_gid = num_nodes
@@ -148,24 +152,32 @@ class meshTri(_base_mesh):
         num_edges = len(self.edges)
         num_cells = len(self.cells)
         num_new_edges = 2 * num_edges + 3 * num_cells
-        new_edges_nodes = np.empty(num_new_edges, dtype=np.dtype((int, 2)))
+        new_edges_nodes = numpy.empty(num_new_edges,
+                                      dtype=numpy.dtype((int, 2))
+                                      )
         new_edge_gid = 0
 
         # After the refinement step, all previous cell-node associations will
         # be obsolete, so record *all* the new cells.
         num_new_cells = 4 * num_cells
-        new_cells_nodes = np.empty(num_new_cells, dtype=np.dtype((int, 3)))
-        new_cells_edges = np.empty(num_new_cells, dtype=np.dtype((int, 3)))
+        new_cells_nodes = numpy.empty(num_new_cells,
+                                      dtype=numpy.dtype((int, 3))
+                                      )
+        new_cells_edges = numpy.empty(num_new_cells,
+                                      dtype=numpy.dtype((int, 3))
+                                      )
         new_cell_gid = 0
 
-        is_edge_divided = np.zeros(num_edges, dtype=bool)
-        edge_midpoint_gids = np.empty(num_edges, dtype=int)
-        edge_newedges_gids = np.empty(num_edges, dtype=np.dtype((int, 2)))
+        is_edge_divided = numpy.zeros(num_edges, dtype=bool)
+        edge_midpoint_gids = numpy.empty(num_edges, dtype=int)
+        edge_newedges_gids = numpy.empty(num_edges,
+                                         dtype=numpy.dtype((int, 2))
+                                         )
         # Loop over all elements.
         for cell_id, cell in enumerate(self.cells):
             # Divide edges.
-            local_edge_midpoint_gids = np.empty(3, dtype=int)
-            local_edge_newedges = np.empty(3, dtype=np.dtype((int, 2)))
+            local_edge_midpoint_gids = numpy.empty(3, dtype=int)
+            local_edge_newedges = numpy.empty(3, dtype=numpy.dtype((int, 2)))
             local_neighbor_midpoints = [[], [], []]
             local_neighbor_newedges = [[], [], []]
             for k, edge_gid in enumerate(cell['edges']):
@@ -179,8 +191,9 @@ class meshTri(_base_mesh):
                 else:
                     # Create new node at the edge midpoint.
                     self.node_coords[new_node_gid] = \
-                        0.5 * (self.node_coords[edgenodes_gids[0]] \
-                              +self.node_coords[edgenodes_gids[1]])
+                        0.5 * (self.node_coords[edgenodes_gids[0]]
+                               + self.node_coords[edgenodes_gids[1]]
+                               )
                     local_edge_midpoint_gids[k] = new_node_gid
                     new_node_gid += 1
                     edge_midpoint_gids[edge_gid] = \
@@ -188,14 +201,14 @@ class meshTri(_base_mesh):
 
                     # Divide edge into two.
                     new_edges_nodes[new_edge_gid] = \
-                        np.array([edgenodes_gids[0],
-                                  local_edge_midpoint_gids[k]
-                                  ])
+                        numpy.array([edgenodes_gids[0],
+                                     local_edge_midpoint_gids[k]
+                                     ])
                     new_edge_gid += 1
                     new_edges_nodes[new_edge_gid] = \
-                        np.array([local_edge_midpoint_gids[k],
-                                  edgenodes_gids[1]
-                                  ])
+                        numpy.array([local_edge_midpoint_gids[k],
+                                     edgenodes_gids[1]
+                                     ])
                     new_edge_gid += 1
 
                     local_edge_newedges[k] = [new_edge_gid-2, new_edge_gid-1]
@@ -206,8 +219,8 @@ class meshTri(_base_mesh):
                 # Keep a record of the new neighbors of the old nodes.
                 # Get local node IDs.
                 edgenodes_lids = [
-                    np.nonzero(cell['nodes'] == edgenodes_gids[0])[0][0],
-                    np.nonzero(cell['nodes'] == edgenodes_gids[1])[0][0]
+                    numpy.nonzero(cell['nodes'] == edgenodes_gids[0])[0][0],
+                    numpy.nonzero(cell['nodes'] == edgenodes_gids[1])[0][0]
                     ]
                 local_neighbor_midpoints[edgenodes_lids[0]] \
                     .append(local_edge_midpoint_gids[k])
@@ -218,7 +231,7 @@ class meshTri(_base_mesh):
                 local_neighbor_newedges[edgenodes_lids[1]] \
                     .append(local_edge_newedges[k][1])
 
-            new_edge_opposite_of_local_node = np.empty(3, dtype=int)
+            new_edge_opposite_of_local_node = numpy.empty(3, dtype=int)
             # New edges: Connect the three midpoints.
             for k in xrange(3):
                 new_edges_nodes[new_edge_gid] = local_neighbor_midpoints[k]
@@ -233,25 +246,29 @@ class meshTri(_base_mesh):
             # The three corner elements:
             for k in xrange(3):
                 new_cells_nodes[new_cell_gid] = \
-                    np.array([self.cells['nodes'][cell_id][k],
-                              local_neighbor_midpoints[k][0],
-                              local_neighbor_midpoints[k][1]])
+                    numpy.array([self.cells['nodes'][cell_id][k],
+                                 local_neighbor_midpoints[k][0],
+                                 local_neighbor_midpoints[k][1]
+                                 ])
                 new_cells_edges[new_cell_gid] = \
-                    np.array([new_edge_opposite_of_local_node[k],
-                              local_neighbor_newedges[k][0],
-                              local_neighbor_newedges[k][1]])
+                    numpy.array([new_edge_opposite_of_local_node[k],
+                                 local_neighbor_newedges[k][0],
+                                 local_neighbor_newedges[k][1]
+                                 ])
                 new_cell_gid += 1
 
         # Override edges.
         num_edges = len(new_edges_nodes)
-        self.edges = np.empty(num_edges, dtype=np.dtype([('nodes', (int, 2))]))
+        self.edges = numpy.empty(num_edges,
+                                 dtype=numpy.dtype([('nodes', (int, 2))])
+                                 )
         self.edges['nodes'] = new_edges_nodes
 
         # Override cells.
         num_cells = len(new_cells_nodes)
-        self.cells = np.empty(
+        self.cells = numpy.empty(
             num_cells,
-            dtype=np.dtype([('nodes', (int, 3)), ('edges', (int, 3))])
+            dtype=numpy.dtype([('nodes', (int, 3)), ('edges', (int, 3))])
             )
         self.cells['nodes'] = new_cells_nodes
         self.cells['edges'] = new_cells_edges
@@ -273,7 +290,7 @@ class meshTri(_base_mesh):
     def _compute_voronoi_volumes(self):
         from vtk import vtkTriangle
         num_nodes = len(self.node_coords)
-        self.control_volumes = np.zeros(num_nodes, dtype=float)
+        self.control_volumes = numpy.zeros(num_nodes, dtype=float)
 
         # compute cell circumcenters
         #if self.cell_circumcenters is None:
@@ -294,11 +311,11 @@ class meshTri(_base_mesh):
             x = self.node_coords[self.cells['nodes'][cell_id]]
             # Project to 2D, compute circumcenter, get its barycentric
             # coordinates, and project those back to 3D.
-            x2d = np.empty(3, dtype=np.dtype((float, 2)))
+            x2d = numpy.empty(3, dtype=numpy.dtype((float, 2)))
             vtkTriangle.ProjectTo2D(x[0], x[1], x[2],
                                     x2d[0], x2d[1], x2d[2])
             # Compute circumcenter.
-            cc = np.empty(2)
+            cc = numpy.empty(2)
             vtkTriangle.Circumcircle(x2d[0], x2d[1], x2d[2], cc)
 
             for edge_id in self.cells['edges'][cell_id]:
@@ -307,36 +324,38 @@ class meshTri(_base_mesh):
                 node_ids = self.edges['nodes'][edge_id]
 
                 # Get the local IDs.
-                edge_lid = np.nonzero(self.cells['edges'][cell_id] == edge_id)[0][0]
-                node_lids = np.array([
-                  np.nonzero(self.cells['nodes'][cell_id] == node_ids[0])[0][0],
-                  np.nonzero(self.cells['nodes'][cell_id] == node_ids[1])[0][0]
+                edge_lid = \
+                    numpy.nonzero(self.cells['edges'][cell_id] == edge_id)[0][0]
+                node_lids = numpy.array([
+                  numpy.nonzero(self.cells['nodes'][cell_id] == node_ids[0])[0][0],
+                  numpy.nonzero(self.cells['nodes'][cell_id] == node_ids[1])[0][0]
                   ])
 
-                # This makes use of the fact that cellsEdges and cellsNodes
-                # are coordinated such that in cell #i, the edge cellsEdges[i][k]
+                # This makes use of the fact that cellsEdges and cellsNodes are
+                # coordinated such that in cell #i, the edge cellsEdges[i][k]
                 # opposes cellsNodes[i][k].
                 other0 = x2d[edge_lid] - x2d[node_lids[0]]
 
                 # Compute edge midpoint.
                 edge_midpoint = 0.5 * (x2d[node_lids[0]] + x2d[node_lids[1]]) \
-                              - x2d[node_lids[0]]
+                    - x2d[node_lids[0]]
 
                 cc_tmp = cc - x2d[node_lids[0]]
 
-                # Compute the area of the triangle {node[0], cc, edge_midpoint}.
-                # Gauge the sign with the sign of the area {node[0], other0, edge_midpoint}.
+                # Compute the area of the triangle {node[0], cc,
+                # edge_midpoint}.  Gauge the sign with the sign of the area
+                # {node[0], other0, edge_midpoint}.
 
-                # Computing the triangle volume like this is called the shoelace
-                # formula and can be interpreted as the z-component of the
-                # cross-product of other0 and edge_midpoint.
+                # Computing the triangle volume like this is called the
+                # shoelace formula and can be interpreted as the z-component of
+                # the cross-product of other0 and edge_midpoint.
                 gauge = other0[0] * edge_midpoint[1] \
-                      - other0[1] * edge_midpoint[0]
+                    - other0[1] * edge_midpoint[0]
 
-                self.control_volumes[node_ids] += np.sign(gauge) \
-                                                * 0.5 * (cc_tmp[0] * edge_midpoint[1]
-                                                        -cc_tmp[1] * edge_midpoint[0])
-
+                self.control_volumes[node_ids] += \
+                    numpy.sign(gauge) * 0.5 * (cc_tmp[0] * edge_midpoint[1]
+                                               - cc_tmp[1] * edge_midpoint[0]
+                                               )
         # Sanity checks.
         if self.cell_volumes is None:
             self.create_cell_volumes()
@@ -345,8 +364,8 @@ class meshTri(_base_mesh):
         alpha = sum_cv - sum_cells
         if abs(alpha) > 1.0e-9:
             msg = ('Sum of control volumes sum does not coincide with the sum '
-                   'of the cell volumes (|cv|-|cells| = %g - %g = %g.') \
-                       % (sum_cv, sum_cells, alpha)
+                   'of the cell volumes (|cv|-|cells| = %g - %g = %g.'
+                   ) % (sum_cv, sum_cells, alpha)
             raise RuntimeError(msg)
         if any(self.control_volumes < 0.0):
             msg = 'Not all control volumes are positive. This is due do ' \
@@ -356,7 +375,7 @@ class meshTri(_base_mesh):
 
     def _compute_flat_voronoi_volumes(self):
         num_nodes = len(self.node_coords)
-        self.control_volumes = np.zeros(num_nodes, dtype=float)
+        self.control_volumes = numpy.zeros(num_nodes, dtype=float)
 
         # compute cell circumcenters
         if self.cell_circumcenters is None:
@@ -383,35 +402,40 @@ class meshTri(_base_mesh):
             cell0 = self.edges['cells'][edge_id][0]
             # This nonzero construct is an ugly replacement for the nonexisting
             # index() method. (Compare with Python lists.)
-            edge_lid = np.nonzero(self.cells['edges'][cell0] == edge_id)[0][0]
+            edge_lid = \
+                numpy.nonzero(self.cells['edges'][cell0] == edge_id)[0][0]
             # This makes use of the fact that cellsEdges and cellsNodes
             # are coordinated such that in cell #i, the edge cellsEdges[i][k]
             # opposes cellsNodes[i][k].
             other0 = self.node_coords[self.cells['nodes'][cell0][edge_lid]] \
-                   - node
+                - node
             node_ids = self.edges['nodes'][edge_id]
             node_coords = self.node_coords[node_ids]
             edge_midpoint = 0.5 * (node_coords[0] + node_coords[1]) \
-                          - node
+                - node
             # Computing the triangle volume like this is called the shoelace
             # formula and can be interpreted as the z-component of the
             # cross-product of other0 and edge_midpoint.
             gauge = other0[0] * edge_midpoint[1] \
-                  - other0[1] * edge_midpoint[0]
+                - other0[1] * edge_midpoint[0]
 
             # Get the circumcenters of the adjacent cells.
             cc = self.cell_circumcenters[self.edges['cells'][edge_id]] \
-               - node
-            if len(cc) == 2: # interior edge
-                self.control_volumes[node_ids] += np.sign(gauge) \
-                                                * 0.5 * (cc[0][0] * cc[1][1] \
-                                                        -cc[0][1] * cc[1][0])
-            elif len(cc) == 1: # boundary edge
-                self.control_volumes[node_ids] += np.sign(gauge) \
-                                                * 0.5 * (cc[0][0] * edge_midpoint[1]
-                                                        -cc[0][1] * edge_midpoint[0])
+                - node
+            if len(cc) == 2:  # interior edge
+                self.control_volumes[node_ids] += \
+                    numpy.sign(gauge) * 0.5 * (cc[0][0] * cc[1][1]
+                                               - cc[0][1] * cc[1][0]
+                                               )
+            elif len(cc) == 1:  # boundary edge
+                self.control_volumes[node_ids] += \
+                    numpy.sign(gauge) * 0.5 * (cc[0][0] * edge_midpoint[1]
+                                               - cc[0][1] * edge_midpoint[0]
+                                               )
             else:
-                raise RuntimeError('An edge should have either 1 or two adjacent cells.')
+                raise RuntimeError('An edge should have either 1'
+                                   ' or two adjacent cells.'
+                                   )
 
         # Don't check equality with sum of triangle areas since
         # it will generally not be equal.
@@ -429,7 +453,7 @@ class meshTri(_base_mesh):
         if self.cell_volumes is None:
             self.create_cell_volumes()
         num_nodes = len(self.node_coords)
-        self.control_volumes = np.zeros(num_nodes, dtype=float)
+        self.control_volumes = numpy.zeros(num_nodes, dtype=float)
         for k, cell in enumerate(self.cells):
             self.control_volumes[cell['nodes']] += self.cell_volumes[k] / 3.0
         return
@@ -440,10 +464,10 @@ class meshTri(_base_mesh):
         the domain (for boundary edges).
 
         :returns edge_normals: List of all edge normals.
-        :type edge_normals: np.ndarray(num_edges, np.dtype((float, 2)))
+        :type edge_normals: numpy.ndarray(num_edges, numpy.dtype((float, 2)))
         '''
         num_edges = len(self.edges['nodes'])
-        edge_normals = np.empty(num_edges, dtype=np.dtype((float, 2)))
+        edge_normals = numpy.empty(num_edges, dtype=numpy.dtype((float, 2)))
         for cell_id, cell in enumerate(self.cells):
             # Loop over the local faces.
             for k in xrange(3):
@@ -453,16 +477,17 @@ class meshTri(_base_mesh):
                 neighbor_cell_ids = self.edges['cells'][edge_id]
                 if cell_id == neighbor_cell_ids[0]:
                     edge_nodes = self.node_coords[self.edges['nodes'][edge_id]]
-                    edge = (edge_nodes[1] - edge_node[0])
-                    edge_normals[edge_id] = np.array([-edge[1], edge[0]])
+                    edge = (edge_nodes[1] - edge_nodes[0])
+                    edge_normals[edge_id] = numpy.array([-edge[1], edge[0]])
                     edge_normals[edge_id] /= \
-                        np.linalg.norm(edge_normals[edge_id])
+                        numpy.linalg.norm(edge_normals[edge_id])
 
                     # Make sure the normal points in the outward direction.
                     other_node_id = self.cells['nodes'][cell_id][k]
                     other_node_coords = self.node_coords[other_node_id]
-                    if np.dot(edge_node[0]-other_node_coords,
-                              edge_normals[edge_id]) < 0.0:
+                    if numpy.dot(edge_nodes[0]-other_node_coords,
+                                 edge_normals[edge_id]
+                                 ) < 0.0:
                         edge_normals[edge_id] *= -1
         return edge_normals
 
@@ -473,7 +498,7 @@ class meshTri(_base_mesh):
         '''
         num_nodes = len(self.node_coords)
         assert len(u) == num_nodes
-        gradient = np.zeros((num_nodes, 2), dtype=u.dtype)
+        gradient = numpy.zeros((num_nodes, 2), dtype=u.dtype)
         # Compute everything we need.
         if self.edges is None:
             self.create_adjacent_entities()
@@ -488,40 +513,50 @@ class meshTri(_base_mesh):
         for edge_id, edge in enumerate(self.edges):
             if len(edge['cells']) == 1:
                 if edge['nodes'][0] not in boundary_matrices:
-                    boundary_matrices[edge['nodes'][0]] = np.zeros((2, 2))
+                    boundary_matrices[edge['nodes'][0]] = numpy.zeros((2, 2))
                 if edge['nodes'][1] not in boundary_matrices:
-                    boundary_matrices[edge['nodes'][1]] = np.zeros((2, 2))
+                    boundary_matrices[edge['nodes'][1]] = numpy.zeros((2, 2))
 
         for edge_id, edge in enumerate(self.edges):
             # Compute edge length.
             edge_coords = self.node_coords[edge['nodes'][1]] \
-                        - self.node_coords[edge['nodes'][0]]
+                - self.node_coords[edge['nodes'][0]]
 
             # Compute coedge length.
             if len(edge['cells']) == 1:
                 # Boundary edge.
                 edge_midpoint = 0.5 * (self.node_coords[edge['nodes'][0]]
-                                      +self.node_coords[edge['nodes'][1]])
+                                       + self.node_coords[edge['nodes'][1]]
+                                       )
                 coedge = self.cell_circumcenters[edge['cells'][0]] \
-                       - edge_midpoint
-                coedge_midpoint = 0.5 * (self.cell_circumcenters[edge['cells'][0]]
-                                        +edge_midpoint)
+                    - edge_midpoint
+                coedge_midpoint = \
+                    0.5 * (self.cell_circumcenters[edge['cells'][0]]
+                           + edge_midpoint
+                           )
             elif len(edge['cells']) == 2:
                 # Interior edge.
                 coedge = self.cell_circumcenters[edge['cells'][0]] \
-                       - self.cell_circumcenters[edge['cells'][1]]
-                coedge_midpoint = 0.5 * (self.cell_circumcenters[edge['cells'][0]]
-                                        +self.cell_circumcenters[edge['cells'][1]])
+                    - self.cell_circumcenters[edge['cells'][1]]
+                coedge_midpoint = \
+                    0.5 * (self.cell_circumcenters[edge['cells'][0]]
+                           + self.cell_circumcenters[edge['cells'][1]]
+                           )
             else:
-                raise RuntimeError('Edge needs to have either one or two neighbors.')
+                raise RuntimeError('Edge needs to have either one '
+                                   'or two neighbors.'
+                                   )
 
             # Compute the coefficient r for both contributions
-            coeffs = np.sqrt(np.dot(coedge, coedge) / np.dot(edge_coords, edge_coords)) \
-                   / self.control_volumes[edge['nodes']]
+            coeffs = numpy.sqrt(numpy.dot(coedge, coedge)
+                                / numpy.dot(edge_coords, edge_coords)
+                                ) / self.control_volumes[edge['nodes']]
 
             # Compute R*_{IJ} ((11) in [1]).
-            r0 = (coedge_midpoint - self.node_coords[edge['nodes'][0]])* coeffs[0]
-            r1 = (coedge_midpoint - self.node_coords[edge['nodes'][1]])* coeffs[1]
+            r0 = (coedge_midpoint - self.node_coords[edge['nodes'][0]]) \
+                * coeffs[0]
+            r1 = (coedge_midpoint - self.node_coords[edge['nodes'][1]]) \
+                * coeffs[1]
 
             diff = u[edge['nodes'][1]] - u[edge['nodes'][0]]
 
@@ -531,13 +566,13 @@ class meshTri(_base_mesh):
             # Store the boundary correction matrices.
             if edge['nodes'][0] in boundary_matrices:
                 boundary_matrices[edge['nodes'][0]] += \
-                    np.outer(r0, edge_coords)
+                    numpy.outer(r0, edge_coords)
             if edge['nodes'][1] in boundary_matrices:
                 boundary_matrices[edge['nodes'][1]] += \
-                    np.outer(r1, -edge_coords)
+                    numpy.outer(r1, -edge_coords)
         # Apply corrections to the gradients on the boundary.
         for k, value in boundary_matrices.items():
-            gradient[k] = np.linalg.solve(value, gradient[k])
+            gradient[k] = numpy.linalg.solve(value, gradient[k])
         return gradient
 
     def compute_curl(self, vector_field):
@@ -553,16 +588,17 @@ class meshTri(_base_mesh):
         '''
         if self.edges is None:
             self.create_adjacent_entities()
-        curl = np.zeros((len(self.cells),3), dtype=vector_field.dtype)
+        curl = numpy.zeros((len(self.cells), 3), dtype=vector_field.dtype)
         for edge in self.edges:
             edge_coords = self.node_coords[edge['nodes'][1]] \
-                        - self.node_coords[edge['nodes'][0]]
+                - self.node_coords[edge['nodes'][0]]
             # Calculate A at the edge midpoint.
             A = 0.5 * (vector_field[edge['nodes'][0]]
-                      + vector_field[edge['nodes'][1]])
+                       + vector_field[edge['nodes'][1]]
+                       )
             print(curl[edge['cells'], :])
             print(edge_coords)
-            curl[edge['cells'], :] += edge_coords * np.dot(edge_coords, A)
+            curl[edge['cells'], :] += edge_coords * numpy.dot(edge_coords, A)
         return curl
 
     def check_delaunay(self):
@@ -599,7 +635,7 @@ class meshTri(_base_mesh):
             cell0 = self.edges['cells'][edge_id][0]
             # This nonzero construct is an ugly replacement for the nonexisting
             # index() method. (Compare with Python lists.)
-            edge_lid = np.nonzero(self.cells['edges'][cell0] == edge_id)[0][0]
+            edge_lid = numpy.nonzero(self.cells['edges'][cell0] == edge_id)[0][0]
             # This makes use of the fact that cellsEdges and cellsNodes
             # are coordinated such that in cell #i, the edge cellsEdges[i][k]
             # opposes cellsNodes[i][k].
@@ -614,7 +650,7 @@ class meshTri(_base_mesh):
             cc = self.cell_circumcenters[self.edges['cells'][edge_id]]
             # Check if cc[1]-cc[0] and the gauge point
             # in the "same" direction.
-            if np.dot(edge_midpoint-other0, cc[1]-cc[0]) < 0.0:
+            if numpy.dot(edge_midpoint-other0, cc[1]-cc[0]) < 0.0:
                 num_delaunay_violations += 1
         return num_delaunay_violations, num_interior_edges
 
@@ -650,11 +686,15 @@ class meshTri(_base_mesh):
                 if len(ccs) == 2:
                     p = ccs.T
                 elif len(ccs) == 1:
-                    edge_midpoint = 0.5 * (self.node_coords[self.edges['nodes'][edge_id][0]]
-                                          +self.node_coords[self.edges['nodes'][edge_id][1]])
-                    p = np.c_[ccs[0], edge_midpoint]
+                    edge_midpoint = \
+                        0.5 * (self.node_coords[self.edges['nodes'][edge_id][0]]
+                               + self.node_coords[self.edges['nodes'][edge_id][1]]
+                               )
+                    p = numpy.c_[ccs[0], edge_midpoint]
                 else:
-                    raise RuntimeError('An edge has to have either 1 or 2 adjacent cells.')
+                    raise RuntimeError('An edge has to have either 1 '
+                                       'or 2 adjacent cells.'
+                                       )
                 ax.plot(p[0], p[1], color=covolume_col)
         if save_as:
             import matplotlib2tikz
@@ -703,12 +743,12 @@ class meshTri(_base_mesh):
                     ccs = self.cell_circumcenters[self.edges['cells'][edge_id]]
                     if len(ccs) == 2:
                         p = ccs.T
-                        q = np.c_[ccs[0], ccs[1], self.node_coords[node_id]]
+                        q = numpy.c_[ccs[0], ccs[1], self.node_coords[node_id]]
                     elif len(ccs) == 1:
                         edge_midpoint = 0.5 * (self.node_coords[node_ids[0]]
                                               +self.node_coords[node_ids[1]])
-                        p = np.c_[ccs[0], edge_midpoint]
-                        q = np.c_[ccs[0],
+                        p = numpy.c_[ccs[0], edge_midpoint]
+                        q = numpy.c_[ccs[0],
                                   edge_midpoint,
                                   self.node_coords[node_id]
                                   ]

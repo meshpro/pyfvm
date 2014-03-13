@@ -143,12 +143,12 @@ class _base_mesh(object):
 
 
 def _create_vtkarray(X, name):
-    import numpy as np
+    import numpy
     from vtk import vtkBitArray, vtkIntArray, vtkDoubleArray, vtkCharArray
 
     # If something isn't a Numpy array already, try to make it one.
-    if not isinstance(X, np.ndarray) and not isinstance(X, str):
-        X = np.array(X)
+    if not isinstance(X, numpy.ndarray) and not isinstance(X, str):
+        X = numpy.array(X)
 
     # This could be a lot more fine-grained:
     # vtkLongLongArray, vtkFloatArray,...
@@ -162,7 +162,7 @@ def _create_vtkarray(X, name):
         array = vtkDoubleArray()
     elif X.dtype == complex:
         # Convert complex arrays to double.
-        Y = np.empty((len(X), 2), dtype=float)
+        Y = numpy.empty((len(X), 2), dtype=float)
         if len(X.shape) == 1:
             Y[:, 0] = X.real
             Y[:, 1] = X.imag

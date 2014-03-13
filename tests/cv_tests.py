@@ -1,5 +1,5 @@
 import os
-import numpy as np
+import numpy
 import unittest
 
 import voropy
@@ -22,26 +22,26 @@ class TestControlVolumes(unittest.TestCase):
         self.assertAlmostEqual(actual_values[0], vol2, delta=tol)
         # Check the volume by summing over the absolute value of the
         # control volumes.
-        vol = np.linalg.norm(mesh.control_volumes, ord=1)
+        vol = numpy.linalg.norm(mesh.control_volumes, ord=1)
         self.assertAlmostEqual(actual_values[0], vol, delta=tol)
         # Check control volume norms.
-        norm = np.linalg.norm(mesh.control_volumes, ord=2)
+        norm = numpy.linalg.norm(mesh.control_volumes, ord=2)
         self.assertAlmostEqual(actual_values[1], norm, delta=tol)
-        norm = np.linalg.norm(mesh.control_volumes, ord=np.Inf)
+        norm = numpy.linalg.norm(mesh.control_volumes, ord=numpy.Inf)
         self.assertAlmostEqual(actual_values[2], norm, delta=tol)
         return
 
     def test_degenerate_small(self):
-        points = np.array([[0, 0], [1, 0], [0.5, 0.1], [0.5, -0.1]])
+        points = numpy.array([[0, 0], [1, 0], [0.5, 0.1], [0.5, -0.1]])
         # Manually compute the volumes.
         total_vol = 2 * 0.5 * 0.1
         cv0 = 0.25 * 0.1/0.5 * (0.5**2 + 0.1**2)
         cv = [cv0, cv0, 0.5*(total_vol-2*cv0), 0.5 * (total_vol-2*cv0)]
-        #cells = np.array([[0, 1, 2], [0, 1, 3]])
+        #cells = numpy.array([[0, 1, 2], [0, 1, 3]])
         mesh = voropy.mesh2d.mesh2d(points, cells=None)
-        actual_values = [np.linalg.norm(cv, ord=1),
-                         np.linalg.norm(cv, ord=2),
-                         np.linalg.norm(cv, ord=np.Inf)
+        actual_values = [numpy.linalg.norm(cv, ord=1),
+                         numpy.linalg.norm(cv, ord=2),
+                         numpy.linalg.norm(cv, ord=numpy.Inf)
                          ]
         self._run_test(mesh, actual_values)
         return
@@ -57,16 +57,17 @@ class TestControlVolumes(unittest.TestCase):
         return
 
     def test_arrow3d(self):
-        nodes = np.array([[0.0,  0.0, 0.0],
-                          [2.0, -1.0, 0.0],
-                          [2.0,  0.0, 0.0],
-                          [2.0,  1.0, 0.0],
-                          [0.5,  0.0, -0.9],
-                          [0.5,  0.0, 0.9]])
-        cellsNodes = np.array([[1, 2, 4, 5],
-                               [2, 3, 4, 5],
-                               [0, 1, 4, 5],
-                               [0, 3, 4, 5]])
+        nodes = numpy.array([[0.0,  0.0, 0.0],
+                             [2.0, -1.0, 0.0],
+                             [2.0,  0.0, 0.0],
+                             [2.0,  1.0, 0.0],
+                             [0.5,  0.0, -0.9],
+                             [0.5,  0.0, 0.9]])
+        cellsNodes = numpy.array([[1, 2, 4, 5],
+                                  [2, 3, 4, 5],
+                                  [0, 1, 4, 5],
+                                  [0, 3, 4, 5]
+                                  ])
         mesh = voropy.meshTetra.meshTetra(nodes, cellsNodes)
         # pull this to see what a negative covolume looks like
         #if mesh.edgesNodes is None:

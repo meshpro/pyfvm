@@ -2,13 +2,13 @@
 '''Module for reading unstructured grids (and related data) from various
 file formats.
 
-.. moduleauthor:: Nico Schloemer <nico.schloemer@gmail.com>
+.. moduleauthor:: Nico Schlömer <nico.schloemer@gmail.com>
 
 '''
 __all__ = ['read']
 
 import os
-import numpy as np
+import numpy
 
 
 def read(filenames, timestep=None):
@@ -180,7 +180,9 @@ def _read_exodusii_mesh(reader, timestep=None):
         if array_name[-1] == '_':
             array.SetName(array_name[0:-1])
 
-    #time_values = reader.GetOutputInformation(0).Get(vtkStreamingDemandDrivenPipeline.TIME_STEPS())
+    #time_values = reader.GetOutputInformation(0).Get(
+    #    vtkStreamingDemandDrivenPipeline.TIME_STEPS()
+    #    )
 
     return vtk_mesh[0]  # , time_values
 
@@ -188,9 +190,9 @@ def _read_exodusii_mesh(reader, timestep=None):
 def _read_points(vtk_mesh):
     num_points = vtk_mesh.GetNumberOfPoints()
     # construct the points list
-    points = np.empty(num_points, np.dtype((float, 3)))
+    points = numpy.empty(num_points, numpy.dtype((float, 3)))
     for k in range(num_points):
-        points[k] = np.array(vtk_mesh.GetPoint(k))
+        points[k] = numpy.array(vtk_mesh.GetPoint(k))
     return points
 
 
@@ -199,9 +201,9 @@ def _read_cells_nodes(vtk_mesh):
     num_cells = vtk_mesh.GetNumberOfCells()
     # Assume that all cells have the same number of local nodes.
     max_num_local_nodes = vtk_mesh.GetCell(0).GetNumberOfPoints()
-    cells_nodes = np.empty(num_cells,
-                           dtype=np.dtype((int, max_num_local_nodes))
-                           )
+    cells_nodes = numpy.empty(num_cells,
+                              dtype=numpy.dtype((int, max_num_local_nodes))
+                              )
 
     for k in range(num_cells):
         cell = vtk_mesh.GetCell(k)
@@ -229,7 +231,7 @@ def _read_point_data(vtk_data):
         array_name = array.GetName()
         num_entries = array.GetNumberOfTuples()
         num_components = array.GetNumberOfComponents()
-        out[array_name] = np.empty((num_entries, num_components))
+        out[array_name] = numpy.empty((num_entries, num_components))
         for k in range(num_entries):
             for i in range(num_components):
                 out[array_name][k][i] = array.GetComponent(k, i)
@@ -251,16 +253,16 @@ def _read_field_data(vtk_data):
         # Data type as specified in vtkSetGet.h.
         data_type = array.GetDataType()
         if data_type == 1:
-            dtype = np.bool
+            dtype = numpy.bool
         elif data_type in [2, 3]:
-            dtype = np.str
+            dtype = numpy.str
         elif data_type in [4, 5, 6, 7, 8, 9]:
-            dtype = np.int
+            dtype = numpy.int
         elif data_type in [10, 11]:
-            dtype = np.float
+            dtype = numpy.float
         else:
             raise TypeError('Unknown VTK data type %d.' % data_type)
-        values = np.empty(num_values, dtype=dtype)
+        values = numpy.empty(num_values, dtype=dtype)
         for i in range(num_values):
             values[i] = array.GetValue(i)
         field_data[name] = values
