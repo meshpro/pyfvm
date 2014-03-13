@@ -3,7 +3,7 @@
 __all__ = ['meshTetra']
 
 import numpy
-from voropy.base import _base_mesh
+from base import _base_mesh
 
 
 class meshTetra(_base_mesh):

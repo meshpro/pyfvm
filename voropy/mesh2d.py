@@ -4,7 +4,7 @@ __all__ = ['mesh2d']
 
 import numpy as np
 import warnings
-from voropy.base import _base_mesh
+from base import _base_mesh
 
 
 class mesh2d(_base_mesh):
