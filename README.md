@@ -13,3 +13,6 @@ For example, this package is for you if you want to:
 
 Some of the methods in this packages are merely convenience wrappers around the VTK Python interface which needs to be installed in your system. Further dependencies include Numpy and SciPy.
 
+#License
+
+VoroPy is released under the 3-clause BSD license.
