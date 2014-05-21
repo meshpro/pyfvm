@@ -320,14 +320,13 @@ class meshTetra(_base_mesh):
 
             # 0.5 * alpha / edge_length = covolume.
             # This is chosen to avoid unnecessary calculation (such as
-            # projecting onto the normalized edge and later multiplying
-            # the aggregate by the edge length.
+            # projecting onto the normalized edge and later multiplying the
+            # aggregate by the edge length).
             alpha = 0.0
             for face_id in self.edges['faces'][edge_id]:
                 # Make sure that the edge orientation is such that the covolume
-                # contribution is positive if and only if the the vector
-                # p[0]->p[1] is oriented like the face normal
-                # cell[0]->cell[1].
+                # contribution is positive if and only if the vector p[0]->p[1]
+                # is oriented like the face normal cell[0]->cell[1].
                 # We need to make sure to gauge the edge orientation using
                 # the face normal and one point *in* the face, e.g., the one
                 # corner point that is not part of the edge. This makes sure
@@ -395,11 +394,11 @@ class meshTetra(_base_mesh):
                                        )
 
             # We add the pyramid volume
-            #   covolume * 0.5*edgelength / 3,
+            #   p_vol = covolume * 0.5*edgelength / 3,
             # which, given
             #   covolume = 0.5 * alpha / edge_length
             # is just
-            #   0.25 * alpha / 3.
+            #   p_vol = 0.25 * alpha / 3.
             self.control_volumes[edge_node_ids] += alpha / 12.0
 
         # Sanity checks.
