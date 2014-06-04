@@ -35,7 +35,7 @@ __all__ = ['meshTri']
 
 import numpy
 import warnings
-from base import _base_mesh
+from voropy.base import _base_mesh
 
 
 class meshTri(_base_mesh):
