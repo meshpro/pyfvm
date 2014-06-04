@@ -37,5 +37,5 @@ from . import meshTetra
 from . import reader
 
 __all__ = ['mesh2d', 'meshTri', 'meshTetra', 'reader']
-__version__ = '0.1.1'
+__version__ = '0.1.2'
 
