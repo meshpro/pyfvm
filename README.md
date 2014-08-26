@@ -1,6 +1,6 @@
 #VoroPy
 
-[![Build Status](https://travis-ci.org/nschloe/VoroPy.png?branch=master)](https://travis-ci.org/nschloe/VoroPy)
+[![Build Status](https://travis-ci.org/nschloe/voropy.svg?branch=master)](https://travis-ci.org/nschloe/voropy)
 [![Coverage
 Status](https://coveralls.io/repos/nschloe/voropy/badge.png?branch=master)](https://coveralls.io/r/nschloe/voropy?branch=master)
 
