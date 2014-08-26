@@ -1,4 +1,8 @@
-#VoroPy [![Build Status](https://travis-ci.org/nschloe/VoroPy.png?branch=master)](https://travis-ci.org/nschloe/VoroPy)
+#VoroPy
+
+[![Build Status](https://travis-ci.org/nschloe/VoroPy.png?branch=master)](https://travis-ci.org/nschloe/VoroPy)
+[![Coverage
+Status](https://coveralls.io/repos/nschloe/voropy/badge.png?branch=master)](https://coveralls.io/r/nschloe/voropy?branch=master)
 
 A package for handling simplex-meshes in two and three dimensions with support for Voronoi regions.
 
