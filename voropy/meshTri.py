@@ -47,7 +47,6 @@ class meshTri(_base_mesh):
         '''Initialization.
         '''
         super(meshTri, self).__init__(nodes, cells)
-        self.node_coords = nodes
         self.edges = None
         num_cells = len(cells)
         self.cells = numpy.empty(num_cells,

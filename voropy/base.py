@@ -40,6 +40,7 @@ class _base_mesh(object):
                  nodes,
                  cells_nodes
                  ):
+        self.node_coords = nodes
         return
 
     def write(self,

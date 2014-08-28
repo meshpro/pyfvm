@@ -47,7 +47,6 @@ class mesh2d(_base_mesh):
         '''Initialization.
         '''
         super(mesh2d, self).__init__(nodes, cells)
-        self.node_coords = nodes
         self.edges = None
 
         # Wait for Numpy 1.6.1 for this

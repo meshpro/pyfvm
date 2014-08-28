@@ -46,7 +46,6 @@ class meshTetra(_base_mesh):
         '''Initialization.
         '''
         super(meshTetra, self).__init__(node_coords, cells)
-        self.node_coords = node_coords
 
         # Wait for Numpy 1.6.1 for this
         #     self.cells = numpy.array(cells, dtype=numpy.dtype([('nodes', (int, 4))]))
