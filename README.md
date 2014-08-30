@@ -1,8 +1,7 @@
 # VoroPy
 
 [![Build Status](https://travis-ci.org/nschloe/voropy.svg?branch=master)](https://travis-ci.org/nschloe/voropy)
-[![Coverage
-Status](https://coveralls.io/repos/nschloe/voropy/badge.png?branch=master)](https://coveralls.io/r/nschloe/voropy?branch=master)
+[![Coverage Status](https://img.shields.io/coveralls/nschloe/voropy.svg)](https://coveralls.io/r/nschloe/voropy?branch=master)
 [![Code Health](https://landscape.io/github/nschloe/voropy/master/landscape.png)](https://landscape.io/github/nschloe/voropy/master)
 [![Documentation Status](https://readthedocs.org/projects/voropy/badge/?version=latest)](https://readthedocs.org/projects/voropy/?badge=latest)
 [![PyPI version](https://badge.fury.io/py/voropy.svg)](http://badge.fury.io/py/voropy)
