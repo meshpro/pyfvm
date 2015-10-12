@@ -33,52 +33,59 @@
 #
 import os
 from setuptools import setup
+import pypandoc
 
+from voropy import __version__, __author__, __author_email__
 
-# Utility function to read the README file.
-# Used for the long_description.  It's nice, because now 1) we have a top level
-# README file and 2) it's easier to type in the README file than to put a raw
-# string in below ...
-def read(fname):
-    return open(os.path.join(os.path.dirname(__file__), fname)).read()
+longdesc = pypandoc.convert(
+    os.path.join(os.path.dirname(os.path.realpath(__file__)), 'README.md'),
+    'rst'
+    )
 
 setup(name='voropy',
-      version='0.1.2',
-      author='Nico Schlömer',
-      author_email='nico.schloemer@gmail.com',
+      version=__version__,
+      author=__author__,
+      author_email=__author__email__,
       packages=['voropy'],
       description='Delaunay meshes, Voronoi regions',
-      long_description=read('README.md'),
+      long_description=__longdesc__,
       url='https://github.com/nschloe/voropy',
-      download_url=None,
+      download_url='https://github.com/nschloe/voropy/releases',
       license='License :: OSI Approved :: BSD License',
       platforms='any',
       requires=['numpy', 'scipy', 'vtk'],
-      classifiers=['Development Status :: 3 - Alpha',
-                   'Topic :: Utilities'
-                   ],
-      scripts=['examples/ball',
-               'examples/convert_mesh',
-               'examples/cube',
-               'examples/cylinder_tri',
-               'examples/delaunay_checker',
-               'examples/delaunay_maker',
-               'examples/ellipse',
-               'examples/hexagon',
-               'examples/lshape',
-               'examples/lshape3d',
-               'examples/moebius2_tri',
-               'examples/moebius_tri',
-               'examples/moebius_tri_alt',
-               'examples/pacman',
-               'examples/pseudomoebius',
-               'examples/rectangle',
-               'examples/rectangle_with_hole',
-               'examples/simple_arrow',
-               'examples/sphere',
-               'examples/tetrahedron',
-               'examples/triangle',
-               'examples/tube'],
+      classifiers=[
+          'Development Status :: 4 - Beta',
+          'Intended Audience :: Science/Research',
+          'License :: OSI Approved :: BSD License',
+          'Operating System :: OS Independent',
+          'Programming Language :: Python',
+          'Topic :: Scientific/Engineering :: Mathematics'
+          ],
+      scripts=[
+          'examples/ball',
+          'examples/convert_mesh',
+          'examples/cube',
+          'examples/cylinder_tri',
+          'examples/delaunay_checker',
+          'examples/delaunay_maker',
+          'examples/ellipse',
+          'examples/hexagon',
+          'examples/lshape',
+          'examples/lshape3d',
+          'examples/moebius2_tri',
+          'examples/moebius_tri',
+          'examples/moebius_tri_alt',
+          'examples/pacman',
+          'examples/pseudomoebius',
+          'examples/rectangle',
+          'examples/rectangle_with_hole',
+          'examples/simple_arrow',
+          'examples/sphere',
+          'examples/tetrahedron',
+          'examples/triangle',
+          'examples/tube'
+          ],
       )
 # Don't install test files.
 #        data_files=[('tests', ['tests/cubesmall.e',
