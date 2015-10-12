@@ -170,7 +170,7 @@ class meshTetra(_base_mesh):
         for cell_id, cell in enumerate(self.cells):
             # Make sure cellNodes are sorted.
             self.cells['nodes'][cell_id] = numpy.sort(cell['nodes'])
-            for k in xrange(4):
+            for k in range(4):
                 # Remove the k-th element. This makes sure that the k-th
                 # face is opposite of the k-th node. Useful later in
                 # in construction of face normals.
@@ -189,7 +189,7 @@ class meshTetra(_base_mesh):
                     # and facesEdge[k][i] are opposite in face k.
                     self.faces['nodes'][new_face_gid] = indices
                     # Register edges.
-                    for kk in xrange(len(indices)):
+                    for kk in range(len(indices)):
                         # Note that node_tuple is also sorted, and thus
                         # is a key in the edges dictionary.
                         node_tuple = indices[:kk] + indices[kk+1:]
@@ -306,7 +306,7 @@ class meshTetra(_base_mesh):
         # Compute covolumes and control volumes.
         num_nodes = len(self.node_coords)
         self.control_volumes = numpy.zeros(num_nodes, dtype=float)
-        for edge_id in xrange(len(self.edges['nodes'])):
+        for edge_id in range(len(self.edges['nodes'])):
             edge_node_ids = self.edges['nodes'][edge_id]
             # Explicitly cast indices to 'int' here as the array node_coords
             # might only accept those. (This is the case with tetgen arrays,
@@ -433,7 +433,7 @@ class meshTetra(_base_mesh):
         face_normals = numpy.zeros(num_faces, dtype=numpy.dtype((float, 3)))
         for cell_id, cell in enumerate(self.cells):
             # Loop over the local faces.
-            for k in xrange(4):
+            for k in range(4):
                 face_id = cell['faces'][k]
                 # Compute the normal in the direction of the higher cell ID,
                 # or if this is a boundary face, to the outside of the domain.
@@ -469,7 +469,7 @@ class meshTetra(_base_mesh):
         num_faces = len(self.faces['nodes'])
         num_interior_faces = 0
         num_delaunay_violations = 0
-        for face_id in xrange(num_faces):
+        for face_id in range(num_faces):
             # Boundary faces don't need to be checked.
             if len(self.faces['cells'][face_id]) != 2:
                 continue

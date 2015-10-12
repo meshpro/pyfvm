@@ -135,7 +135,7 @@ class meshTri(_base_mesh):
             # Make sure cellNodes are sorted.
             self.cells['nodes'][cell_id] = \
                 numpy.sort(self.cells['nodes'][cell_id])
-            for k in xrange(len(cell['nodes'])):
+            for k in range(len(cell['nodes'])):
                 # Remove the k-th element. This makes sure that the k-th
                 # edge is opposite of the k-th node. Useful later in
                 # in construction of edge (face) normals.
@@ -263,7 +263,7 @@ class meshTri(_base_mesh):
 
             new_edge_opposite_of_local_node = numpy.empty(3, dtype=int)
             # New edges: Connect the three midpoints.
-            for k in xrange(3):
+            for k in range(3):
                 new_edges_nodes[new_edge_gid] = local_neighbor_midpoints[k]
                 new_edge_opposite_of_local_node[k] = new_edge_gid
                 new_edge_gid += 1
@@ -274,7 +274,7 @@ class meshTri(_base_mesh):
             new_cells_edges[new_cell_gid] = new_edge_opposite_of_local_node
             new_cell_gid += 1
             # The three corner elements:
-            for k in xrange(3):
+            for k in range(3):
                 new_cells_nodes[new_cell_gid] = \
                     numpy.array([self.cells['nodes'][cell_id][k],
                                  local_neighbor_midpoints[k][0],
@@ -336,7 +336,7 @@ class meshTri(_base_mesh):
         # the control volume contributions for each side in a cell separately.
 
         num_cells = len(self.cells)
-        for cell_id in xrange(num_cells):
+        for cell_id in range(num_cells):
             # Project the triangle to 2D.
             x = self.node_coords[self.cells['nodes'][cell_id]]
             # Project to 2D, compute circumcenter, get its barycentric
@@ -416,7 +416,7 @@ class meshTri(_base_mesh):
 
         # Compute covolumes and control volumes.
         num_edges = len(self.edges['nodes'])
-        for edge_id in xrange(num_edges):
+        for edge_id in range(num_edges):
             # Move the system such that one of the two end points is in the
             # origin. Deliberately take self.edges['nodes'][edge_id][0].
             node = self.node_coords[self.edges['nodes'][edge_id][0]]
@@ -500,7 +500,7 @@ class meshTri(_base_mesh):
         edge_normals = numpy.empty(num_edges, dtype=numpy.dtype((float, 2)))
         for cell_id, cell in enumerate(self.cells):
             # Loop over the local faces.
-            for k in xrange(3):
+            for k in range(3):
                 edge_id = cell['edges'][k]
                 # Compute the normal in the direction of the higher cell ID,
                 # or if this is a boundary face, to the outside of the domain.
@@ -641,7 +641,7 @@ class meshTri(_base_mesh):
         num_delaunay_violations = 0
 
         num_edges = len(self.edges['nodes'])
-        for edge_id in xrange(num_edges):
+        for edge_id in range(num_edges):
             # Boundary edges don't need to be checked.
             if len(self.edges['cells'][edge_id]) != 2:
                 continue
@@ -711,7 +711,7 @@ class meshTri(_base_mesh):
             if self.cell_circumcenters is None:
                 self.compute_cell_circumcenters()
             covolume_col = '0.6'
-            for edge_id in xrange(len(self.edges['cells'])):
+            for edge_id in range(len(self.edges['cells'])):
                 ccs = self.cell_circumcenters[self.edges['cells'][edge_id]]
                 if len(ccs) == 2:
                     p = ccs.T
@@ -767,7 +767,7 @@ class meshTri(_base_mesh):
                 self.compute_cell_circumcenters()
             covolume_boundary_col = '0.5'
             covolume_area_col = '0.7'
-            for edge_id in xrange(len(self.edges['cells'])):
+            for edge_id in range(len(self.edges['cells'])):
                 node_ids = self.edges['nodes'][edge_id]
                 if node_id in node_ids:
                     ccs = self.cell_circumcenters[self.edges['cells'][edge_id]]

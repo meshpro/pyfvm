@@ -227,13 +227,13 @@ def _create_vtkarray(X, name):
     elif len(X.shape) == 1:
         array.SetNumberOfComponents(1)
         # Set values.
-        for k in xrange(X.shape[0]):
+        for k in range(X.shape[0]):
             array.InsertNextValue(X[k])
     elif len(X.shape) == 2:
         array.SetNumberOfComponents(X.shape[1])
         # Set values.
-        for k in xrange(X.shape[0]):
-            for k2 in xrange(X.shape[1]):
+        for k in range(X.shape[0]):
+            for k2 in range(X.shape[1]):
                 array.InsertNextValue(X[k][k2])
     else:
         raise ValueError('Don''t know what to do with '
