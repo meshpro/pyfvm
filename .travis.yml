@@ -18,7 +18,9 @@ addons:
   apt:
     packages:
       - python-scipy
+      - python3-scipy
       - python-vtk
+      - python3-vtk
       - pandoc
 
 install:
