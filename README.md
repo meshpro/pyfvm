@@ -9,6 +9,10 @@
 
 A package for handling simplex-meshes in two and three dimensions with support for Voronoi regions.
 
+![moebius strip](https://nschloe.github.io/voropy/moebius2.png)
+
+*A twice-folded Möbius strip, created with VoroPy's `moebius_tri -i 2 out.e`. Visualization with [ParaView](http://www.paraview.org/).*
+
 This is of specific interest to everyone who wants to use the finite volume method, but many of the provided methods can come in handy for finite element problems, too.
 
 For example, this package is for you if you want to:
