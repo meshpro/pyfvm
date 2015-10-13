@@ -5,7 +5,7 @@
 [![Code Health](https://landscape.io/github/nschloe/voropy/master/landscape.png)](https://landscape.io/github/nschloe/voropy/master)
 [![Documentation Status](https://readthedocs.org/projects/voropy/badge/?version=latest)](https://readthedocs.org/projects/voropy/?badge=latest)
 [![PyPI version](https://badge.fury.io/py/voropy.svg)](http://badge.fury.io/py/voropy)
-[![PyPI downloads](https://img.shields.io/pypi/dm/voropy.svg)]()
+[![PyPI downloads](https://img.shields.io/pypi/dm/voropy.svg)](https://img.shields.io/pypi/dm/voropy.svg)
 
 A package for handling simplex-meshes in two and three dimensions with support for Voronoi regions.
 
