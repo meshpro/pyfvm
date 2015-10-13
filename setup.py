@@ -33,14 +33,20 @@
 #
 import os
 from setuptools import setup
-import pypandoc
+import codecs
 
 from voropy import __version__, __author__, __author_email__
 
-longdesc = pypandoc.convert(
-    os.path.join(os.path.dirname(os.path.realpath(__file__)), 'README.md'),
-    'rst'
-    )
+
+def read(fname):
+    try:
+        content = codecs.open(
+            os.path.join(os.path.dirname(__file__), fname),
+            encoding='utf-8'
+            ).read()
+    except Exception:
+        content = ''
+    return content
 
 setup(name='voropy',
       version=__version__,
@@ -48,7 +54,7 @@ setup(name='voropy',
       author_email=__author_email__,
       packages=['voropy'],
       description='Delaunay meshes, Voronoi regions',
-      long_description=longdesc,
+      long_description=read('README.rst'),
       url='https://github.com/nschloe/voropy',
       download_url='https://github.com/nschloe/voropy/releases',
       license='License :: OSI Approved :: BSD License',

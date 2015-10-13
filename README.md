@@ -5,9 +5,13 @@
 [![Code Health](https://landscape.io/github/nschloe/voropy/master/landscape.png)](https://landscape.io/github/nschloe/voropy/master)
 [![Documentation Status](https://readthedocs.org/projects/voropy/badge/?version=latest)](https://readthedocs.org/projects/voropy/?badge=latest)
 [![PyPI version](https://badge.fury.io/py/voropy.svg)](http://badge.fury.io/py/voropy)
-[![PyPI downloads](https://img.shields.io/pypi/dm/voropy.svg)]()
+[![PyPI downloads](https://img.shields.io/pypi/dm/voropy.svg)](https://img.shields.io/pypi/dm/voropy.svg)
 
 A package for handling simplex-meshes in two and three dimensions with support for Voronoi regions.
+
+![moebius strip](https://nschloe.github.io/voropy/moebius2.png)
+
+*A twice-folded Möbius strip, created with VoroPy's `moebius_tri -i 2 out.e`. Visualization with [ParaView](http://www.paraview.org/).*
 
 This is of specific interest to everyone who wants to use the finite volume method, but many of the provided methods can come in handy for finite element problems, too.
 

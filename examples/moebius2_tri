@@ -198,6 +198,48 @@ def _parse_options():
         sys.exit( "\nProvide a file to be written to." )
 
     return args[0]
+
+def _parse_options():
+    '''Parse input options.'''
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description='Construct a trival tetrahedrization of a cube.'
+        )
+
+    parser.add_argument(
+        'filename',
+        metavar='FILE',
+        type=str,
+        help='file to be written to'
+        )
+
+    parser.add_argument(
+        '--canonical', '-c',
+        metavar='NX',
+        dest='nx',
+        nargs='?',
+        type=int,
+        const=0,
+        default=0,
+        help=('canonical tetrahedrization with NX discretization points ' +
+              'along each axis')
+        )
+
+    parser.add_argument(
+        '--meshpy', '-m',
+        metavar='MAXVOL',
+        dest='maxvol',
+        nargs='?',
+        type=float,
+        const=0.0,
+        default=0.0,
+        help='meshpy tetrahedrization with MAXVOL maximum tetrahedron volume'
+        )
+
+    args = parser.parse_args()
+
+    return args
 # ==============================================================================
 if __name__ == "__main__":
     _main()

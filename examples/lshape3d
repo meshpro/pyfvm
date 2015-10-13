@@ -6,7 +6,8 @@ import numpy as np
 import time
 
 import voropy
-# ==============================================================================
+
+
 def _main():
 
     # get the file name to be written to
@@ -21,41 +22,43 @@ def _main():
     print 'Create mesh...',
     start = time.time()
     # Corner points of the cube
-    points = [( -0.5*l[0], -0.5*l[1], -0.5*l[2] ),
-              (  0.5*l[0], -0.5*l[1], -0.5*l[2] ),
-              (  0.5*l[0],  0.5*l[1], -0.5*l[2] ),
-              ( -0.5*l[0],  0.5*l[1], -0.5*l[2] ),
-              ( -0.5*l[0], -0.5*l[1],  0.5*l[2] ),
-              (  0.5*l[0],  0.5*l[1],  0.5*l[2] ),
-              ( -0.5*l[0],  0.5*l[1],  0.5*l[2] ),
-              (  0.0,      -0.5*l[1],  0.5*l[2] ),
-              (  0.0,      -0.5*l[1],  0.0 ),
-              (  0.5*l[0], -0.5*l[1],  0.0 ),
-              (  0.5*l[0],  0.0,       0.0 ),
-              (  0.5*l[0],  0.0,       0.5*l[2] ),
-              (  0.0,       0.0,       0.5*l[2] ),
-              (  0.0,       0.0,       0.0 )
-              ]
-    facets = [[0,1,2,3],
-              [4,7,12,11,5,6],
-              [0,1,9,8,7,4],
-              [1,2,5,11,10,9],
-              [2,5,6,3],
-              [3,6,4,0],
-              [8,13,12,7],
-              [8,9,10,13],
-              [10,11,12,13]
+    points = [
+        (-0.5*l[0], -0.5*l[1], -0.5*l[2]),
+        ( 0.5*l[0], -0.5*l[1], -0.5*l[2]),
+        ( 0.5*l[0],  0.5*l[1], -0.5*l[2]),
+        (-0.5*l[0],  0.5*l[1], -0.5*l[2]),
+        (-0.5*l[0], -0.5*l[1],  0.5*l[2]),
+        ( 0.5*l[0],  0.5*l[1],  0.5*l[2]),
+        (-0.5*l[0],  0.5*l[1],  0.5*l[2]),
+        ( 0.0,      -0.5*l[1],  0.5*l[2]),
+        ( 0.0,      -0.5*l[1],  0.0),
+        ( 0.5*l[0], -0.5*l[1],  0.0),
+        ( 0.5*l[0],  0.0,       0.0),
+        ( 0.5*l[0],  0.0,       0.5*l[2]),
+        ( 0.0,       0.0,       0.5*l[2]),
+        ( 0.0,       0.0,       0.0)
+        ]
+    facets = [[0, 1, 2, 3],
+              [4, 7, 12, 11, 5, 6],
+              [0, 1, 9, 8, 7, 4],
+              [1, 2, 5, 11, 10, 9],
+              [2, 5, 6, 3],
+              [3, 6, 4, 0],
+              [8, 13, 12, 7],
+              [8, 9, 10, 13],
+              [10, 11, 12, 13]
               ]
     # create the mesh
     import meshpy.tet
     # Set the geometry and build the mesh.
     info = meshpy.tet.MeshInfo()
-    info.set_points( points )
-    info.set_facets( facets )
-    meshpy_mesh = meshpy.tet.build( info,
-                                    max_volume = args.maxvol
-                                  )
-    mesh = voropy.mesh3d(np.array(meshpy_mesh.points), meshpy_mesh.elements)
+    info.set_points(points)
+    info.set_facets(facets)
+    meshpy_mesh = meshpy.tet.build(info, max_volume=args.maxvol)
+    mesh = voropy.meshTetra.meshTetra(
+        np.array(meshpy_mesh.points),
+        meshpy_mesh.elements
+        )
     elapsed = time.time() - start
     print 'done. (%gs)' % elapsed
 
@@ -70,34 +73,39 @@ def _main():
     print 'done. (%gs)' % elapsed
 
     return
-# ==============================================================================
+
+
 def _parse_options():
     '''Parse input options.'''
     import argparse
 
-    parser = argparse.ArgumentParser( description = 'Construct a trival tetrahedrization of a 3D L-shape.' )
+    parser = argparse.ArgumentParser(
+        description='Construct a trival tetrahedrization of a 3D L-shape.'
+        )
 
+    parser.add_argument(
+        'filename',
+        metavar='FILE',
+        type=str,
+        help='file to be written to'
+        )
 
-    parser.add_argument( 'filename',
-                         metavar = 'FILE',
-                         type    = str,
-                         help    = 'file to be written to'
-                       )
-
-    parser.add_argument( '--maxvol', '-m',
-                         metavar = 'MAXVOL',
-                         dest='maxvol',
-                         nargs='?',
-                         type=float,
-                         const=1.0,
-                         default=1.0,
-                         help='maximum tetrahedron volume of the tetrahedrization (default: 1.0)'
-                       )
+    parser.add_argument(
+        '--maxvol', '-m',
+        metavar='MAXVOL',
+        dest='maxvol',
+        nargs='?',
+        type=float,
+        const=1.0,
+        default=1.0,
+        help=('maximum tetrahedron volume ' +
+              'of the tetrahedrization (default: 1.0)')
+        )
 
     args = parser.parse_args()
 
     return args
-# ==============================================================================
+
+
 if __name__ == "__main__":
     _main()
-# ==============================================================================
