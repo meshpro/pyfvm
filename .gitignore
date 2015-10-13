@@ -1,2 +1,4 @@
 doc/_build/
 README.rst
+voropy.egg-info/
+dist/
