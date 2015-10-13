@@ -6,9 +6,9 @@ from meshpy.geometry import generate_surface_of_revolution, EXT_OPEN, \
     GeometryBuilder
 
 import voropy
-#import mesh
-#import mesh.meshpy_interface
-#import mesh.magnetic_vector_potentials
+# import mesh
+# import mesh.meshpy_interface
+# import mesh.magnetic_vector_potentials
 
 
 def _main():
@@ -40,10 +40,12 @@ def _main():
     print 'Build mesh...',
     start = time.time()
     geob = GeometryBuilder()
-    geob.add_geometry( *generate_surface_of_revolution(rz,
-                                                       closure=EXT_OPEN,
-                                                       radial_subdiv=radial_subdiv)
-                     )
+    geob.add_geometry(
+            *generate_surface_of_revolution(
+                rz,
+                closure=EXT_OPEN,
+                radial_subdiv=radial_subdiv
+                ))
     mesh_info = MeshInfo()
     geob.set(mesh_info)
     meshpy_mesh = build(mesh_info, max_volume=canonical_tet_volume)
@@ -51,7 +53,7 @@ def _main():
     print 'done. (%gs)' % elapsed
 
     # Fill the data into a voropy mesh object.
-    mesh = voropy.meshTetra(meshpy_mesh.points, meshpy_mesh.elements)
+    mesh = voropy.meshTetra.meshTetra(meshpy_mesh.points, meshpy_mesh.elements)
 
     print '\n%d nodes, %d elements' % (len(mesh.node_coords), len(mesh.cells))
 
@@ -104,7 +106,8 @@ def _parse_options():
                         type=int,
                         const=10,
                         default=10,
-                        help='number of discretization points along a logitudinal line'
+                        help=('number of discretization points ' +
+                              'along a logitudinal line')
                         )
     args = parser.parse_args()
     return args

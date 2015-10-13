@@ -59,9 +59,10 @@ class _base_mesh(object):
         '''
         import os
 
-        vtk_mesh = self._generate_vtk_mesh(self.node_coords,
-                                           self.cells['nodes']
-                                           )
+        vtk_mesh = self._generate_vtk_mesh(
+            self.node_coords,
+            self.cells['nodes']
+            )
 
         extension = os.path.splitext(filename)[1]
         # add point data
@@ -214,7 +215,7 @@ def _create_vtkarray(X, name):
     # glibc memory corruption.
     # Most likely the cause: You have to call SetNumberOfTuples()
     # AFTER SetNumberOfComponents().
-    #array.SetNumberOfTuples(X.shape[0])
+    #   array.SetNumberOfTuples(X.shape[0])
     # Special treatment for strings:
     if isinstance(X, str):
         array.SetNumberOfComponents(len(X))
