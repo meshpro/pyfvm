@@ -1,0 +1,4 @@
+sphinxcontrib-bibtex
+numpy
+scipy
+vtk
