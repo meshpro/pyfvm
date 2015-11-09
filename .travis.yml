@@ -27,6 +27,9 @@ install:
 
 # command to run tests
 script:
+  # cd into test directory to make sure we're using the pip-installed
+  # matplotlib2tikz.
+  - cd test
   - nosetests --with-coverage --cover-package=voropy
 
 after_success:
