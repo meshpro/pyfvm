@@ -31,11 +31,11 @@
 #  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #  POSSIBILITY OF SUCH DAMAGE.
 #
-__all__ = ['mesh2d']
-
 import warnings
 import numpy
 from voropy.base import _base_mesh
+
+__all__ = ['mesh2d']
 
 
 class mesh2d(_base_mesh):
@@ -50,7 +50,9 @@ class mesh2d(_base_mesh):
         self.edges = None
 
         # Wait for Numpy 1.6.1 for this
-        #     self.cells = numpy.array(cells, dtype=numpy.dtype([('nodes', (int, 3))]))
+        #     self.cells = numpy.array(
+        #         cells, dtype=numpy.dtype([('nodes', (int, 3))])
+        #         )
         # to work. Check out
         # http://stackoverflow.com/questions/9467547/how-to-properly-initialize-numpy-array-with-named-fields
         if cells is None:
@@ -60,7 +62,10 @@ class mesh2d(_base_mesh):
             cells = tri.vertices
 
         num_cells = len(cells)
-        self.cells = numpy.empty(num_cells, dtype=numpy.dtype([('nodes', (int, 3))]))
+        self.cells = numpy.empty(
+            num_cells,
+            dtype=numpy.dtype([('nodes', (int, 3))])
+            )
         self.cells['nodes'] = cells
 
         self.cell_volumes = None
@@ -78,21 +83,24 @@ class mesh2d(_base_mesh):
             # Shoelace formula.
             node0, node1, node2 = self.node_coords[cell['nodes']]
             self.cell_volumes[cell_id] = \
-                0.5 * abs(node0[0] * node1[1] - node0[1] * node1[0]
-                          + node1[0] * node2[1] - node1[1] * node2[0]
-                          + node2[0] * node0[1] - node2[1] * node0[0]
+                0.5 * abs(node0[0] * node1[1] - node0[1] * node1[0] +
+                          node1[0] * node2[1] - node1[1] * node2[0] +
+                          node2[0] * node0[1] - node2[1] * node0[0]
                           )
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-            #edge0 = node0 - node1
-            #edge1 = node1 - node2
-            #self.cell_volumes[cell_id] = \
-            #    0.5 * numpy.linalg.norm(numpy.cross(edge0, edge1))
+            # edge0 = node0 - node1
+            # edge1 = node1 - node2
+            # self.cell_volumes[cell_id] = \
+            #     0.5 * numpy.linalg.norm(numpy.cross(edge0, edge1))
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-            ## Append a third component.
-            #from vtk import vtkTriangle
-            #x = numpy.c_[self.node_coords[cell['nodes']], numpy.zeros((3, 1))]
-            #self.cell_volumes[cell_id] = \
-               #abs(vtkTriangle.TriangleArea(x[0], x[1], x[2]))
+            # # Append a third component.
+            # from vtk import vtkTriangle
+            # x = numpy.c_[
+            #    self.node_coords[cell['nodes']],
+            #    numpy.zeros((3, 1))
+            #    ]
+            # self.cell_volumes[cell_id] = \
+            #   abs(vtkTriangle.TriangleArea(x[0], x[1], x[2]))
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         return
 
@@ -101,9 +109,10 @@ class mesh2d(_base_mesh):
         '''
         from vtk import vtkTriangle
         num_cells = len(self.cells['nodes'])
-        self.cell_circumcenters = numpy.empty(num_cells,
-                                           dtype=numpy.dtype((float, 2))
-                                           )
+        self.cell_circumcenters = numpy.empty(
+                num_cells,
+                dtype=numpy.dtype((float, 2))
+                )
         for cell_id, cell in enumerate(self.cells):
             x = self.node_coords[cell['nodes']]
             vtkTriangle.Circumcircle(x[0], x[1], x[2],
@@ -192,19 +201,31 @@ class mesh2d(_base_mesh):
         num_edges = len(self.edges)
         num_cells = len(self.cells)
         num_new_edges = 2 * num_edges + 3 * num_cells
-        new_edges_nodes = numpy.empty(num_new_edges, dtype=numpy.dtype((int, 2)))
+        new_edges_nodes = numpy.empty(
+            num_new_edges,
+            dtype=numpy.dtype((int, 2))
+            )
         new_edge_gid = 0
 
         # After the refinement step, all previous cell-node associations will
         # be obsolete, so record *all* the new cells.
         num_new_cells = 4 * num_cells
-        new_cells_nodes = numpy.empty(num_new_cells, dtype=numpy.dtype((int, 3)))
-        new_cells_edges = numpy.empty(num_new_cells, dtype=numpy.dtype((int, 3)))
+        new_cells_nodes = numpy.empty(
+             num_new_cells,
+             dtype=numpy.dtype((int, 3))
+             )
+        new_cells_edges = numpy.empty(
+            num_new_cells,
+            dtype=numpy.dtype((int, 3))
+            )
         new_cell_gid = 0
 
         is_edge_divided = numpy.zeros(num_edges, dtype=bool)
         edge_midpoint_gids = numpy.empty(num_edges, dtype=int)
-        edge_newedges_gids = numpy.empty(num_edges, dtype=numpy.dtype((int, 2)))
+        edge_newedges_gids = numpy.empty(
+            num_edges,
+            dtype=numpy.dtype((int, 2))
+            )
         # Loop over all elements.
         for cell_id, cell in enumerate(self.cells):
             # Divide edges.
@@ -223,8 +244,8 @@ class mesh2d(_base_mesh):
                 else:
                     # Create new node at the edge midpoint.
                     self.node_coords[new_node_gid] = \
-                        0.5 * (self.node_coords[edgenodes_gids[0]]
-                               + self.node_coords[edgenodes_gids[1]]
+                        0.5 * (self.node_coords[edgenodes_gids[0]] +
+                               self.node_coords[edgenodes_gids[1]]
                                )
                     local_edge_midpoint_gids[k] = new_node_gid
                     new_node_gid += 1
@@ -233,12 +254,16 @@ class mesh2d(_base_mesh):
 
                     # Divide edge into two.
                     new_edges_nodes[new_edge_gid] = \
-                        numpy.array([edgenodes_gids[0],
-                                  local_edge_midpoint_gids[k]])
+                        numpy.array([
+                            edgenodes_gids[0],
+                            local_edge_midpoint_gids[k]
+                            ])
                     new_edge_gid += 1
                     new_edges_nodes[new_edge_gid] = \
-                        numpy.array([local_edge_midpoint_gids[k],
-                                  edgenodes_gids[1]])
+                        numpy.array([
+                            local_edge_midpoint_gids[k],
+                            edgenodes_gids[1]
+                            ])
                     new_edge_gid += 1
 
                     local_edge_newedges[k] = [new_edge_gid-2, new_edge_gid-1]
@@ -276,24 +301,34 @@ class mesh2d(_base_mesh):
             # The three corner elements:
             for k in range(3):
                 new_cells_nodes[new_cell_gid] = \
-                    numpy.array([self.cells['nodes'][cell_id][k],
-                              local_neighbor_midpoints[k][0],
-                              local_neighbor_midpoints[k][1]])
+                    numpy.array([
+                        self.cells['nodes'][cell_id][k],
+                        local_neighbor_midpoints[k][0],
+                        local_neighbor_midpoints[k][1]
+                        ])
                 new_cells_edges[new_cell_gid] = \
-                    numpy.array([new_edge_opposite_of_local_node[k],
-                              local_neighbor_newedges[k][0],
-                              local_neighbor_newedges[k][1]])
+                    numpy.array([
+                        new_edge_opposite_of_local_node[k],
+                        local_neighbor_newedges[k][0],
+                        local_neighbor_newedges[k][1]
+                        ])
                 new_cell_gid += 1
         # Override edges.
         num_edges = len(new_edges_nodes)
-        self.edges = numpy.empty(num_edges, dtype=numpy.dtype([('nodes', (int, 2))]))
+        self.edges = numpy.empty(
+            num_edges,
+            dtype=numpy.dtype([('nodes', (int, 2))])
+            )
         self.edges['nodes'] = new_edges_nodes
         # Override cells.
         num_cells = len(new_cells_nodes)
-        self.cells = numpy.empty(num_cells,
-                              dtype=numpy.dtype([('nodes', (int, 3)),
-                                              ('edges', (int, 3))])
-                              )
+        self.cells = numpy.empty(
+                num_cells,
+                dtype=numpy.dtype([
+                    ('nodes', (int, 3)),
+                    ('edges', (int, 3))
+                    ])
+                )
         self.cells['nodes'] = new_cells_nodes
         self.cells['edges'] = new_cells_edges
         return
@@ -339,7 +374,9 @@ class mesh2d(_base_mesh):
             cell0 = self.edges['cells'][edge_id][0]
             # This nonzero construct is an ugly replacement for the nonexisting
             # index() method. (Compare with Python lists.)
-            edge_lid = numpy.nonzero(self.cells['edges'][cell0] == edge_id)[0][0]
+            edge_lid = numpy.nonzero(
+                self.cells['edges'][cell0] == edge_id
+                )[0][0]
             # This makes use of the fact that cellsEdges and cellsNodes
             # are coordinated such that in cell #i, the edge cellsEdges[i][k]
             # opposes cellsNodes[i][k].
@@ -360,14 +397,14 @@ class mesh2d(_base_mesh):
                 - node
             if len(cc) == 2:  # interior edge
                 self.control_volumes[node_ids] += \
-                    numpy.sign(gauge) * 0.5 * (cc[0][0] * cc[1][1]
-                                            - cc[0][1] * cc[1][0]
-                                            )
+                    numpy.sign(gauge) * 0.5 * (cc[0][0] * cc[1][1] -
+                                               cc[0][1] * cc[1][0]
+                                               )
             elif len(cc) == 1:  # boundary edge
                 self.control_volumes[node_ids] += \
-                    numpy.sign(gauge) * 0.5 * (cc[0][0] * edge_midpoint[1]
-                                            - cc[0][1] * edge_midpoint[0]
-                                            )
+                    numpy.sign(gauge) * 0.5 * (cc[0][0] * edge_midpoint[1] -
+                                               cc[0][1] * edge_midpoint[0]
+                                               )
             else:
                 raise RuntimeError('An edge should have either 1 '
                                    'or two adjacent cells.'
@@ -432,8 +469,10 @@ class mesh2d(_base_mesh):
                     # Make sure the normal points in the outward direction.
                     other_node_id = self.cells['nodes'][cell_id][k]
                     other_node_coords = self.node_coords[other_node_id]
-                    if numpy.dot(edge_nodes[0]-other_node_coords,
-                              edge_normals[edge_id]) < 0.0:
+                    if numpy.dot(
+                            edge_nodes[0]-other_node_coords,
+                            edge_normals[edge_id]
+                            ) < 0.0:
                         edge_normals[edge_id] *= -1
         return edge_normals
 
@@ -476,22 +515,22 @@ class mesh2d(_base_mesh):
             # Compute coedge length.
             if len(edge['cells']) == 1:
                 # Boundary edge.
-                edge_midpoint = 0.5 * (self.node_coords[edge['nodes'][0]]
-                                       + self.node_coords[edge['nodes'][1]]
+                edge_midpoint = 0.5 * (self.node_coords[edge['nodes'][0]] +
+                                       self.node_coords[edge['nodes'][1]]
                                        )
                 coedge = self.cell_circumcenters[edge['cells'][0]] \
                     - edge_midpoint
                 coedge_midpoint = \
-                    0.5 * (self.cell_circumcenters[edge['cells'][0]]
-                           + edge_midpoint
+                    0.5 * (self.cell_circumcenters[edge['cells'][0]] +
+                           edge_midpoint
                            )
             elif len(edge['cells']) == 2:
                 # Interior edge.
                 coedge = self.cell_circumcenters[edge['cells'][0]] \
                     - self.cell_circumcenters[edge['cells'][1]]
                 coedge_midpoint = \
-                    0.5 * (self.cell_circumcenters[edge['cells'][0]]
-                           + self.cell_circumcenters[edge['cells'][1]]
+                    0.5 * (self.cell_circumcenters[edge['cells'][0]] +
+                           self.cell_circumcenters[edge['cells'][1]]
                            )
             else:
                 raise RuntimeError('Edge needs to have either '
@@ -499,9 +538,9 @@ class mesh2d(_base_mesh):
                                    )
 
             # Compute the coefficient r for both contributions
-            coeffs = numpy.sqrt(numpy.dot(coedge, coedge)
-                             / numpy.dot(edge_coords, edge_coords)
-                             ) / self.control_volumes[edge['nodes']]
+            coeffs = numpy.sqrt(
+                numpy.dot(coedge, coedge) / numpy.dot(edge_coords, edge_coords)
+                ) / self.control_volumes[edge['nodes']]
 
             # Compute R*_{IJ} ((11) in [1]).
             r0 = (coedge_midpoint - self.node_coords[edge['nodes'][0]]) \
@@ -545,11 +584,9 @@ class mesh2d(_base_mesh):
             edge_coords = self.node_coords[edge['nodes'][1]] \
                 - self.node_coords[edge['nodes'][0]]
             # Calculate A at the edge midpoint.
-            A = 0.5 * (vector_field[edge['nodes'][0]]
-                       + vector_field[edge['nodes'][1]]
+            A = 0.5 * (vector_field[edge['nodes'][0]] +
+                       vector_field[edge['nodes'][1]]
                        )
-            print(curl[edge['cells'], :])
-            print(edge_coords)
             curl[edge['cells'], :] += edge_coords * numpy.dot(edge_coords, A)
 
         return curl
@@ -589,7 +626,9 @@ class mesh2d(_base_mesh):
             cell0 = self.edges['cells'][edge_id][0]
             # This nonzero construct is an ugly replacement for the nonexisting
             # index() method. (Compare with Python lists.)
-            edge_lid = numpy.nonzero(self.cells['edges'][cell0] == edge_id)[0][0]
+            edge_lid = numpy.nonzero(
+                self.cells['edges'][cell0] == edge_id
+                )[0][0]
             # This makes use of the fact that cellsEdges and cellsNodes
             # are coordinated such that in cell #i, the edge cellsEdges[i][k]
             # opposes cellsNodes[i][k].
@@ -620,7 +659,7 @@ class mesh2d(_base_mesh):
         import matplotlib.pyplot as plt
 
         fig = plt.figure()
-        #ax = fig.gca(projection='3d')
+        # ax = fig.gca(projection='3d')
         ax = fig.gca()
         plt.axis('equal')
 
@@ -642,10 +681,10 @@ class mesh2d(_base_mesh):
                 if len(ccs) == 2:
                     p = ccs.T
                 elif len(ccs) == 1:
-                    edge_midpoint = \
-                        0.5 * (self.node_coords[self.edges['nodes'][edge_id][0]]
-                               + self.node_coords[self.edges['nodes'][edge_id][1]]
-                               )
+                    edge_midpoint = 0.5 * \
+                        (self.node_coords[self.edges['nodes'][edge_id][0]] +
+                         self.node_coords[self.edges['nodes'][edge_id][1]]
+                         )
                     p = numpy.c_[ccs[0], edge_midpoint]
                 else:
                     raise RuntimeError('An edge has to have either 1 or 2 '
@@ -674,7 +713,7 @@ class mesh2d(_base_mesh):
         import matplotlib.pyplot as plt
 
         fig = plt.figure()
-        #ax = fig.gca(projection='3d')
+        # ax = fig.gca(projection='3d')
         ax = fig.gca()
         plt.axis('equal')
 
@@ -701,16 +740,18 @@ class mesh2d(_base_mesh):
                         p = ccs.T
                         q = numpy.c_[ccs[0], ccs[1], self.node_coords[node_id]]
                     elif len(ccs) == 1:
-                        edge_midpoint = 0.5 * (self.node_coords[node_ids[0]]
-                                               + self.node_coords[node_ids[1]]
+                        edge_midpoint = 0.5 * (self.node_coords[node_ids[0]] +
+                                               self.node_coords[node_ids[1]]
                                                )
-                        p = numpy.c_[ccs[0],
-                                  edge_midpoint
-                                  ]
-                        q = numpy.c_[ccs[0],
-                                  edge_midpoint,
-                                  self.node_coords[node_id]
-                                  ]
+                        p = numpy.c_[
+                                ccs[0],
+                                edge_midpoint
+                                ]
+                        q = numpy.c_[
+                                ccs[0],
+                                edge_midpoint,
+                                self.node_coords[node_id]
+                                ]
                     else:
                         raise RuntimeError('An edge has to have either 1 or 2 '
                                            'adjacent cells.'

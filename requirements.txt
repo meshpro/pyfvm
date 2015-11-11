@@ -1,3 +1,4 @@
 sphinxcontrib-bibtex
+meshio
 numpy
 scipy
