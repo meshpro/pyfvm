@@ -70,7 +70,6 @@ setup(name='voropy',
           ],
       scripts=[
           'examples/ball',
-          'examples/convert_mesh',
           'examples/cube',
           'examples/cylinder_tri',
           'examples/delaunay_checker',
