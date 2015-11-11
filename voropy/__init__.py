@@ -37,6 +37,6 @@ from . import meshTetra
 from . import reader
 
 __all__ = ['mesh2d', 'meshTri', 'meshTetra', 'reader']
-__version__ = '0.1.6'
+__version__ = '0.2.0'
 __author__ = 'Nico Schlömer'
 __author_email__ = 'nico.schloemer@gmail.com'

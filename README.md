@@ -1,11 +1,11 @@
 # VoroPy
 
 [![Build Status](https://travis-ci.org/nschloe/voropy.svg?branch=master)](https://travis-ci.org/nschloe/voropy)
-[![Coverage Status](https://img.shields.io/coveralls/nschloe/voropy.svg)](https://coveralls.io/r/nschloe/voropy?branch=master)
 [![Code Health](https://landscape.io/github/nschloe/voropy/master/landscape.png)](https://landscape.io/github/nschloe/voropy/master)
+[![Coverage Status](https://img.shields.io/coveralls/nschloe/voropy.svg)](https://coveralls.io/r/nschloe/voropy?branch=master)
 [![Documentation Status](https://readthedocs.org/projects/voropy/badge/?version=latest)](https://readthedocs.org/projects/voropy/?badge=latest)
-[![PyPI version](https://badge.fury.io/py/voropy.svg)](http://badge.fury.io/py/voropy)
-[![PyPI downloads](https://img.shields.io/pypi/dm/voropy.svg)](https://img.shields.io/pypi/dm/voropy.svg)
+[![PyPi Version](https://img.shields.io/pypi/v/voropy.svg)](https://pypi.python.org/pypi/voropy)
+[![PyPi Downloads](https://img.shields.io/pypi/dm/voropy.svg)](https://pypi.python.org/pypi/voropy)
 
 A package for handling simplex-meshes in two and three dimensions with support for Voronoi regions.
 

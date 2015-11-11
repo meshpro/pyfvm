@@ -31,11 +31,12 @@
 #  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #  POSSIBILITY OF SUCH DAMAGE.
 #
+import voropy
+
 import os
+import meshio
 import numpy
 import unittest
-
-import voropy
 
 
 class GradientTest(unittest.TestCase):
@@ -66,8 +67,9 @@ class GradientTest(unittest.TestCase):
         return
 
     def test_pacman(self):
-        filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                'pacman.e')
+        filename = os.path.join(
+            os.path.dirname(os.path.realpath(__file__)), 'pacman.e'
+            )
         mesh, _, _ = voropy.reader.read(filename)
         self._run_test(mesh)
         return

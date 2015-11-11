@@ -623,11 +623,9 @@ class meshTri(_base_mesh):
             edge_coords = self.node_coords[edge['nodes'][1]] \
                 - self.node_coords[edge['nodes'][0]]
             # Calculate A at the edge midpoint.
-            A = 0.5 * (vector_field[edge['nodes'][0]]
-                       + vector_field[edge['nodes'][1]]
+            A = 0.5 * (vector_field[edge['nodes'][0]] +
+                       vector_field[edge['nodes'][1]]
                        )
-            print(curl[edge['cells'], :])
-            print(edge_coords)
             curl[edge['cells'], :] += edge_coords * numpy.dot(edge_coords, A)
         return curl
 
