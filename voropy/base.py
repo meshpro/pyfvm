@@ -32,6 +32,7 @@
 #  POSSIBILITY OF SUCH DAMAGE.
 #
 import meshio
+import numpy
 
 __all__ = []
 
@@ -51,15 +52,17 @@ class _base_mesh(object):
               cell_data=None,
               field_data=None
               ):
-        import numpy
-        a = numpy.ascontiguousarray(self.node_coords)
-        print(self.node_coords.flags['C_CONTIGUOUS'])
-        print(a.flags['C_CONTIGUOUS'])
-        print(self.cells)
+        if self.node_coords.shape[1] == 2:
+            n = len(self.node_coords)
+            a = numpy.ascontiguousarray(
+                numpy.c_[self.node_coords, numpy.zeros(n)]
+                )
+        else:
+            a = self.node_coords
         meshio.write(
             filename,
             a,
-            self.cells,
+            self.cells['nodes'],
             point_data=point_data,
             cell_data=cell_data,
             field_data=field_data
