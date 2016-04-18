@@ -5,7 +5,7 @@
 import numpy as np
 import time
 
-import voropy
+import pyfvm
 
 
 def _main():
@@ -55,7 +55,7 @@ def _main():
     info.set_points(points)
     info.set_facets(facets)
     meshpy_mesh = meshpy.tet.build(info, max_volume=args.maxvol)
-    mesh = voropy.meshTetra.meshTetra(
+    mesh = pyfvm.meshTetra.meshTetra(
         np.array(meshpy_mesh.points),
         meshpy_mesh.elements
         )

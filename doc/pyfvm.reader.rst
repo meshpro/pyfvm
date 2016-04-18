@@ -1,7 +1,7 @@
-:mod:`voropy.reader`
+:mod:`pyfvm.reader`
 ====================
 
-.. automodule:: voropy.reader
+.. automodule:: pyfvm.reader
     :members:
     :undoc-members:
     :show-inheritance:

@@ -7,7 +7,7 @@ from meshpy.tet import MeshInfo, build
 from meshpy.geometry import generate_surface_of_revolution, EXT_OPEN, GeometryBuilder
 from meshpy.geometry import generate_surface_of_revolution, EXT_CLOSED_IN_RZ, GeometryBuilder
 
-import voropy
+import pyfvm
 # ==============================================================================
 def _main():
 
@@ -43,8 +43,8 @@ def _main():
 
     print '\n%d nodes, %d elements.\n' % (len(meshpy_mesh.points), len(meshpy_mesh.elements))
 
-    # Fill the data into a voropy mesh object.
-    mesh = voropy.meshTetra(meshpy_mesh.points, meshpy_mesh.elements)
+    # Fill the data into a pyfvm mesh object.
+    mesh = pyfvm.meshTetra(meshpy_mesh.points, meshpy_mesh.elements)
 
     # write the mesh
     print 'Write mesh...',

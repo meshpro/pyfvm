@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
-import voropy
+import pyfvm
 import numpy as np
 import time
 
@@ -47,7 +47,7 @@ def _main():
             info,
             refinement_func=_needs_refinement
             )
-    mesh = voropy.mesh2d.mesh2d(meshpy_mesh.points, meshpy_mesh.elements)
+    mesh = pyfvm.mesh2d.mesh2d(meshpy_mesh.points, meshpy_mesh.elements)
     elapsed = time.time()-start
     print 'done. (%gs)' % elapsed
 

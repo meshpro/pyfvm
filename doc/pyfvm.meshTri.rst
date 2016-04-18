@@ -1,7 +1,7 @@
-:mod:`voropy.meshTri`
+:mod:`pyfvm.meshTri`
 =====================
 
-.. automodule:: voropy.meshTri
+.. automodule:: pyfvm.meshTri
     :members:
     :undoc-members:
     :show-inheritance:

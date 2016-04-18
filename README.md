@@ -1,17 +1,17 @@
-# VoroPy
+# PyFVM
 
-[![Build Status](https://travis-ci.org/nschloe/voropy.svg?branch=master)](https://travis-ci.org/nschloe/voropy)
-[![Code Health](https://landscape.io/github/nschloe/voropy/master/landscape.png)](https://landscape.io/github/nschloe/voropy/master)
-[![Coverage Status](https://img.shields.io/coveralls/nschloe/voropy.svg)](https://coveralls.io/r/nschloe/voropy?branch=master)
-[![Documentation Status](https://readthedocs.org/projects/voropy/badge/?version=latest)](https://readthedocs.org/projects/voropy/?badge=latest)
-[![PyPi Version](https://img.shields.io/pypi/v/voropy.svg)](https://pypi.python.org/pypi/voropy)
-[![PyPi Downloads](https://img.shields.io/pypi/dm/voropy.svg)](https://pypi.python.org/pypi/voropy)
+[![Build Status](https://travis-ci.org/nschloe/pyfvm.svg?branch=master)](https://travis-ci.org/nschloe/pyfvm)
+[![Code Health](https://landscape.io/github/nschloe/pyfvm/master/landscape.png)](https://landscape.io/github/nschloe/pyfvm/master)
+[![Coverage Status](https://img.shields.io/coveralls/nschloe/pyfvm.svg)](https://coveralls.io/r/nschloe/pyfvm?branch=master)
+[![Documentation Status](https://readthedocs.org/projects/pyfvm/badge/?version=latest)](https://readthedocs.org/projects/pyfvm/?badge=latest)
+[![PyPi Version](https://img.shields.io/pypi/v/pyfvm.svg)](https://pypi.python.org/pypi/pyfvm)
+[![PyPi Downloads](https://img.shields.io/pypi/dm/pyfvm.svg)](https://pypi.python.org/pypi/pyfvm)
 
 A package for handling simplex-meshes in two and three dimensions with support for Voronoi regions.
 
-![](https://nschloe.github.io/voropy/moebius2.png)
+![](https://nschloe.github.io/pyfvm/moebius2.png)
 
-*A twice-folded Möbius strip, created with VoroPy's `moebius_tri -i 2 out.e`. Visualization with [ParaView](http://www.paraview.org/).*
+*A twice-folded Möbius strip, created with PyFVM's `moebius_tri -i 2 out.e`. Visualization with [ParaView](http://www.paraview.org/).*
 
 This is of specific interest to everyone who wants to use the finite volume method, but many of the provided methods can come in handy for finite element problems, too.
 
@@ -26,4 +26,4 @@ Some of the methods in this packages are merely convenience wrappers around the 
 
 ### License
 
-VoroPy is released under the 3-clause BSD license.
+PyFVM is released under the 3-clause BSD license.

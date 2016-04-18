@@ -5,7 +5,7 @@
 import numpy as np
 import time
 
-import voropy
+import pyfvm
 
 
 def _main():
@@ -135,7 +135,7 @@ def _canonical(l, N):
                                              N[2] * ( N[1]*i     + j   ) + k+1])
                     l += 1
 
-    mesh = voropy.meshTetra.meshTetra(nodes, cellNodes)
+    mesh = pyfvm.meshTetra.meshTetra(nodes, cellNodes)
 
     return mesh
 
@@ -180,7 +180,7 @@ def _meshpy(l, max_volume):
     # elapsed = time.time()-start
     # print 'done. (%gs)' % elapsed
 
-    return voropy.mesh3d(meshpy_mesh.points, meshpy_mesh.elements)
+    return pyfvm.mesh3d(meshpy_mesh.points, meshpy_mesh.elements)
 
 
 def _parse_options():

@@ -4,7 +4,7 @@
 Creates a simplistic triangular mesh on a Möbius strip.
 '''
 #import vtk
-import voropy
+import pyfvm
 import numpy as np
 from math import pi, sin, cos
 
@@ -89,7 +89,7 @@ def _main():
             elems.append([(nl-1)*nw + j, (nw-1) - j, (nw-1) - (j+1)])
 
     # create the mesh data structure
-    mesh = voropy.meshTri.meshTri(nodes, elems)
+    mesh = pyfvm.meshTri.meshTri(nodes, elems)
 
     # create the mesh
     mesh.write(args.filename)

@@ -3,7 +3,7 @@
 #  Copyright (c) 2012--2014, Nico Schlömer, <nico.schloemer@gmail.com>
 #  All rights reserved.
 #
-#  This file is part of VoroPy.
+#  This file is part of PyFVM.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are met:
@@ -40,7 +40,7 @@ formats.
 import os
 import meshio
 import numpy
-import voropy
+import pyfvm
 
 __all__ = ['read']
 
@@ -72,13 +72,13 @@ def read(filename, timestep=None):
                         value.shape[1] == 3 and \
                         all(value[:, 2] == 0.0):
                     point_data[key] = value[:, :2]
-            return voropy.mesh2d.mesh2d(points[:, :2], cells_nodes), \
+            return pyfvm.mesh2d.mesh2d(points[:, :2], cells_nodes), \
                 point_data, field_data
         else:  # 2d shell mesh
-            return voropy.meshTri.meshTri(points, cells_nodes), \
+            return pyfvm.meshTri.meshTri(points, cells_nodes), \
                    point_data, field_data
     elif len(cells_nodes[0]) == 4:  # 3D
-        return voropy.meshTetra.meshTetra(points, cells_nodes), \
+        return pyfvm.meshTetra.meshTetra(points, cells_nodes), \
                point_data, field_data
     else:
         raise RuntimeError('Unknown mesh type.')

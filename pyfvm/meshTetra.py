@@ -3,7 +3,7 @@
 #  Copyright (c) 2012--2014, Nico Schlömer, <nico.schloemer@gmail.com>
 #  All rights reserved.
 #
-#  This file is part of VoroPy.
+#  This file is part of PyFVM.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are met:
@@ -34,7 +34,7 @@
 __all__ = ['meshTetra']
 
 import numpy
-from voropy.base import _base_mesh
+from pyfvm.base import _base_mesh
 
 
 class meshTetra(_base_mesh):

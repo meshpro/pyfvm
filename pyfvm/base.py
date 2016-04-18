@@ -3,7 +3,7 @@
 #  Copyright (c) 2012--2014, Nico Schlömer, <nico.schloemer@gmail.com>
 #  All rights reserved.
 #
-#  This file is part of VoroPy.
+#  This file is part of PyFVM.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are met:
@@ -31,12 +31,39 @@
 #  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #  POSSIBILITY OF SUCH DAMAGE.
 #
-from . import mesh2d
-from . import meshTri
-from . import meshTetra
-from . import reader
+import meshio
+import numpy
 
-__all__ = ['mesh2d', 'meshTri', 'meshTetra', 'reader']
-__version__ = '0.2.0'
-__author__ = 'Nico Schlömer'
-__author_email__ = 'nico.schloemer@gmail.com'
+__all__ = []
+
+
+class _base_mesh(object):
+
+    def __init__(self,
+                 nodes,
+                 cells_nodes
+                 ):
+        self.node_coords = nodes
+        return
+
+    def write(self,
+              filename,
+              point_data=None,
+              cell_data=None,
+              field_data=None
+              ):
+        if self.node_coords.shape[1] == 2:
+            n = len(self.node_coords)
+            a = numpy.ascontiguousarray(
+                numpy.c_[self.node_coords, numpy.zeros(n)]
+                )
+        else:
+            a = self.node_coords
+        meshio.write(
+            filename,
+            a,
+            self.cells['nodes'],
+            point_data=point_data,
+            cell_data=cell_data,
+            field_data=field_data
+            )

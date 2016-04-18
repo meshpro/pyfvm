@@ -4,7 +4,7 @@ import numpy as np
 from scipy import special
 import time
 
-import voropy
+import pyfvm
 # ==============================================================================
 def _main():
 
@@ -48,7 +48,7 @@ def _main():
     meshpy_mesh = meshpy.triangle.build(info,
                                         refinement_func = _needs_refinement
                                         )
-    mesh = voropy.mesh2d(meshpy_mesh.points, meshpy_mesh.elements)
+    mesh = pyfvm.mesh2d(meshpy_mesh.points, meshpy_mesh.elements)
     elapsed = time.time()-start
     print 'done. (%gs)' % elapsed
 

@@ -3,7 +3,7 @@
 #  Copyright (c) 2012--2014, Nico Schlömer, <nico.schloemer@gmail.com>
 #  All rights reserved.
 #
-#  This file is part of VoroPy.
+#  This file is part of PyFVM.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are met:
@@ -31,7 +31,7 @@
 #  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #  POSSIBILITY OF SUCH DAMAGE.
 #
-import voropy
+import pyfvm
 
 import os
 import meshio
@@ -70,7 +70,7 @@ class GradientTest(unittest.TestCase):
         filename = os.path.join(
             os.path.dirname(os.path.realpath(__file__)), 'pacman.e'
             )
-        mesh, _, _ = voropy.reader.read(filename)
+        mesh, _, _ = pyfvm.reader.read(filename)
         self._run_test(mesh)
         return
 

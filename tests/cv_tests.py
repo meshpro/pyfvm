@@ -3,7 +3,7 @@
 #  Copyright (c) 2012--2014, Nico Schlömer, <nico.schloemer@gmail.com>
 #  All rights reserved.
 #
-#  This file is part of VoroPy.
+#  This file is part of PyFVM.
 #
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are met:
@@ -35,7 +35,7 @@ import os
 import numpy
 import unittest
 
-import voropy
+import pyfvm
 
 
 class TestControlVolumes(unittest.TestCase):
@@ -71,7 +71,7 @@ class TestControlVolumes(unittest.TestCase):
         cv0 = 0.25 * 0.1/0.5 * (0.5**2 + 0.1**2)
         cv = [cv0, cv0, 0.5*(total_vol-2*cv0), 0.5 * (total_vol-2*cv0)]
         #cells = numpy.array([[0, 1, 2], [0, 1, 3]])
-        mesh = voropy.mesh2d.mesh2d(points, cells=None)
+        mesh = pyfvm.mesh2d.mesh2d(points, cells=None)
         actual_values = [numpy.linalg.norm(cv, ord=1),
                          numpy.linalg.norm(cv, ord=2),
                          numpy.linalg.norm(cv, ord=numpy.Inf)
@@ -82,7 +82,7 @@ class TestControlVolumes(unittest.TestCase):
     def test_rectanglesmall(self):
         filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                 'rectanglesmall.e')
-        mesh, _, _ = voropy.reader.read(filename)
+        mesh, _, _ = pyfvm.reader.read(filename)
         actual_values = [10.0,
                          5.0,
                          2.5]
@@ -101,7 +101,7 @@ class TestControlVolumes(unittest.TestCase):
                                   [0, 1, 4, 5],
                                   [0, 3, 4, 5]
                                   ])
-        mesh = voropy.meshTetra.meshTetra(nodes, cellsNodes)
+        mesh = pyfvm.meshTetra.meshTetra(nodes, cellsNodes)
         # pull this to see what a negative covolume looks like
         #if mesh.edgesNodes is None:
             #mesh.create_adjacent_entities()
@@ -116,7 +116,7 @@ class TestControlVolumes(unittest.TestCase):
     def test_tetrahedron(self):
         filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                 'tetrahedron.e')
-        mesh, _, _ = voropy.reader.read(filename)
+        mesh, _, _ = pyfvm.reader.read(filename)
         #mesh.show_edge(54)
         actual_values = [64.150028545708011,
                          15.243602636687179,
@@ -128,7 +128,7 @@ class TestControlVolumes(unittest.TestCase):
     def test_pacman(self):
         filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                 'pacman.e')
-        mesh, _, _ = voropy.reader.read(filename)
+        mesh, _, _ = pyfvm.reader.read(filename)
         actual_values = [302.52270072101,
                          15.3857579093391,
                          1.12779746704366
@@ -139,7 +139,7 @@ class TestControlVolumes(unittest.TestCase):
     def test_shell(self):
         filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                 'shell.e')
-        mesh, _, _ = voropy.reader.read(filename)
+        mesh, _, _ = pyfvm.reader.read(filename)
         actual_values = [3.46410161513775,
                          1.63299316185545,
                          1.15470053837925
@@ -150,7 +150,7 @@ class TestControlVolumes(unittest.TestCase):
     def test_sphere(self):
         filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                 'sphere.e')
-        mesh, _, _ = voropy.reader.read(filename)
+        mesh, _, _ = pyfvm.reader.read(filename)
         actual_values = [11.9741927059035,
                          1.39047542328083,
                          0.198927169088121
@@ -161,7 +161,7 @@ class TestControlVolumes(unittest.TestCase):
     def test_cubesmall(self):
         filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                 'cubesmall.e')
-        mesh, _, _ = voropy.reader.read(filename)
+        mesh, _, _ = pyfvm.reader.read(filename)
         actual_values = [10.0,
                          3.53553390593274,
                          1.25
@@ -172,7 +172,7 @@ class TestControlVolumes(unittest.TestCase):
     def test_brick(self):
         filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                 'brick-w-hole.e')
-        mesh, _, _ = voropy.reader.read(filename)
+        mesh, _, _ = pyfvm.reader.read(filename)
         actual_values = [388.68629169464117,
                          16.661401941985677,
                          1.4684734547497671

@@ -5,7 +5,7 @@ Create irregular mesh on a regular tetrahedron centered at the origin.
 import numpy as np
 import time
 
-import voropy
+import pyfvm
 # ==============================================================================
 def _main():
     args = _parse_options()
@@ -49,7 +49,7 @@ def _main():
     info.set_points( points )
     info.set_facets( facets )
     meshpy_mesh = meshpy.tet.build(info, max_volume = 1.0/args.n**3)
-    mesh = voropy.mesh3d(meshpy_mesh.points, meshpy_mesh.elements)
+    mesh = pyfvm.mesh3d(meshpy_mesh.points, meshpy_mesh.elements)
     elapsed = time.time() - start
     print 'done. (%gs)' % elapsed
 

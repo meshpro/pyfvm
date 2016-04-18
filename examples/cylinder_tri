@@ -5,7 +5,7 @@ Creates a simplisitc mesh on a cylinder strip.
 '''
 import numpy as np
 
-import voropy
+import pyfvm
 # ------------------------------------------------------------------------------
 def _main():
     # The width of the strip
@@ -53,7 +53,7 @@ def _main():
         elems[k+1] = [ (nl - 1)*nw + j, j     , j + 1  ]
         k += 2
 
-    mesh = voropy.mesh2d_shell(nodes, elems)
+    mesh = pyfvm.mesh2d_shell(nodes, elems)
 
     # write the mesh
     mesh.write( 'cylinder.e' )

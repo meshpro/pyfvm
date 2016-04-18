@@ -5,7 +5,7 @@ from meshpy.tet import MeshInfo, build
 from meshpy.geometry import generate_surface_of_revolution, EXT_OPEN, \
     GeometryBuilder
 
-import voropy
+import pyfvm
 # import mesh
 # import mesh.meshpy_interface
 # import mesh.magnetic_vector_potentials
@@ -52,8 +52,8 @@ def _main():
     elapsed = time.time()-start
     print 'done. (%gs)' % elapsed
 
-    # Fill the data into a voropy mesh object.
-    mesh = voropy.meshTetra.meshTetra(meshpy_mesh.points, meshpy_mesh.elements)
+    # Fill the data into a pyfvm mesh object.
+    mesh = pyfvm.meshTetra.meshTetra(meshpy_mesh.points, meshpy_mesh.elements)
 
     print '\n%d nodes, %d elements' % (len(mesh.node_coords), len(mesh.cells))
 
@@ -73,7 +73,7 @@ def _parse_options():
         description='Construct tetrahedrization of a ball.'
         )
 
-    mesh = voropy.meshTetra(meshpy_mesh.points, meshpy_mesh.elements)
+    mesh = pyfvm.meshTetra(meshpy_mesh.points, meshpy_mesh.elements)
 
     print '\n%d nodes, %d elements' % (len(mesh.node_coords), len(mesh.cells))
 

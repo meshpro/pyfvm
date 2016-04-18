@@ -6,7 +6,7 @@ Creates a mesh on a rectangle in the x-y-plane.
 import numpy as np
 import time
 
-import voropy
+import pyfvm
 # ==============================================================================
 def _main():
 
@@ -66,7 +66,7 @@ def _canonical(l, N):
             elems[k] = np.array([i*N[1] + j, (i + 1)*N[1] + j    , (i + 1)*N[1] + j + 1])
             k += 1
 
-    return voropy.mesh2d(nodes, elems)
+    return pyfvm.mesh2d(nodes, elems)
 # ==============================================================================
 def _zigzag(l, N):
     # Create the vertices.
@@ -98,7 +98,7 @@ def _zigzag(l, N):
                 elems[k] = np.array([(i+1)*N[1] + j, (i+1)*N[1] + j+1, i*N[1] + j+1])
                 k += 1
 
-    return voropy.mesh2d(nodes, elems)
+    return pyfvm.mesh2d(nodes, elems)
 # ==============================================================================
 def _meshpy(l, max_area):
     import mesh.meshpy_interface

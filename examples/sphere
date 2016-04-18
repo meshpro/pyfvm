@@ -3,7 +3,7 @@
 '''
 Creates a simplistic triangular mesh the sphere.
 '''
-import voropy
+import pyfvm
 import time
 import numpy as np
 # ==============================================================================
@@ -97,7 +97,7 @@ def _main():
     print '\n%d nodes, %d elements\n' % (num_nodes, num_elems)
 
     # create the mesh data structure
-    mymesh = voropy.meshTri(nodes, elems)
+    mymesh = pyfvm.meshTri(nodes, elems)
 
     # write the mesh
     print 'Writing mesh...',
