@@ -90,7 +90,14 @@ def _main():
         for dep in deps[name]:
             class_objects.extend(collect_class_objects(dep))
         if name not in visited:
-            class_object = generators[name].get_cxx_class_object(class_objects)
+            if args.backend == 'scipy':
+                class_object = \
+                    generators[name].get_python_class_object(class_objects)
+            elif args.backend == 'nosh':
+                class_object = \
+                    generators[name].get_cxx_class_object(class_objects)
+            else:
+                raise ValueError('Illegal backend \'%s\'.' % args.backend)
             visited.add(name)
             class_objects.append(class_object)
             return class_objects
@@ -149,6 +156,12 @@ def _parse_cmd_arguments():
         'outfile',
         type=str,
         help='output C++ header file'
+        )
+    parser.add_argument(
+        '--backend', '-b',
+        type=str,
+        choices=['scipy', 'nosh'],
+        default='scipy'
         )
     return parser.parse_args()
 
