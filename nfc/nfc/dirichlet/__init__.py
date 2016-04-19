@@ -87,7 +87,7 @@ class Dirichlet(object):
             free_symbols = set()
 
         extra_body, extra_init, extra_declare = \
-            _get_extra(arguments, free_symbols)
+            _get_cxx_extra(arguments, free_symbols)
 
         init = ['nosh::operator_core_dirichlet(%s)' % init]
         init.extend(extra_init)
@@ -108,8 +108,32 @@ class Dirichlet(object):
                 })
         return code
 
+    def get_python_class_object(self, dep_class_objects):
+        # collect subdomain init code
+        init = '[%s]' % ', '.join(
+                '\'%s\'' % sanitize_identifier(sd.__name__)
+                for sd in self.subdomains
+                )
 
-def _get_extra(arguments, used_variables):
+        assert(self.is_matrix)
+
+        x = sympy.MatrixSymbol('x', 3, 1)
+        result = self.function(x)
+
+        # template substitution
+        filename = os.path.join(os.path.dirname(__file__), 'python.tpl')
+        with open(filename, 'r') as f:
+            code = Template(f.read()).substitute({
+                'name': self.class_name,
+                'eval_return_value': result
+                })
+
+        return {
+            'code': code,
+            }
+
+
+def _get_cxx_extra(arguments, used_variables):
     vertex = sympy.Symbol('vertex')
     unused_arguments = arguments - used_variables
     undefined_symbols = used_variables - arguments
@@ -157,3 +181,38 @@ def _get_extra(arguments, used_variables):
         body.insert(0, '(void) %s;' % name)
 
     return body, init, declare
+
+
+def _get_python_extra(arguments, used_variables):
+    vertex = sympy.Symbol('vertex')
+    unused_arguments = arguments - used_variables
+    undefined_symbols = used_variables - arguments
+
+    body = []
+
+    u = sympy.Symbol('u')
+    if u in undefined_symbols:
+        undefined_symbols.remove(u)
+
+    x = sympy.MatrixSymbol('x', 3, 1)
+    if x in undefined_symbols:
+        body.append('x = self.mesh.coords[k]')
+        undefined_symbols.remove(x)
+        if vertex in unused_arguments:
+            unused_arguments.remove(vertex)
+
+    k = sympy.Symbol('k')
+    if k in undefined_symbols:
+        undefined_symbols.remove(k)
+        if vertex in unused_arguments:
+            unused_arguments.remove(vertex)
+
+    if len(undefined_symbols) > 0:
+        raise RuntimeError(
+                'The following symbols are undefined: %s' % undefined_symbols
+                )
+
+    # remove double lines
+    body = list_unique(body)
+
+    return body

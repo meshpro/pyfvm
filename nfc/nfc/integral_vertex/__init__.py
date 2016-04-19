@@ -14,7 +14,7 @@ from ..helpers import \
         get_uuid, \
         is_affine_linear, \
         list_unique, \
-        members_init_declare, \
+        cxx_members_init_declare, \
         replace_nosh_functions
 
 
@@ -63,7 +63,7 @@ class IntegralVertex(object):
 
         # now take care of the template substitution
         deps_init, deps_declare = \
-            members_init_declare(
+            cxx_members_init_declare(
                     self.namespace,
                     'matrix_core_vertex' if self.matrix_var else
                     'operator_core_vertex',
@@ -81,12 +81,12 @@ class IntegralVertex(object):
 
         # handle parameters
         params_init, params_declare, params_methods = \
-            _handle_parameters(self.scalar_params, self.vector_params)
+            _handle_parameters_cxx(self.scalar_params, self.vector_params)
         init.extend(params_init)
         declare.extend(params_declare)
         methods.extend(params_methods)
 
-        extra_body, extra_init, extra_declare = _get_extra(
+        extra_body, extra_init, extra_declare = _get_cxx_extra(
                 arguments, used_vars
                 )
         eval_body.extend(extra_body)
@@ -144,6 +144,100 @@ class IntegralVertex(object):
             'vector_parameters': self.vector_params
             }
 
+    def get_python_class_object(self, dependency_class_objects):
+        if self.matrix_var:
+            arguments = set([sympy.Symbol('k')])
+        else:
+            arguments = set([sympy.Symbol('k'), sympy.Symbol('u')])
+        used_vars = self.expr.free_symbols
+
+        eval_body = []
+        init = []
+        declare = []
+        methods = []
+
+        # now take care of the template substitution
+        deps_init, deps_declare = \
+            cxx_members_init_declare(
+                    self.namespace,
+                    'matrix_core_vertex' if self.matrix_var else
+                    'operator_core_vertex',
+                    dependency_class_objects
+                    )
+        init.extend(deps_init)
+        declare.extend(deps_declare)
+
+        arguments.update(self.scalar_params)
+        # Unfortunately, we cannot just add the vector_params to the arguments
+        # since in the used_variables, given by expr.free_symbols, they are
+        # reported as sympy.Symbol, not sympy.IndexedBase.
+        for v in self.vector_params:
+            arguments.add(sympy.Symbol('%s' % v))
+
+        # handle parameters
+        params_init, params_declare, params_methods = \
+            _handle_parameters_cxx(self.scalar_params, self.vector_params)
+        init.extend(params_init)
+        declare.extend(params_declare)
+        methods.extend(params_methods)
+
+        extra_body, extra_init, extra_declare = _get_cxx_extra(
+                arguments, used_vars
+                )
+        eval_body.extend(extra_body)
+        init.extend(extra_init)
+        declare.extend(extra_declare)
+
+        # remove double lines
+        eval_body = list_unique(eval_body)
+        init = list_unique(init)
+        declare = list_unique(declare)
+
+        if self.matrix_var:
+            coeff, affine = extract_linear_components(
+                    self.expr,
+                    sympy.Symbol('%s[k]' % self.matrix_var)
+                    )
+            type = 'matrix_core_vertex'
+            filename = os.path.join(
+                    os.path.dirname(__file__),
+                    'python_matrix_core_vertex.tpl'
+                    )
+            with open(filename, 'r') as f:
+                src = Template(f.read())
+                code = src.substitute({
+                    'name': self.class_name,
+                    'vertex_contrib': extract_c_expression(coeff),
+                    'vertex_affine': extract_c_expression(-affine),
+                    'vertex_body': '\n'.join(eval_body),
+                    'members_init': ':\n' + ',\n'.join(init) if init else '',
+                    'members_declare': '\n'.join(declare)
+                    })
+        else:
+            type = 'operator_core_vertex'
+            filename = os.path.join(
+                    os.path.dirname(__file__),
+                    'python_operator_core_vertex.tpl'
+                    )
+            with open(filename, 'r') as f:
+                src = Template(f.read())
+                code = src.substitute({
+                    'name': self.class_name,
+                    'return_value': extract_c_expression(self.expr),
+                    'eval_body': '\n'.join(eval_body),
+                    'members_init': ':\n' + ',\n'.join(init) if init else '',
+                    'members_declare': '\n'.join(declare),
+                    'methods': '\n'.join(methods)
+                    })
+
+        return {
+            'type': type,
+            'code': code,
+            'class_name': self.class_name,
+            'constructor_args': [],
+            'scalar_parameters': self.scalar_params,
+            'vector_parameters': self.vector_params
+            }
 
 # def get_matrix_core_vertex_code(namespace, class_name, core):
 #     '''Get code generator from raw core object.
@@ -169,7 +263,7 @@ def _discretize_expression(expr):
     return sympy.Symbol('control_volume') * expr, fks
 
 
-def _get_extra(arguments, used_variables):
+def _get_cxx_extra(arguments, used_variables):
     vertex = sympy.Symbol('vertex')
     unused_arguments = arguments - used_variables
     undefined_symbols = used_variables - arguments
@@ -222,7 +316,7 @@ def _get_extra(arguments, used_variables):
     return body, init, declare
 
 
-def _handle_parameters(scalar_params, vector_params):
+def _handle_parameters_cxx(scalar_params, vector_params):
     '''Treat vector variables (u, u0,...)
     '''
     params_init = []
@@ -307,3 +401,179 @@ def _handle_parameters(scalar_params, vector_params):
         )
 
     return params_init, params_declare, params_methods
+
+
+def _get_python_extra(arguments, used_variables):
+    vertex = sympy.Symbol('vertex')
+    unused_arguments = arguments - used_variables
+    undefined_symbols = used_variables - arguments
+
+    body = []
+
+    control_volume = sympy.Symbol('control_volume')
+    if control_volume in undefined_symbols:
+        body.append('control_volume = self.mesh.control_volumes[k]')
+        undefined_symbols.remove(control_volume)
+        if vertex in unused_arguments:
+            unused_arguments.remove(vertex)
+
+    x = sympy.MatrixSymbol('x', 3, 1)
+    if x in undefined_symbols:
+        body.append('x = self.mesh.coords[k]')
+        undefined_symbols.remove(x)
+        if vertex in unused_arguments:
+            unused_arguments.remove(vertex)
+
+    if len(undefined_symbols) > 0:
+        raise RuntimeError(
+                'The following symbols are undefined: %s' % undefined_symbols
+                )
+
+    return body
+
+
+def _handle_parameters_cxx(scalar_params, vector_params):
+    '''Treat vector variables (u, u0,...)
+    '''
+    params_init = []
+    params_declare = []
+    params_methods = []
+
+    tpetra_str = 'Tpetra::Vector<double, int, int>'
+    for v in vector_params:
+        params_init.extend([
+            'mesh_(mesh)',
+            '%s_vec_(std::make_shared<%s>(Teuchos::rcp(mesh->map())))' % (v, tpetra_str),
+            '%s(%s_vec_->getData())' % (v, v)
+            ])
+        params_declare.extend([
+            'const std::shared_ptr<const nosh::mesh> mesh_;',
+            'std::shared_ptr<const %s> %s_vec_;' % (tpetra_str, v),
+            'Teuchos::ArrayRCP<const double> %s;' % v
+            ])
+
+    for alpha in scalar_params:
+        params_init.append('%s(0.0)' % alpha)
+        params_declare.append('double %s;' % alpha)
+
+    refill_body = []
+
+    if len(vector_params) > 0:
+        params_methods.append('''
+        virtual
+        std::map<std::string, std::shared_ptr<const %s>>
+        get_vector_parameters() const
+        {
+          return {
+            %s
+            };
+        };
+        ''' % (
+            tpetra_str,
+            ',\n'.join(['{"%s", %s_vec_}' % (v, v) for v in vector_params])
+            )
+        )
+        refill_body.append(
+          ',\n'.join(['''
+          this->%s_vec_ = vector_params.at("%s");
+          this->%s = this->%s_vec_->getData();
+          ''' % (vec, vec, vec, vec) for vec in vector_params])
+          )
+
+    if len(scalar_params) > 0:
+        params_methods.append('''
+        virtual
+        std::map<std::string, double>
+        get_scalar_parameters() const
+        {
+          return {
+            %s
+            };
+        };
+        ''' % (
+            ',\n'.join(['{"%s", %s}' % (p, p) for p in scalar_params])
+            )
+        )
+        refill_body.append(
+          ',\n'.join(['''
+          %s = scalar_params.at("%s");
+          ''' % (a, a) for a in scalar_params])
+          )
+
+    refill_body = list_unique(refill_body)
+    if len(refill_body) > 0:
+        params_methods.append('''
+        virtual
+        void
+        refill_(
+            const std::map<std::string, double> & scalar_params,
+            const std::map<std::string, std::shared_ptr<const %s>> & vector_params
+            )
+        {%s}
+        ''' % (
+          tpetra_str,
+          '\n'.join(refill_body)
+        )
+        )
+
+    return params_init, params_declare, params_methods
+
+
+def _handle_parameters_python(scalar_params, vector_params):
+    '''Treat vector variables (u, u0,...)
+    '''
+    params_init = []
+    params_methods = []
+
+    for v in vector_params:
+        params_init.extend([
+            'self.%s = None' % v
+            ])
+
+    for alpha in scalar_params:
+        params_init.append('%s = 0.0' % alpha)
+
+    refill_body = []
+
+    if len(vector_params) > 0:
+        params_methods.append('''
+        def get_vector_parameters(self):
+            return {
+              %s
+              }
+        ''' % (
+            ',\n'.join(['\'%s\': %s' % (v, v) for v in vector_params])
+            )
+        )
+        refill_body.append(
+          ',\n'.join(['''
+          self.%s = vector_params[\'%s\']
+          ''' % (vec, vec) for vec in vector_params])
+          )
+
+    if len(scalar_params) > 0:
+        params_methods.append('''
+        def get_scalar_parameters(self):
+          return {
+            %s
+            }
+        ''' % (
+            ',\n'.join(['\'%s\': %s' % (p, p) for p in scalar_params])
+            )
+        )
+        refill_body.append(
+          ',\n'.join(['''
+          %s = scalar_params[\'%s\']
+          ''' % (a, a) for a in scalar_params])
+          )
+
+    refill_body = list_unique(refill_body)
+    if len(refill_body) > 0:
+        params_methods.append('''
+        def refill_(self, scalar_params, vector_params):
+            %s
+            return
+        ''' % '\n'.join(refill_body)
+        )
+
+    return params_init, params_methods

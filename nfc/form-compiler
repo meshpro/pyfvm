@@ -108,6 +108,9 @@ def _main():
     for name in deps:
         class_objects.extend(collect_class_objects(name))
 
+    for co in class_objects:
+        print(co)
+
     code = '\n'.join(class_object['code'] for class_object in class_objects)
 
     if missing_objects:

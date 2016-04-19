@@ -12,7 +12,7 @@ from ..helpers import \
         get_uuid, \
         is_affine_linear, \
         list_unique, \
-        members_init_declare, \
+        cxx_members_init_declare, \
         replace_nosh_functions
 
 
@@ -55,7 +55,7 @@ class IntegralBoundary(object):
 
         # now take care of the template substitution
         members_init, members_declare = \
-            members_init_declare(
+            cxx_members_init_declare(
                     self.namespace,
                     'matrix_core_boundary',
                     dep_class_objects

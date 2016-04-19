@@ -14,7 +14,7 @@ from ..helpers import \
         is_affine_linear, \
         list_unique, \
         get_uuid, \
-        members_init_declare
+        cxx_members_init_declare
 
 
 class IntegralEdge(object):
@@ -44,96 +44,99 @@ class IntegralEdge(object):
     def get_dependencies(self):
         return self.dependencies
 
+    def _collect_variables(self):
+        # Arguments from the template.
+        assert(self.matrix_var)
+
+        # Unfortunately, it's not too easy to differentiate with respect to
+        # an IndexedBase u with indices k0, k1 respectively. For this
+        # reason, we'll simply replace u[k0] by a variable uk0, and u[k1]
+        # likewise.
+        u = sympy.IndexedBase('%s' % self.matrix_var)
+        k0 = sympy.Symbol('k0')
+        k1 = sympy.Symbol('k1')
+        uk0 = sympy.Symbol('uk0')
+        uk1 = sympy.Symbol('uk1')
+        expr = self.expr.subs([(u[k0], uk0), (u[k1], uk1)])
+        edge_coeff, edge_affine = \
+            _extract_linear_components(expr, [uk0, uk1])
+
+        arguments = set([sympy.Symbol('edge')])
+
+        # gather up all used variables
+        used_vars = set()
+        for a in [edge_coeff[0][0], edge_coeff[0][1],
+                  edge_coeff[1][0], edge_coeff[1][1],
+                  edge_affine[0], edge_affine[1]
+                  ]:
+            used_vars.update(a.free_symbols)
+
+        return edge_coeff, edge_affine, arguments, used_vars
+
+
     def get_cxx_class_object(self, dependency_class_objects):
+        type = 'nosh::matrix_core_edge'
+
+        edge_coeff, edge_affine, arguments, used_vars = \
+                self._collect_variables()
+
         init, members_declare = \
-            members_init_declare(
+            cxx_members_init_declare(
                     self.namespace,
                     'matrix_core_edge',
                     dependency_class_objects
                     )
 
-        # Arguments from the template.
-        if self.matrix_var:
-            type = 'nosh::matrix_core_edge'
+        extra_body, extra_init, extra_declare = \
+            _get_cxx_extra(arguments, used_vars)
 
-            # Unfortunately, it's not too easy to differentiate with respect to
-            # an IndexedBase u with indices k0, k1 respectively. For this
-            # reason, we'll simply replace u[k0] by a variable uk0, and u[k1]
-            # likewise.
-            u = sympy.IndexedBase('%s' % self.matrix_var)
-            k0 = sympy.Symbol('k0')
-            k1 = sympy.Symbol('k1')
-            uk0 = sympy.Symbol('uk0')
-            uk1 = sympy.Symbol('uk1')
-            expr = self.expr.subs([(u[k0], uk0), (u[k1], uk1)])
-            edge_coeff, edge_affine = \
-                _extract_linear_components(expr, [uk0, uk1])
+        init.extend(extra_init)
+        members_declare.extend(extra_declare)
 
-            arguments = set([sympy.Symbol('edge')])
+        # template substitution
+        filename = os.path.join(
+                os.path.dirname(__file__),
+                'cxx.tpl'
+                )
+        with open(filename, 'r') as f:
+            src = Template(f.read())
+            code = src.substitute({
+                'name': self.class_name,
+                'edge00': _expr_to_cxx_code(edge_coeff[0][0]),
+                'edge01': _expr_to_cxx_code(edge_coeff[0][1]),
+                'edge10': _expr_to_cxx_code(edge_coeff[1][0]),
+                'edge11': _expr_to_cxx_code(edge_coeff[1][1]),
+                'edge_affine0': _expr_to_cxx_code(-edge_affine[0]),
+                'edge_affine1': _expr_to_cxx_code(-edge_affine[1]),
+                'eval_body': '\n'.join(extra_body),
+                'members_init': ':\n' + ',\n'.join(init) if init else '',
+                'members_declare': '\n'.join(members_declare)
+                })
 
-            # gather up all used variables
-            used_vars = set()
-            for a in [edge_coeff[0][0], edge_coeff[0][1],
-                      edge_coeff[1][0], edge_coeff[1][1],
-                      edge_affine[0], edge_affine[1]
-                      ]:
-                used_vars.update(a.free_symbols)
+    def get_python_class_object(self, dependency_class_objects):
 
-            extra_body, extra_init, extra_declare = \
-                _get_extra(arguments, used_vars)
+        edge_coeff, edge_affine, arguments, used_vars = \
+                self._collect_variables()
 
-            init.extend(extra_init)
-            members_declare.extend(extra_declare)
+        body = []
 
-            # template substitution
-            filename = os.path.join(
-                    os.path.dirname(__file__),
-                    'matrix_core_edge.tpl'
-                    )
-            with open(filename, 'r') as f:
-                src = Template(f.read())
-                code = src.substitute({
-                    'name': self.class_name,
-                    'edge00': _expr_to_code(edge_coeff[0][0]),
-                    'edge01': _expr_to_code(edge_coeff[0][1]),
-                    'edge10': _expr_to_code(edge_coeff[1][0]),
-                    'edge11': _expr_to_code(edge_coeff[1][1]),
-                    'edge_affine0': _expr_to_code(-edge_affine[0]),
-                    'edge_affine1': _expr_to_code(-edge_affine[1]),
-                    'eval_body': '\n'.join(extra_body),
-                    'members_init': ':\n' + ',\n'.join(init) if init else '',
-                    'members_declare': '\n'.join(members_declare)
-                    })
-        else:
-            used_vars = self.expr.free_symbols
+        extra_body = _get_python_extra(arguments, used_vars)
+        body.extend(extra_body)
 
-            type = 'nosh::operator_core_edge'
-            # template substitution
-            filename = os.path.join(
-                    os.path.dirname(__file__),
-                    'operator_core_edge.tpl'
-                    )
-            with open(filename, 'r') as f:
-                src = Template(f.read())
-                code = src.substitute({
-                    'name': self.class_name,
-                    'edge00': _expr_to_code(edge_coeff[0][0]),
-                    'edge01': _expr_to_code(edge_coeff[0][1]),
-                    'edge10': _expr_to_code(edge_coeff[1][0]),
-                    'edge11': _expr_to_code(edge_coeff[1][1]),
-                    'edge_affine0': _expr_to_code(-edge_affine[0]),
-                    'edge_affine1': _expr_to_code(-edge_affine[1]),
-                    'eval_body': '\n'.join(eval_body),
-                    'members_init': ':\n' + ',\n'.join(init) if init else '',
-                    'members_declare': '\n'.join(members_declare)
-                    })
-
-        return {
-            'type': type,
-            'code': code,
-            'class_name': self.class_name,
-            'constructor_args': []
-            }
+        # template substitution
+        filename = os.path.join(os.path.dirname(__file__), 'python.tpl')
+        with open(filename, 'r') as f:
+            src = Template(f.read())
+            code = src.substitute({
+                'name': self.class_name,
+                'edge00': edge_coeff[0][0],
+                'edge01': edge_coeff[0][1],
+                'edge10': edge_coeff[1][0],
+                'edge11': edge_coeff[1][1],
+                'edge_affine0': -edge_affine[0],
+                'edge_affine1': -edge_affine[1],
+                'eval_body': '\n'.join(body)
+                })
 
 
 def _extract_linear_components(expr, dvars):
@@ -171,13 +174,13 @@ def _extract_linear_components(expr, dvars):
         )
 
 
-def _expr_to_code(expr):
+def _expr_to_cxx_code(expr):
     gen = CodeGeneratorEigen()
     code, _ = gen.generate(expr)
     return code
 
 
-def _get_extra(arguments, used_variables):
+def _get_cxx_extra(arguments, used_variables):
     edge = sympy.Symbol('edge')
     unused_arguments = arguments - used_variables
     undefined_symbols = used_variables - arguments
@@ -259,3 +262,58 @@ def _get_extra(arguments, used_variables):
         body.insert(0, '(void) %s;' % name)
 
     return body, init, declare
+
+
+def _get_python_extra(arguments, used_variables):
+    edge = sympy.Symbol('edge')
+    unused_arguments = arguments - used_variables
+    undefined_symbols = used_variables - arguments
+
+    body = []
+
+    edge_length = sympy.Symbol('edge_length')
+    if edge_length in undefined_symbols:
+        body.append('edge_length = mesh.edge_lengths[k]')
+        undefined_symbols.remove(edge_length)
+        if edge in unused_arguments:
+            unused_arguments.remove(edge)
+
+    edge_covolume = sympy.Symbol('edge_covolume')
+    if edge_covolume in undefined_symbols:
+        body.append('edge_covolume = self.mesh.covolumes[k]')
+        undefined_symbols.remove(edge_covolume)
+        if edge in unused_arguments:
+            unused_arguments.remove(edge)
+
+    x0 = sympy.Symbol('x0')
+    if x0 in undefined_symbols:
+        body.append('x0 = self.mesh.coords[edge_vertices[k][0]]')
+        undefined_symbols.remove(x0)
+        if edge in unused_arguments:
+            unused_arguments.remove(edge)
+
+    x1 = sympy.Symbol('x1')
+    if x1 in undefined_symbols:
+        body.append('x1 = self.mesh.coords[edge_vertices[k][1]]')
+        undefined_symbols.remove(x1)
+        if edge in unused_arguments:
+            unused_arguments.remove(edge)
+
+    if nfl.n in undefined_symbols:
+        body.append('x0 = self.mesh.coords[edge_vertices[k][0]]')
+        body.append('x1 = self.mesh.coords[edge_vertices[k][1]]')
+        body.append('edge_length = mesh.edge_lengths[k]')
+        body.append('n = (x1 - x0) / edge_length')
+        undefined_symbols.remove(nfl.n)
+        if edge in unused_arguments:
+            unused_arguments.remove(edge)
+
+    if len(undefined_symbols) > 0:
+        raise RuntimeError(
+                'The following symbols are undefined: %s' % undefined_symbols
+                )
+
+    # remove double lines
+    body = list_unique(body)
+
+    return body
