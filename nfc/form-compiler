@@ -1,0 +1,153 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+#
+import argparse
+import nfl
+import inspect
+import re
+from string import Template
+import os
+import importlib.machinery
+
+import nfc
+
+from nfc.helpers import sanitize_identifier, templates_dir, run
+
+
+def _main():
+    args = _parse_cmd_arguments()
+
+    inmod_name = 'inmod'
+    inmod = importlib.machinery.SourceFileLoader(
+        inmod_name,
+        args.infile
+        ).load_module()
+
+    namespace = sanitize_identifier(
+            os.path.splitext(os.path.basename(args.infile))[0]
+            )
+
+    # Loop over all locally defined entities and collect everything we can
+    # convert.
+    # Between the entities, there are some dependencies between the entities
+    # which are not necessarily reflected in the order they appear here. For
+    # example, in the output HPP, the boundary conditions classes must
+    # typically be defined _before_ the fvm_matrix classes, since they are used
+    # there.
+    # Build directed dependency graph as a dictionary, see
+    # <https://www.python.org/doc/essays/graphs/>.
+    def get_generator(cls):
+        if issubclass(cls, nfl.FvmMatrix):
+            return nfc.FvmMatrixCode(namespace, cls)
+        elif issubclass(cls, nfl.LinearFvmProblem):
+            return nfc.LinearFvmProblemCode(namespace, cls)
+        elif issubclass(cls, nfl.FvmOperator):
+            return nfc.FvmOperatorCode(namespace, cls)
+        elif issubclass(cls, nfl.Subdomain):
+            return nfc.SubdomainCode(cls)
+        # elif issubclass(var, nfl.EdgeCore):
+        #     instance = var()
+        #     return nfc.get_code_matrix_core_edge(namespace, name, instance)
+        elif issubclass(cls, nfl.Expression):
+            return nfc.ExpressionCode(cls)
+        else:
+            raise RuntimeError('Unknown class \'%s\'.' % cls.__name__)
+
+    deps = {}
+    generators = {}
+
+    # Recursively go through all generators, get the dependencies, and build
+    # the dependency tree.
+    def insert_dependencies(generator):
+        if generator.class_name in deps:
+            return
+        generators[generator.class_name] = generator
+        deps[generator.class_name] = [
+            dep.class_name for dep in generator.get_dependencies()
+            ]
+        for dep in generator.get_dependencies():
+            insert_dependencies(dep)
+
+    # Loop over all inmod classes to create the dependency tree
+    for name, obj in inmod.__dict__.items():
+        # Only inspect classes from inmod
+        if not inspect.isclass(obj) or obj.__module__ != inmod_name:
+            continue
+        generator = get_generator(obj)
+        insert_dependencies(generator)
+
+    # Now that we have all generators and dependencies in place,
+    # go through dependency graph and collect code.
+    visited = set([])
+    missing_objects = set([])
+
+    def collect_class_objects(name):
+        if name not in deps:
+            missing_objects.add(name)
+            return []
+        # take care of the dependencies first
+        class_objects = []
+        for dep in deps[name]:
+            class_objects.extend(collect_class_objects(dep))
+        if name not in visited:
+            class_object = generators[name].get_cxx_class_object(class_objects)
+            visited.add(name)
+            class_objects.append(class_object)
+            return class_objects
+
+        return []
+
+    class_objects = []
+    for name in deps:
+        class_objects.extend(collect_class_objects(name))
+
+    code = '\n'.join(class_object['code'] for class_object in class_objects)
+
+    if missing_objects:
+        print()
+        print('You will need to manually define the objects')
+        print('     %s' % ', '.join(missing_objects))
+        print('in the namespace `%s` before #including the generated header.' %
+              namespace)
+        print()
+
+    # Plug it all together in main
+    with open(os.path.join(templates_dir, 'main.tpl'), 'r') as f:
+        main_src = Template(f.read())
+        main_content = main_src.substitute({
+            'namespace': namespace,
+            'namespace_uppercase': namespace.upper(),
+            'content': code
+            })
+
+    # write it
+    # outfile = os.path.splitext(args.infile)[0] + '.hpp'
+    with open(args.outfile, 'w') as f:
+        f.write(main_content)
+
+    # Make sure it's formatted nicely.
+    # TODO check out uncrustify
+    run('astyle --style=ansi -s2 %s' % args.outfile)
+
+    return
+
+
+def _parse_cmd_arguments():
+    parser = argparse.ArgumentParser(
+        description='Convert NFL files into C++ headers.'
+        )
+    parser.add_argument(
+        'infile',
+        type=str,
+        help='input NFL file'
+        )
+    parser.add_argument(
+        'outfile',
+        type=str,
+        help='output C++ header file'
+        )
+    return parser.parse_args()
+
+
+if __name__ == '__main__':
+    _main()
