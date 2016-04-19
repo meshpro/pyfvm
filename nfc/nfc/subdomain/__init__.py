@@ -93,17 +93,14 @@ class SubdomainCode(object):
             ibo = 'false'
 
         # template substitution
-        filename = os.path.join(os.path.dirname(__file__), 'subdomain.tpl')
+        filename = os.path.join(os.path.dirname(__file__), 'python.tpl')
         with open(filename, 'r') as f:
             src = Template(f.read())
             code = src.substitute({
                 'name': self.class_name,
                 'id': '"%s"' % self.class_name,
                 'is_inside_return': extract_c_expression(result),
-                'is_boundary_only': ibo,
-                'is_inside_body': '\n'.join(
-                    ('(void) %s;' % name) for name in unused_arguments
-                    ),
+                'is_boundary_only': ibo
                 })
 
         return {
