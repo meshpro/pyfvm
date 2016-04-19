@@ -11,7 +11,7 @@ import importlib.machinery
 
 import nfc
 
-from nfc.helpers import sanitize_identifier, templates_dir, run
+from nfc.helpers import sanitize_identifier, run
 
 
 def _main():
@@ -112,7 +112,11 @@ def _main():
         print()
 
     # Plug it all together in main
-    with open(os.path.join(templates_dir, 'main.tpl'), 'r') as f:
+    filename = os.path.join(
+            os.path.dirname(__file__),
+            'templates/main.tpl'
+            )
+    with open(filename, 'r') as f:
         main_src = Template(f.read())
         main_content = main_src.substitute({
             'namespace': namespace,

@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 #
-import os
 import re
 import subprocess
 import sympy
@@ -8,12 +7,6 @@ import sys
 import uuid
 
 import nfl
-
-templates_dir = os.path.join(
-    os.path.dirname(os.path.realpath(__file__)),
-    '..',
-    'templates'
-    )
 
 
 def get_uuid():

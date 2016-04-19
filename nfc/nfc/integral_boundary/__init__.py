@@ -5,16 +5,15 @@ from string import Template
 import sympy
 import nfl
 
-from .code_generator_eigen import CodeGeneratorEigen
-from .helpers import \
+from ..code_generator_eigen import CodeGeneratorEigen
+from ..helpers import \
         extract_c_expression, \
         extract_linear_components, \
         get_uuid, \
         is_affine_linear, \
         list_unique, \
         members_init_declare, \
-        replace_nosh_functions, \
-        templates_dir
+        replace_nosh_functions
 
 
 class IntegralBoundary(object):
@@ -76,8 +75,7 @@ class IntegralBoundary(object):
                     sympy.Symbol('%s[k]' % self.matrix_var)
                     )
             type = 'matrix_core_boundary'
-            filename = os.path.join(templates_dir, 'matrix_core_boundary.tpl')
-            with open(filename, 'r') as f:
+            with open('matrix_core_boundary.tpl', 'r') as f:
                 src = Template(f.read())
                 code = src.substitute({
                     'name': self.class_name,
@@ -89,10 +87,7 @@ class IntegralBoundary(object):
                     })
         else:
             type = 'matrix_core_operator'
-            filename = os.path.join(
-                    templates_dir, 'operator_core_boundary.tpl'
-                    )
-            with open(filename, 'r') as f:
+            with open('operator_core_boundary.tpl', 'r') as f:
                 src = Template(f.read())
                 code = src.substitute({
                     'name': self.class_name,

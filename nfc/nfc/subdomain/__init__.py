@@ -3,11 +3,10 @@
 import os
 from string import Template
 import sympy
-from .helpers import \
+from ..helpers import \
         extract_c_expression, \
         get_uuid, \
-        sanitize_identifier, \
-        templates_dir
+        sanitize_identifier
 
 import nfl
 
@@ -48,7 +47,8 @@ class SubdomainCode(object):
             ibo = 'false'
 
         # template substitution
-        with open(os.path.join(templates_dir, 'subdomain.tpl'), 'r') as f:
+        filename = os.path.join(os.path.dirname(__file__), 'subdomain.tpl')
+        with open(filename, 'r') as f:
             src = Template(f.read())
             code = src.substitute({
                 'name': self.class_name,
@@ -93,7 +93,8 @@ class SubdomainCode(object):
             ibo = 'false'
 
         # template substitution
-        with open(os.path.join(templates_dir, 'subdomain.tpl'), 'r') as f:
+        filename = os.path.join(os.path.dirname(__file__), 'subdomain.tpl')
+        with open(filename, 'r') as f:
             src = Template(f.read())
             code = src.substitute({
                 'name': self.class_name,

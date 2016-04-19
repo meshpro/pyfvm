@@ -3,11 +3,10 @@
 import os
 from string import Template
 import sympy
-from .helpers import \
+from ..helpers import \
         compare_variables, \
         extract_c_expression, \
-        sanitize_identifier, \
-        templates_dir
+        sanitize_identifier
 
 
 class ExpressionCode(object):
@@ -32,8 +31,7 @@ class ExpressionCode(object):
                 + 'return %s;' % extract_c_expression(result)
 
         # template substitution
-        filename = os.path.join(templates_dir, 'expression.tpl')
-        with open(filename, 'r') as f:
+        with open('expression.tpl', 'r') as f:
             src = Template(f.read())
             code = src.substitute({
                 'name': self.class_name,

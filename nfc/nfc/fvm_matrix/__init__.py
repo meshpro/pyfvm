@@ -5,11 +5,11 @@ import os
 from string import Template
 import sympy
 
-from .integral_boundary import IntegralBoundary
-from .dirichlet import Dirichlet
-from .integral_edge import IntegralEdge
-from .integral_vertex import IntegralVertex
-from .helpers import get_uuid, sanitize_identifier, templates_dir
+from ..integral_boundary import IntegralBoundary
+from ..dirichlet import Dirichlet
+from ..integral_edge import IntegralEdge
+from ..integral_vertex import IntegralVertex
+from ..helpers import get_uuid, sanitize_identifier
 
 
 class FvmMatrixCode(object):
@@ -179,8 +179,8 @@ def get_code_linear_problem(
       ]
     members_declare = []
 
-    templ = os.path.join(templates_dir, template_filename)
-    with open(templ, 'r') as f:
+    filename = os.path.join(os.path.dirname(__file__), template_filename)
+    with open(filename, 'r') as f:
         src = Template(f.read())
         code = src.substitute({
             'name': class_name,

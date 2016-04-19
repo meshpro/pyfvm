@@ -7,7 +7,7 @@ import sympy
 
 import nfl
 from .code_generator_tpetra import get_code_tpetra
-from .helpers import extract_c_expression, templates_dir
+from ..helpers import extract_c_expression
 
 
 def get_code_operator(namespace, name, var):
@@ -106,8 +106,7 @@ def _get_code_operator_plain(name, obj):
     else:
         full_members_init = ''
 
-    # template substitution
-    with open(os.path.join(templates_dir, 'operator.tpl'), 'r') as f:
+    with open('operator.tpl', 'r') as f:
         src = Template(f.read())
         code = src.substitute({
             'light_class_name': name.lower() + '_light',
@@ -151,9 +150,7 @@ def _get_code_operator_with_rebuild():
                 (required_fvm_matrix['var_name'].lower(),
                     required_fvm_matrix['class'].__name__.lower())
                 )
-    # template substitution
-    template = os.path.join(templates_dir, 'operator_with_rebuild.tpl')
-    with open(template, 'r') as f:
+    with open('operator_with_rebuild.tpl', 'r') as f:
         src = Template(f.read())
         code = src.substitute({
             'name': name.lower(),  # class names are lowercase

@@ -6,16 +6,15 @@ import sympy
 import nfl
 
 from .discretize_edge_integral import discretize_edge_integral
-from .code_generator_eigen import CodeGeneratorEigen
-from .expression import *
-from .subdomain import *
-from .helpers import \
+from ..code_generator_eigen import CodeGeneratorEigen
+from ..expression import *
+from ..subdomain import *
+from ..helpers import \
         extract_c_expression, \
         is_affine_linear, \
         list_unique, \
         get_uuid, \
-        members_init_declare, \
-        templates_dir
+        members_init_declare
 
 
 class IntegralEdge(object):
@@ -87,7 +86,10 @@ class IntegralEdge(object):
             members_declare.extend(extra_declare)
 
             # template substitution
-            filename = os.path.join(templates_dir, 'matrix_core_edge.tpl')
+            filename = os.path.join(
+                    os.path.dirname(__file__),
+                    'matrix_core_edge.tpl'
+                    )
             with open(filename, 'r') as f:
                 src = Template(f.read())
                 code = src.substitute({
@@ -107,7 +109,10 @@ class IntegralEdge(object):
 
             type = 'nosh::operator_core_edge'
             # template substitution
-            filename = os.path.join(templates_dir, 'operator_core_edge.tpl')
+            filename = os.path.join(
+                    os.path.dirname(__file__),
+                    'operator_core_edge.tpl'
+                    )
             with open(filename, 'r') as f:
                 src = Template(f.read())
                 code = src.substitute({

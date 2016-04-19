@@ -7,14 +7,14 @@ import sympy
 
 import nfl
 
-from .fvm_matrix import \
+from ..fvm_matrix import \
         FvmMatrixCode, \
         gather_core_dependencies
-from .integral_boundary import IntegralBoundary
-from .dirichlet import Dirichlet
-from .integral_edge import IntegralEdge
-from .integral_vertex import IntegralVertex
-from .helpers import get_uuid, sanitize_identifier, templates_dir
+from ..integral_boundary import IntegralBoundary
+from ..dirichlet import Dirichlet
+from ..integral_edge import IntegralEdge
+from ..integral_vertex import IntegralVertex
+from ..helpers import get_uuid, sanitize_identifier
 
 
 class FvmOperatorCode(object):
@@ -206,8 +206,7 @@ def get_code_linear_problem(
         ''' % (tpetra, '\n'.join(lines_refill))
         )
 
-    templ = os.path.join(templates_dir, template_filename)
-    with open(templ, 'r') as f:
+    with open(template_filename, 'r') as f:
         src = Template(f.read())
         code = src.substitute({
             'name': class_name,

@@ -4,15 +4,14 @@ import os
 from string import Template
 import sympy
 
-from .helpers import \
+from ..helpers import \
         compare_variables, \
         extract_c_expression, \
         get_uuid, \
         list_unique, \
         replace_nosh_functions, \
-        sanitize_identifier, \
-        templates_dir
-from .subdomain import *
+        sanitize_identifier
+from ..subdomain import *
 
 
 class Dirichlet(object):
@@ -58,7 +57,10 @@ class Dirichlet(object):
         unused_args, _ = compare_variables(set([vertex]), [result])
 
         # template substitution
-        filename = os.path.join(templates_dir, 'matrix_core_dirichlet.tpl')
+        filename = os.path.join(
+                os.path.dirname(__file__),
+                'matrix_core_dirichlet.tpl'
+                )
         with open(filename, 'r') as f:
             code = Template(f.read()).substitute({
                 'name': self.class_name,
@@ -92,7 +94,10 @@ class Dirichlet(object):
         declare = extra_declare
 
         # template substitution
-        filename = os.path.join(templates_dir, 'operator_core_dirichlet.tpl')
+        filename = os.path.join(
+                os.path.dirname(__file__),
+                'operator_core_dirichlet.tpl'
+                )
         with open(filename, 'r') as f:
             code = Template(f.read()).substitute({
                 'name': self.class_name,
