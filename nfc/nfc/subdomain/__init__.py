@@ -98,7 +98,7 @@ class SubdomainCode(object):
             src = Template(f.read())
             code = src.substitute({
                 'name': self.class_name_python,
-                'id': '"%s"' % self.class_name_python,
+                'id': '\'%s\'' % self.class_name_python,
                 'is_inside_return': result,
                 'is_boundary_only': ibo
                 })

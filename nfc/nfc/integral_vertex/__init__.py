@@ -21,7 +21,9 @@ from ..helpers import \
 class IntegralVertex(object):
     def __init__(self, namespace, integrand, subdomains, matrix_var=None):
         self.namespace = namespace
-        self.class_name_cxx = 'vertex_core_' + get_uuid()
+        uuid = get_uuid()
+        self.class_name_cxx = 'vertex_core_' + uuid
+        self.class_name_python = 'VertexCore' + uuid
 
         self.matrix_var = matrix_var
 
@@ -206,7 +208,7 @@ class IntegralVertex(object):
             with open(filename, 'r') as f:
                 src = Template(f.read())
                 code = src.substitute({
-                    'name': self.class_name_cxx,
+                    'name': self.class_name_python,
                     'vertex_contrib': extract_c_expression(coeff),
                     'vertex_affine': extract_c_expression(-affine),
                     'vertex_body': '\n'.join(eval_body),

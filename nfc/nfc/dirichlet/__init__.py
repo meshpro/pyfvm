@@ -16,7 +16,9 @@ from ..subdomain import *
 
 class Dirichlet(object):
     def __init__(self, function, subdomains, is_matrix):
-        self.class_name_cxx = 'dirichlet_' + get_uuid()
+        uuid = get_uuid()
+        self.class_name_cxx = 'dirichlet_' + uuid
+        self.class_name_python = 'Dirichlet' + uuid
         self.function = function
         self.is_matrix = is_matrix
 
@@ -111,7 +113,7 @@ class Dirichlet(object):
     def get_python_class_object(self, dep_class_objects):
         # collect subdomain init code
         init = '[%s]' % ', '.join(
-                '\'%s\'' % sanitize_identifier_cxx(sd.__name__)
+                '\'%s\'' % sd.__name__
                 for sd in self.subdomains
                 )
 
@@ -124,7 +126,8 @@ class Dirichlet(object):
         filename = os.path.join(os.path.dirname(__file__), 'python.tpl')
         with open(filename, 'r') as f:
             code = Template(f.read()).substitute({
-                'name': self.class_name_cxx,
+                'name': self.class_name_python,
+                'init_subdomains': init,
                 'eval_return_value': result
                 })
 

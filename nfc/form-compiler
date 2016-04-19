@@ -109,7 +109,7 @@ def _main():
         class_objects.extend(collect_class_objects(name))
 
     for co in class_objects:
-        print(co)
+        print(co['code'])
 
     code = '\n'.join(class_object['code'] for class_object in class_objects)
 

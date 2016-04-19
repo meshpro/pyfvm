@@ -20,7 +20,9 @@ from ..helpers import \
 class IntegralEdge(object):
     def __init__(self, namespace, integrand, subdomains, matrix_var=None):
         self.namespace = namespace
-        self.class_name_cxx = 'edge_core_' + get_uuid()
+        uuid = get_uuid()
+        self.class_name_cxx = 'edge_core_' + uuid
+        self.class_name_python = 'EdgeCore' + uuid
 
         self.expr, self.vector_vars = discretize_edge_integral(integrand)
 
@@ -128,7 +130,7 @@ class IntegralEdge(object):
         with open(filename, 'r') as f:
             src = Template(f.read())
             code = src.substitute({
-                'name': self.class_name_cxx,
+                'name': self.class_name_python,
                 'edge00': edge_coeff[0][0],
                 'edge01': edge_coeff[0][1],
                 'edge10': edge_coeff[1][0],
