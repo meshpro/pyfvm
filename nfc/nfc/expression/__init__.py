@@ -6,12 +6,12 @@ import sympy
 from ..helpers import \
         compare_variables, \
         extract_c_expression, \
-        sanitize_identifier
+        sanitize_identifier_cxx
 
 
 class ExpressionCode(object):
     def __init__(self, cls):
-        self.class_name = sanitize_identifier(cls.__name__)
+        self.class_name_cxx = sanitize_identifier_cxx(cls.__name__)
         self.cls = cls
         return
 
@@ -34,13 +34,13 @@ class ExpressionCode(object):
         with open('expression.tpl', 'r') as f:
             src = Template(f.read())
             code = src.substitute({
-                'name': self.class_name,
+                'name': self.class_name_cxx,
                 'eval_body': eval_body
                 })
 
         return {
             'code': code,
             'type': 'expression',
-            'class_name': self.class_name,
+            'class_name_cxx': self.class_name_cxx,
             'constructor_args': []
             }

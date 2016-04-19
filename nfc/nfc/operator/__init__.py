@@ -56,7 +56,7 @@ def _get_code_operator_plain(name, obj):
     for required_fvm_matrix in required_fvm_matrices:
         var_name = required_fvm_matrix['var_name'].lower()
         arg_name = var_name + '_'
-        class_name = required_fvm_matrix['class'].__name__.lower()
+        class_name_cxx = required_fvm_matrix['class'].__name__.lower()
         light_constructor_args.append(
                 'const std::shared_ptr<const Tpetra::Operator> & %s' % arg_name
                 )
@@ -64,11 +64,11 @@ def _get_code_operator_plain(name, obj):
                 '%s(%s)' % (var_name, arg_name)
                 )
         # At this point, we actually need to know the dependencies of the
-        # class_name constructor. As a stopgap measure, just put 'mesh' and
+        # class_name_cxx constructor. As a stopgap measure, just put 'mesh' and
         # hope for the best.
         # TODO fix this
         full_members_init.append(
-                '%s(std::make_shared<%s>(mesh))' % (var_name, class_name)
+                '%s(std::make_shared<%s>(mesh))' % (var_name, class_name_cxx)
                 )
         light_members_declare.append(
                 'const std::shared_ptr<const Tpetra::Operator> %s;' % var_name
@@ -80,7 +80,7 @@ def _get_code_operator_plain(name, obj):
 
         dependencies.add(required_fvm_matrix['class'])
 
-    light_class_name = name.lower() + '_light'
+    light_class_name_cxx = name.lower() + '_light'
     # initialize a member if _light in the full class
     light_var_name = name.lower() + '_light_'
     full_members_declare.append(
@@ -88,7 +88,7 @@ def _get_code_operator_plain(name, obj):
         )
     full_members_init.append(
         '%s(std::make_shared<%s>(%s)' % (
-            light_var_name, light_class_name, ', '.join(full_members_names)
+            light_var_name, light_class_name_cxx, ', '.join(full_members_names)
         )
         )
 
@@ -109,13 +109,13 @@ def _get_code_operator_plain(name, obj):
     with open('operator.tpl', 'r') as f:
         src = Template(f.read())
         code = src.substitute({
-            'light_class_name': name.lower() + '_light',
+            'light_class_name_cxx': name.lower() + '_light',
             'light_constructor_args': ',\n'.join(light_constructor_args),
             'light_members_init': light_members_init,
             'light_members_declare': '\n'.join(light_members_declare),
             'light_apply': op_code,
             'boundary_code': boundary_code,
-            'full_class_name': name.lower(),
+            'full_class_name_cxx': name.lower(),
             'full_members_init': full_members_init,
             'light_var_name': light_var_name,
             'full_members_declare': '\n'.join(full_members_declare)

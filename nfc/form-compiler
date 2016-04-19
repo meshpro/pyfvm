@@ -11,7 +11,7 @@ import importlib.machinery
 
 import nfc
 
-from nfc.helpers import sanitize_identifier, run
+from nfc.helpers import sanitize_identifier_cxx, run
 
 
 def _main():
@@ -23,7 +23,7 @@ def _main():
         args.infile
         ).load_module()
 
-    namespace = sanitize_identifier(
+    namespace = sanitize_identifier_cxx(
             os.path.splitext(os.path.basename(args.infile))[0]
             )
 
@@ -59,11 +59,11 @@ def _main():
     # Recursively go through all generators, get the dependencies, and build
     # the dependency tree.
     def insert_dependencies(generator):
-        if generator.class_name in deps:
+        if generator.class_name_cxx in deps:
             return
-        generators[generator.class_name] = generator
-        deps[generator.class_name] = [
-            dep.class_name for dep in generator.get_dependencies()
+        generators[generator.class_name_cxx] = generator
+        deps[generator.class_name_cxx] = [
+            dep.class_name_cxx for dep in generator.get_dependencies()
             ]
         for dep in generator.get_dependencies():
             insert_dependencies(dep)

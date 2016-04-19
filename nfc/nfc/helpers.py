@@ -113,34 +113,34 @@ def cxx_members_init_declare(namespace, parent_name, dependency_class_objects):
     # now take care of the template substitution
     members_init = []
     members_declare = []
-    subdomain_class_names = []
+    subdomain_class_name_cxxs = []
     for dep in dependency_class_objects:
         if dep['type'] == 'subdomain':
-            subdomain_class_names.append(dep['class_name'])
+            subdomain_class_name_cxxs.append(dep['class_name_cxx'])
         else:
-            var_name = dep['class_name']
+            var_name = dep['class_name_cxx']
             members_init.append(
                 '%s(%s::%s(%s))' %
                 (var_name, namespace,
-                 dep['class_name'], ', '.join(dep['constructor_args']))
+                 dep['class_name_cxx'], ', '.join(dep['constructor_args']))
                 )
             members_declare.append(
                 'const %s::%s %s;' %
-                (namespace, dep['class_name'], var_name)
+                (namespace, dep['class_name_cxx'], var_name)
                 )
 
-    if len(subdomain_class_names) == 0:
-        subdomain_class_names.append('everywhere')
+    if len(subdomain_class_name_cxxs) == 0:
+        subdomain_class_name_cxxs.append('everywhere')
     # initialize the parent class first
     members_init.insert(
         0,
         'nosh::%s({%s})' %
-        (parent_name, ', '.join(['"%s"' % s for s in subdomain_class_names]))
+        (parent_name, ', '.join(['"%s"' % s for s in subdomain_class_name_cxxs]))
         )
     return members_init, members_declare
 
 
-def sanitize_identifier(string):
+def sanitize_identifier_cxx(string):
     # turn any string into a valid C++ variable identifier
     return re.sub('\W|^(?=\d)', '_', string).lower()
 

@@ -14,12 +14,12 @@ from ..integral_boundary import IntegralBoundary
 from ..dirichlet import Dirichlet
 from ..integral_edge import IntegralEdge
 from ..integral_vertex import IntegralVertex
-from ..helpers import get_uuid, sanitize_identifier
+from ..helpers import get_uuid, sanitize_identifier_cxx
 
 
 class FvmOperatorCode(object):
     def __init__(self, namespace, cls):
-        self.class_name = sanitize_identifier(cls.__name__)
+        self.class_name_cxx = sanitize_identifier_cxx(cls.__name__)
         self.namespace = namespace
         self.dependencies = gather_dependencies(namespace, cls)
         return
@@ -30,7 +30,7 @@ class FvmOperatorCode(object):
     def get_cxx_class_object(self, dep_class_objects):
         code = get_code_linear_problem(
             'fvm_operator.tpl',
-            self.class_name,
+            self.class_name_cxx,
             'nosh::fvm_operator',
             self.dependencies
             )
@@ -69,8 +69,8 @@ def gather_dependencies(namespace, cls):
 
 def get_code_linear_problem(
         template_filename,
-        class_name,
-        base_class_name,
+        class_name_cxx,
+        base_class_name_cxx,
         dependencies
         ):
     dirichlet_cores = []
@@ -99,7 +99,7 @@ def get_code_linear_problem(
             fvm_matrices.append(dep)
         else:
             raise RuntimeError(
-                'Dependency \'%s\' not accounted for.' % dep.class_name
+                'Dependency \'%s\' not accounted for.' % dep.class_name_cxx
                 )
         # Collect all dependencies
         if dep.scalar_params:
@@ -111,23 +111,23 @@ def get_code_linear_problem(
         'const std::shared_ptr<const nosh::mesh> & _mesh'
         ]
     init_operator_core_edge = '{%s}' % (
-            ', '.join(['std::make_shared<%s>(_mesh)' % n.class_name
+            ', '.join(['std::make_shared<%s>(_mesh)' % n.class_name_cxx
                        for n in edge_cores])
             )
     init_operator_core_vertex = '{%s}' % (
-            ', '.join(['std::make_shared<%s>(_mesh)' % n.class_name
+            ', '.join(['std::make_shared<%s>(_mesh)' % n.class_name_cxx
                        for n in vertex_cores])
             )
     init_operator_core_boundary = '{%s}' % (
-            ', '.join(['std::make_shared<%s>(_mesh)' % n.class_name
+            ', '.join(['std::make_shared<%s>(_mesh)' % n.class_name_cxx
                        for n in boundary_cores])
             )
     init_operator_core_dirichlet = '{%s}' % (
-            ', '.join(['std::make_shared<%s>(_mesh)' % n.class_name
+            ', '.join(['std::make_shared<%s>(_mesh)' % n.class_name_cxx
                        for n in dirichlet_cores])
             )
     init_fvm_matrix = '{%s}' % (
-            ', '.join(['std::make_shared<%s>(_mesh)' % n.class_name
+            ', '.join(['std::make_shared<%s>(_mesh)' % n.class_name_cxx
                        for n in fvm_matrices])
             )
 
@@ -209,7 +209,7 @@ def get_code_linear_problem(
     with open(template_filename, 'r') as f:
         src = Template(f.read())
         code = src.substitute({
-            'name': class_name,
+            'name': class_name_cxx,
             'constructor_args': ',\n'.join(constructor_args),
             'members_init': ',\n'.join(members_init),
             'members_declare': '\n'.join(members_declare),

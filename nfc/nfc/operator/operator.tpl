@@ -1,13 +1,13 @@
-class ${light_class_name}: public Tpetra::Operator<double,int,int> {
+class ${light_class_name_cxx}: public Tpetra::Operator<double,int,int> {
 public:
-${light_class_name}(
+${light_class_name_cxx}(
     ${light_constructor_args}
     )${light_members_init}
 {
 }
 
 virtual
-~${light_class_name}()
+~${light_class_name_cxx}()
 {
 }
 
@@ -52,12 +52,12 @@ getRangeMap() const
 protected:
 private:
 ${light_members_declare}
-} // class ${light_class_name}
+} // class ${light_class_name_cxx}
 
 
-class ${full_class_name}: public Tpetra::Operator<double,int,int> {
+class ${full_class_name_cxx}: public Tpetra::Operator<double,int,int> {
 public:
-${full_class_name}(
+${full_class_name_cxx}(
     const std::shared_ptr<const nosh::mesh> & mesh
     ):
   ${full_members_init}
@@ -65,7 +65,7 @@ ${full_class_name}(
 }
 
 virtual
-~${full_class_name}()
+~${full_class_name_cxx}()
 {
 }
 
@@ -97,4 +97,4 @@ getRangeMap() const
 protected:
 private:
   ${full_members_declare}
-} // class ${full_class_name}
+} // class ${full_class_name_cxx}

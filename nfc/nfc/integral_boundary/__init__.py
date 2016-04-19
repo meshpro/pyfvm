@@ -22,7 +22,7 @@ class IntegralBoundary(object):
 
         self.matrix_var = matrix_var
 
-        self.class_name = 'boundary_core_' + get_uuid()
+        self.class_name_cxx = 'boundary_core_' + get_uuid()
 
         x = sympy.MatrixSymbol('x', 3, 1)
         fx = integrand(x)
@@ -78,7 +78,7 @@ class IntegralBoundary(object):
             with open('matrix_core_boundary.tpl', 'r') as f:
                 src = Template(f.read())
                 code = src.substitute({
-                    'name': self.class_name,
+                    'name': self.class_name_cxx,
                     'coeff': extract_c_expression(coeff),
                     'affine': extract_c_expression(-affine),
                     'body': '\n'.join(extra_body),
@@ -90,7 +90,7 @@ class IntegralBoundary(object):
             with open('operator_core_boundary.tpl', 'r') as f:
                 src = Template(f.read())
                 code = src.substitute({
-                    'name': self.class_name,
+                    'name': self.class_name_cxx,
                     'coeff': extract_c_expression(boundary_coeff),
                     'affine': extract_c_expression(-boundary_affine),
                     'body': '\n'.join(
@@ -103,12 +103,12 @@ class IntegralBoundary(object):
         return {
             'type': type,
             'code': code,
-            'class_name': self.class_name,
+            'class_name_cxx': self.class_name_cxx,
             'constructor_args': []
             }
 
 
-# def get_matrix_core_boundary_code(namespace, class_name, core):
+# def get_matrix_core_boundary_code(namespace, class_name_cxx, core):
 #     '''Get code generator from raw core object.
 #     '''
 #     # handle the boundary contributions
@@ -122,7 +122,7 @@ class IntegralBoundary(object):
 #     boundary_coeff, boundary_affine = method(x, vol)
 #
 #     return _get_code_matrix_core_boundary(
-#             namespace, class_name,
+#             namespace, class_name_cxx,
 #             boundary_coeff, boundary_affine
 #             )
 
