@@ -122,17 +122,35 @@ def _main():
         print()
 
     # Plug it all together in main
-    filename = os.path.join(
-            os.path.dirname(__file__),
-            'templates/main.tpl'
-            )
-    with open(filename, 'r') as f:
-        main_src = Template(f.read())
+    if args.backend == 'scipy':
+        main_template_python = '''
+        import pyfvm
+
+
+        ${content}
+        '''
+        main_src = Template(main_template_python)
+        main_content = main_src.substitute({'content': code})
+    elif args.backend == 'nosh':
+        main_template_cxx = '''
+        #ifndef ${namespace_uppercase}_HPP
+        #define ${namespace_uppercase}_HPP
+
+        #include <nosh.hpp>
+
+        namespace ${namespace}
+        {
+        ${content}
+        } // namespace ${namespace}
+        '''
+        main_src = Template(main_template_cxx)
         main_content = main_src.substitute({
             'namespace': namespace,
             'namespace_uppercase': namespace.upper(),
             'content': code
             })
+    else:
+        raise ValueError('Illegal backend \'%s\'.' % args.backend)
 
     # write it
     # outfile = os.path.splitext(args.infile)[0] + '.hpp'
