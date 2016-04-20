@@ -30,7 +30,7 @@ def read(filename, timestep=None):
     points, cells_nodes, point_data, cell_data, field_data = \
         meshio.read(filename)
 
-    if len(cells_nodes[0]) == 3:
+    if 'triangle' in cells_nodes:
         if all(points[:, 2] == 0.0):
             # Flat mesh.
             # Check if there's three-dimensional point data that can be cut.
@@ -41,12 +41,13 @@ def read(filename, timestep=None):
                         value.shape[1] == 3 and \
                         all(value[:, 2] == 0.0):
                     point_data[key] = value[:, :2]
-            return pyfvm.mesh2d.mesh2d(points[:, :2], cells_nodes), \
+            return \
+                pyfvm.mesh2d.mesh2d(points[:, :2], cells_nodes['triangle']), \
                 point_data, field_data
         else:  # 2d shell mesh
-            return pyfvm.meshTri.meshTri(points, cells_nodes), \
+            return pyfvm.meshTri.meshTri(points, cells_nodes['triangle']), \
                    point_data, field_data
-    elif len(cells_nodes[0]) == 4:  # 3D
+    elif 'tetrahedra' in cells_nodes:  # 3D
         return pyfvm.meshTetra.meshTetra(points, cells_nodes), \
                point_data, field_data
     else:
