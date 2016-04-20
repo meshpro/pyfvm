@@ -158,17 +158,6 @@ class IntegralVertex(object):
         declare = []
         methods = []
 
-        # now take care of the template substitution
-        deps_init, deps_declare = \
-            cxx_members_init_declare(
-                    self.namespace,
-                    'matrix_core_vertex' if self.matrix_var else
-                    'operator_core_vertex',
-                    dependency_class_objects
-                    )
-        init.extend(deps_init)
-        declare.extend(deps_declare)
-
         arguments.update(self.scalar_params)
         # Unfortunately, we cannot just add the vector_params to the arguments
         # since in the used_variables, given by expr.free_symbols, they are
@@ -183,12 +172,10 @@ class IntegralVertex(object):
         declare.extend(params_declare)
         methods.extend(params_methods)
 
-        extra_body, extra_init, extra_declare = _get_cxx_extra(
+        extra_body = _get_python_extra(
                 arguments, used_vars
                 )
         eval_body.extend(extra_body)
-        init.extend(extra_init)
-        declare.extend(extra_declare)
 
         # remove double lines
         eval_body = list_unique(eval_body)
@@ -211,8 +198,8 @@ class IntegralVertex(object):
                     'name': self.class_name_python,
                     'vertex_contrib': extract_c_expression(coeff),
                     'vertex_affine': extract_c_expression(-affine),
-                    'vertex_body': '\n'.join(eval_body),
-                    'members_init': ':\n' + ',\n'.join(init) if init else '',
+                    'vertex_body': '; '.join(eval_body),
+                    'members_init': ',\n'.join(init),
                     'members_declare': '\n'.join(declare)
                     })
         else:
