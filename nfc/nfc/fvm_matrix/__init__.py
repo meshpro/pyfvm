@@ -36,7 +36,7 @@ class FvmMatrixCode(object):
 
     def get_cxx_class_object(self, dep_class_objects):
         # Go through the dependencies collect the cores.
-        code = get_code_linear_problem(
+        code = get_code_linear_problem_cxx(
             'fvm_matrix.tpl',
             self.class_name_cxx,
             'nosh::fvm_matrix',
@@ -98,7 +98,7 @@ def get_code_fvm_matrix(namespace, class_name_cxx, obj):
             handle_core_dependencies(namespace, obj)
 
     # append the code of the linear problem itself
-    code += '\n' + get_code_linear_problem(
+    code += '\n' + get_code_linear_problem_cxx(
             'fvm_matrix.tpl',
             class_name_cxx.lower(),
             'nosh::fvm_matrix',
@@ -111,7 +111,7 @@ def get_code_fvm_matrix(namespace, class_name_cxx, obj):
     return code, dependencies
 
 
-def get_code_linear_problem(
+def get_code_linear_problem_cxx(
         template_filename,
         class_name_cxx,
         base_class_name_cxx,
@@ -187,6 +187,79 @@ def get_code_linear_problem(
             'constructor_args': ',\n'.join(constructor_args),
             'members_init': ',\n'.join(members_init),
             'members_declare': '\n'.join(members_declare)
+            })
+
+    return code
+
+
+def get_code_linear_problem_python(
+        template_filename,
+        class_name_python,
+        dependencies
+        ):
+    # Go through the dependencies collect the cores.
+    dirichlet_cores = []
+    vertex_cores = []
+    edge_cores = []
+    boundary_cores = []
+    vector_parameters = {}
+    for dep in dependencies:
+        # Collect all vector dependencies
+        vector_parameters[dep.class_name_cxx] = dep.vector_params
+        # Sort the cores
+        if isinstance(dep, Dirichlet):
+            dirichlet_cores.append(dep)
+        elif isinstance(dep, IntegralVertex):
+            vertex_cores.append(dep)
+        elif isinstance(dep, IntegralEdge):
+            edge_cores.append(dep)
+        elif isinstance(dep, IntegralBoundary):
+            boundary_cores.append(dep)
+        else:
+            raise RuntimeError(
+                'Dependency \'%s\' not accounted for.' % dep.class_name_cxx
+                )
+
+    constructor_args = []
+    init_matrix_core_edge = 'self.edge_cores = [%s]' % (
+            ', '.join(
+                ['%s(self.mesh)' % n.class_name_python
+                 for n in edge_cores]
+                )
+            )
+    init_matrix_core_vertex = 'self.vertex_cores = [%s]' % (
+            ', '.join(
+                ['%s(self.mesh)' % n.class_name_python
+                 for n in vertex_cores]
+                )
+            )
+    init_matrix_core_boundary = 'self.boundary_cores = [%s]' % (
+            ', '.join(
+                ['%s(self.mesh)' % n.class_name_python
+                 for n in boundary_cores]
+                )
+            )
+    init_matrix_core_dirichlet = 'self.dirichlets = [%s]' % (
+            ', '.join(
+                ['%s(self.mesh)' % n.class_name_python
+                 for n in dirichlet_cores]
+                )
+            )
+
+    members_init = '; '.join([
+        init_matrix_core_edge,
+        init_matrix_core_vertex,
+        init_matrix_core_boundary,
+        init_matrix_core_dirichlet
+       ])
+
+    filename = os.path.join(os.path.dirname(__file__), template_filename)
+    with open(filename, 'r') as f:
+        src = Template(f.read())
+        code = src.substitute({
+            'name': class_name_python,
+            'constructor_args': ',\n'.join(constructor_args),
+            'members_init': members_init
             })
 
     return code

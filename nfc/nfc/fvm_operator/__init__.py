@@ -28,7 +28,7 @@ class FvmOperatorCode(object):
         return self.dependencies
 
     def get_cxx_class_object(self, dep_class_objects):
-        code = get_code_linear_problem(
+        code = get_code_linear_problem_cxx(
             'fvm_operator.tpl',
             self.class_name_cxx,
             'nosh::fvm_operator',
@@ -67,7 +67,7 @@ def gather_dependencies(namespace, cls):
     return dependencies
 
 
-def get_code_linear_problem(
+def get_code_linear_problem_cxx(
         template_filename,
         class_name_cxx,
         base_class_name_cxx,

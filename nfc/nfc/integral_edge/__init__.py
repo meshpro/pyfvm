@@ -114,6 +114,7 @@ class IntegralEdge(object):
                 'members_init': ':\n' + ',\n'.join(init) if init else '',
                 'members_declare': '\n'.join(members_declare)
                 })
+        return {'code': code}
 
     def get_python_class_object(self, dependency_class_objects):
 
@@ -137,8 +138,9 @@ class IntegralEdge(object):
                 'edge11': edge_coeff[1][1],
                 'edge_affine0': -edge_affine[0],
                 'edge_affine1': -edge_affine[1],
-                'eval_body': '\n'.join(body)
+                'eval_body': '; '.join(body)
                 })
+        return {'code': code}
 
 
 def _extract_linear_components(expr, dvars):
@@ -275,7 +277,7 @@ def _get_python_extra(arguments, used_variables):
 
     edge_length = sympy.Symbol('edge_length')
     if edge_length in undefined_symbols:
-        body.append('edge_length = mesh.edge_lengths[k]')
+        body.append('edge_length = self.mesh.edge_lengths[k]')
         undefined_symbols.remove(edge_length)
         if edge in unused_arguments:
             unused_arguments.remove(edge)

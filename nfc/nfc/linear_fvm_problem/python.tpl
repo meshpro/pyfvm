@@ -1,5 +1,6 @@
 class ${name}(object):
-    def __init__():
+    def __init__(self, mesh):
+        self.mesh = mesh
         ${members_init}
         fill()
         return

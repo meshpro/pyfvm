@@ -5,12 +5,16 @@ from ..integral_boundary import *
 from ..integral_edge import *
 from ..integral_vertex import *
 from ..helpers import sanitize_identifier_cxx
-from ..fvm_matrix import gather_core_dependencies, get_code_linear_problem
+from ..fvm_matrix import \
+        gather_core_dependencies, \
+        get_code_linear_problem_cxx, \
+        get_code_linear_problem_python
 
 
 class LinearFvmProblemCode(object):
     def __init__(self, namespace, cls):
         self.class_name_cxx = sanitize_identifier_cxx(cls.__name__)
+        self.class_name_python = cls.__name__
         self.namespace = namespace
 
         u = sympy.Function('u')
@@ -31,7 +35,7 @@ class LinearFvmProblemCode(object):
                 os.path.dirname(__file__),
                 'linear_fvm_problem.tpl'
                 )
-        code = get_code_linear_problem(
+        code = get_code_linear_problem_cxx(
             'linear_fvm_problem.tpl',
             self.class_name_cxx,
             'nosh::linear_problem',
@@ -44,10 +48,9 @@ class LinearFvmProblemCode(object):
 
     def get_python_class_object(self, dep_class_objects):
         filename = os.path.join(os.path.dirname(__file__), 'python.tpl')
-        code = get_code_linear_problem(
+        code = get_code_linear_problem_python(
             filename,
-            self.class_name_cxx,
-            'nosh::linear_problem',
+            self.class_name_python,
             self.dependencies
             )
 

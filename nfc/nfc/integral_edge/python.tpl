@@ -1,9 +1,8 @@
 class ${name}(object):
-
-    def __init__(mesh):
+    def __init__(self, mesh):
         self.mesh = mesh
 
-    def eval(edge):
+    def eval(self, k):
        ${eval_body}
        return ([[
         ${edge00},
