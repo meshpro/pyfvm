@@ -108,11 +108,6 @@ def _main():
     for name in deps:
         class_objects.extend(collect_class_objects(name))
 
-    for co in class_objects:
-        print(co['code'])
-
-    code = '\n'.join(class_object['code'] for class_object in class_objects)
-
     if missing_objects:
         print()
         print('You will need to manually define the objects')
@@ -123,26 +118,32 @@ def _main():
 
     # Plug it all together in main
     if args.backend == 'scipy':
+        # Python classes want two newlines between them
+        code = '\n\n'.join(
+                class_object['code'] for class_object in class_objects
+                )
+
         main_template_python = '''
-        import pyfvm
+import pyfvm
 
 
-        ${content}
-        '''
+${content}'''
         main_src = Template(main_template_python)
         main_content = main_src.substitute({'content': code})
     elif args.backend == 'nosh':
+        code = '\n'.join(
+                class_object['code'] for class_object in class_objects
+                )
         main_template_cxx = '''
-        #ifndef ${namespace_uppercase}_HPP
-        #define ${namespace_uppercase}_HPP
+#ifndef ${namespace_uppercase}_HPP
+#define ${namespace_uppercase}_HPP
 
-        #include <nosh.hpp>
+#include <nosh.hpp>
 
-        namespace ${namespace}
-        {
-        ${content}
-        } // namespace ${namespace}
-        '''
+namespace ${namespace}
+{
+${content}
+} // namespace ${namespace}'''
         main_src = Template(main_template_cxx)
         main_content = main_src.substitute({
             'namespace': namespace,
@@ -157,9 +158,10 @@ def _main():
     with open(args.outfile, 'w') as f:
         f.write(main_content)
 
-    # Make sure it's formatted nicely.
-    # TODO check out uncrustify
-    run('astyle --style=ansi -s2 %s' % args.outfile)
+    if args.backend == 'nosh':
+        # Make sure it's formatted nicely.
+        # TODO check out uncrustify
+        run('astyle --style=ansi -s2 %s' % args.outfile)
 
     return
 
