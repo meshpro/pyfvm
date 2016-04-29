@@ -1,5 +1,6 @@
 class ${name}(object):
-    def __init__(self):
+    def __init__(self, mesh):
+        self.mesh = mesh
         self.subdomains = ${init_subdomains}
         return
 
