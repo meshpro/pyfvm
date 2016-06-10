@@ -33,7 +33,7 @@ script:
   # cd into test directory to make sure we're using the pip-installed
   # matplotlib2tikz.
   - cd tests
-  - nosetests --with-coverage --cover-package=voropy
+  - nosetests --with-coverage --cover-package=pyfvm
 
 after_success:
   - coveralls

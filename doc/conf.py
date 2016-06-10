@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# VoroPy documentation build configuration file, created by
+# PyFVM documentation build configuration file, created by
 # sphinx-quickstart on Tue Feb 25 11:45:44 2014.
 #
 # This file is execfile()d with the current directory set to its containing dir.
@@ -44,14 +44,14 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'VoroPy'
+project = u'PyFVM'
 copyright = u'2015, Nico Schlömer'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 #
-from voropy import __version__
+from pyfvm import __version__
 # The short X.Y version.
 version = '.'.join(__version__.split('.')[:2])
 # The full version, including alpha/beta/rc tags.
@@ -169,7 +169,7 @@ html_static_path = ['_static']
 #html_file_suffix = None
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'VoroPydoc'
+htmlhelp_basename = 'PyFVMdoc'
 
 
 # -- Options for LaTeX output --------------------------------------------------
@@ -188,7 +188,7 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'VoroPy.tex', u'VoroPy Documentation',
+  ('index', 'PyFVM.tex', u'PyFVM Documentation',
    u'Nico Schlömer', 'manual'),
 ]
 
@@ -218,7 +218,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'voropy', u'VoroPy Documentation',
+    ('index', 'pyfvm', u'PyFVM Documentation',
      [u'Nico Schlömer'], 1)
 ]
 
@@ -232,8 +232,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'VoroPy', u'VoroPy Documentation',
-   u'Nico Schlömer', 'VoroPy', 'One line description of project.',
+  ('index', 'PyFVM', u'PyFVM Documentation',
+   u'Nico Schlömer', 'PyFVM', 'One line description of project.',
    'Miscellaneous'),
 ]
 
