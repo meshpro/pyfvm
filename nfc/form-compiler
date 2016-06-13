@@ -10,6 +10,7 @@ import os
 import importlib.machinery
 import tokenize
 import io
+import autopep8
 
 import nfc
 
@@ -148,6 +149,10 @@ ${content}'''
         main_src = Template(main_template_python)
         main_content = main_src.substitute({'content': code})
         main_content = _semicolons_to_newlines(main_content)
+        main_content = autopep8.fix_code(
+                main_content,
+                options={'aggressive': 2}
+                )
     elif args.backend == 'nosh':
         code = '\n'.join(
                 class_object['code'] for class_object in class_objects
