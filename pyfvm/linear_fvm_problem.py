@@ -42,7 +42,7 @@ def _get_VIJ(
                 # TODO fix this
                 k0, k1 = mesh.get_edge_vertices(k)
                 vals_matrix, vals_rhs = edge_core.eval(k)
-                V += [vals]
+                V += [vals_matrix]
                 I += [k0, k1]
                 J += [k0, k1]
 
@@ -59,7 +59,15 @@ def _get_VIJ(
             #     J += [k0, k1]
 
     for vertex_core in vertex_cores:
-        raise NotImplemented('vertex core')
+        for subdomain in vertex_core.subdomains:
+            for k in mesh.get_vertices(subdomain):
+                val_matrix, val_rhs = vertex_core.eval(k)
+                V += [val_matrix]
+                I += [k]
+                J += [k]
+
+                if compute_rhs:
+                    rhs[k] += val_rhs
 
     for dirichlet in dirichlets:
         for subdomain in dirichlet.subdomains:
