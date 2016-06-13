@@ -173,10 +173,11 @@ class TestControlVolumes(unittest.TestCase):
         filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                 'brick-w-hole.e')
         mesh, _, _ = pyfvm.reader.read(filename)
-        actual_values = [388.68629169464117,
-                         16.661401941985677,
-                         1.4684734547497671
-                         ]
+        actual_values = [
+                388.68629169464117,
+                16.661401941985677,
+                1.4684734547497671
+                ]
         self._run_test(mesh, actual_values)
         return
 

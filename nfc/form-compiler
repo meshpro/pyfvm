@@ -8,10 +8,27 @@ import re
 from string import Template
 import os
 import importlib.machinery
+import tokenize
+import io
 
 import nfc
 
 from nfc.helpers import sanitize_identifier_cxx, run
+
+
+def _semicolons_to_newlines(code):
+    '''Replaces semicolons in Python code with newlines and the appropriate
+    indentation.
+    '''
+    g = tokenize.generate_tokens(io.StringIO(code).readline)
+    result = []
+    for toknum, tokval, _, _, _ in g:
+        if toknum == tokenize.OP and tokval == ';':
+            result.append((tokenize.NEWLINE, '\n'))
+        else:
+            result.append((toknum, tokval))
+
+    return tokenize.untokenize(result)
 
 
 def _main():
@@ -130,6 +147,7 @@ import pyfvm
 ${content}'''
         main_src = Template(main_template_python)
         main_content = main_src.substitute({'content': code})
+        main_content = _semicolons_to_newlines(main_content)
     elif args.backend == 'nosh':
         code = '\n'.join(
                 class_object['code'] for class_object in class_objects
