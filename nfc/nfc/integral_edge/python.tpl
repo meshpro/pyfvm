@@ -1,6 +1,7 @@
 class ${name}(object):
     def __init__(self, mesh):
         self.mesh = mesh
+        self.subdomains = ${init_subdomains}
 
     def eval(self, k):
         ${eval_body}

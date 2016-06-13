@@ -333,9 +333,10 @@ class mesh2d(_base_mesh):
             # Compute coedge length.
             if len(edge['cells']) == 1:
                 # Boundary edge.
-                edge_midpoint = 0.5 * (self.node_coords[edge['nodes'][0]] +
-                                       self.node_coords[edge['nodes'][1]]
-                                       )
+                edge_midpoint = 0.5 * (
+                        self.node_coords[edge['nodes'][0]] +
+                        self.node_coords[edge['nodes'][1]]
+                        )
                 coedge = self.cell_circumcenters[edge['cells'][0]] \
                     - edge_midpoint
                 coedge_midpoint = \

@@ -41,6 +41,9 @@ class IntegralEdge(object):
                 for atom in self.expr.atoms(nfl.Expression)],
             [SubdomainCode(sd) for sd in subdomains]
             )
+
+        self.subdomains = subdomains
+
         return
 
     def get_dependencies(self):
@@ -126,6 +129,12 @@ class IntegralEdge(object):
         extra_body = _get_python_extra(arguments, used_vars)
         body.extend(extra_body)
 
+        # collect subdomain init code
+        init_subdomains = '[%s]' % ', '.join(
+                '\'%s\'' % sd.__name__
+                for sd in self.subdomains
+                )
+
         # template substitution
         filename = os.path.join(os.path.dirname(__file__), 'python.tpl')
         with open(filename, 'r') as f:
@@ -138,7 +147,8 @@ class IntegralEdge(object):
                 'edge11': edge_coeff[1][1],
                 'edge_affine0': -edge_affine[0],
                 'edge_affine1': -edge_affine[1],
-                'eval_body': '; '.join(body)
+                'eval_body': '; '.join(body),
+                'init_subdomains': init_subdomains
                 })
         return {'code': code}
 

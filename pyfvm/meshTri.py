@@ -1,41 +1,10 @@
 # -*- coding: utf-8 -*-
 #
-#  Copyright (c) 2012--2014, Nico Schlömer, <nico.schloemer@gmail.com>
-#  All rights reserved.
-#
-#  This file is part of PyFVM.
-#
-#  Redistribution and use in source and binary forms, with or without
-#  modification, are permitted provided that the following conditions are met:
-#
-#  1. Redistributions of source code must retain the above copyright notice,
-#  this list of conditions and the following disclaimer.
-#
-#  2. Redistributions in binary form must reproduce the above copyright notice,
-#  this list of conditions and the following disclaimer in the documentation
-#  and/or other materials provided with the distribution.
-#
-#  3. Neither the name of the copyright holder nor the names of its
-#  contributors may be used to endorse or promote products derived from this
-#  software without specific prior written permission.
-#
-#  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-#  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-#  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-#  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
-#  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-#  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-#  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-#  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-#  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-#  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-#  POSSIBILITY OF SUCH DAMAGE.
-#
-__all__ = ['meshTri']
-
 import numpy
 import warnings
 from pyfvm.base import _base_mesh
+
+__all__ = ['meshTri']
 
 
 class meshTri(_base_mesh):
@@ -56,6 +25,11 @@ class meshTri(_base_mesh):
         self.cell_volumes = None
         self.cell_circumcenters = None
         self.control_volumes = None
+
+        return
+
+    def mark_subdomains(self, subdomains):
+        # TODO
         return
 
     def create_cell_volumes(self):
@@ -65,10 +39,10 @@ class meshTri(_base_mesh):
         self.cell_volumes = numpy.empty(num_cells, dtype=float)
         for cell_id, cell in enumerate(self.cells):
             x0, x1, x2 = self.node_coords[cell['nodes']]
-            #edge0 = node0 - node1
-            #edge1 = node1 - node2
-            #self.cell_volumes[cell_id] = \
-            #    0.5 * numpy.linalg.norm(numpy.cross(edge0, edge1))
+            # edge0 = node0 - node1
+            # edge1 = node1 - node2
+            # self.cell_volumes[cell_id] = \
+            #     0.5 * numpy.linalg.norm(numpy.cross(edge0, edge1))
             # Append a third component.
             from vtk import vtkTriangle
             self.cell_volumes[cell_id] = \
@@ -161,7 +135,6 @@ class meshTri(_base_mesh):
         self.edges = self.edges[:new_edge_gid]
         return
 
-
     def compute_control_volumes(self, variant='voronoi'):
         '''Compute the control volumes of all nodes in the mesh.
         '''
@@ -181,8 +154,8 @@ class meshTri(_base_mesh):
         self.control_volumes = numpy.zeros(num_nodes, dtype=float)
 
         # compute cell circumcenters
-        #if self.cell_circumcenters is None:
-            #self.compute_cell_circumcenters()
+        # if self.cell_circumcenters is None:
+        #    self.compute_cell_circumcenters()
 
         if self.edges is None:
             self.create_adjacent_entities()
@@ -241,9 +214,10 @@ class meshTri(_base_mesh):
                     - other0[1] * edge_midpoint[0]
 
                 self.control_volumes[node_ids] += \
-                    numpy.sign(gauge) * 0.5 * (cc_tmp[0] * edge_midpoint[1]
-                                               - cc_tmp[1] * edge_midpoint[0]
-                                               )
+                    numpy.sign(gauge) * 0.5 * (
+                            cc_tmp[0] * edge_midpoint[1] -
+                            cc_tmp[1] * edge_midpoint[0]
+                            )
         # Sanity checks.
         if self.cell_volumes is None:
             self.create_cell_volumes()
@@ -312,13 +286,13 @@ class meshTri(_base_mesh):
                 - node
             if len(cc) == 2:  # interior edge
                 self.control_volumes[node_ids] += \
-                    numpy.sign(gauge) * 0.5 * (cc[0][0] * cc[1][1]
-                                               - cc[0][1] * cc[1][0]
+                    numpy.sign(gauge) * 0.5 * (cc[0][0] * cc[1][1] -
+                                               cc[0][1] * cc[1][0]
                                                )
             elif len(cc) == 1:  # boundary edge
                 self.control_volumes[node_ids] += \
-                    numpy.sign(gauge) * 0.5 * (cc[0][0] * edge_midpoint[1]
-                                               - cc[0][1] * edge_midpoint[0]
+                    numpy.sign(gauge) * 0.5 * (cc[0][0] * edge_midpoint[1] -
+                                               cc[0][1] * edge_midpoint[0]
                                                )
             else:
                 raise RuntimeError('An edge should have either 1'
@@ -413,22 +387,22 @@ class meshTri(_base_mesh):
             # Compute coedge length.
             if len(edge['cells']) == 1:
                 # Boundary edge.
-                edge_midpoint = 0.5 * (self.node_coords[edge['nodes'][0]]
-                                       + self.node_coords[edge['nodes'][1]]
+                edge_midpoint = 0.5 * (self.node_coords[edge['nodes'][0]] +
+                                       self.node_coords[edge['nodes'][1]]
                                        )
                 coedge = self.cell_circumcenters[edge['cells'][0]] \
                     - edge_midpoint
                 coedge_midpoint = \
-                    0.5 * (self.cell_circumcenters[edge['cells'][0]]
-                           + edge_midpoint
+                    0.5 * (self.cell_circumcenters[edge['cells'][0]] +
+                           edge_midpoint
                            )
             elif len(edge['cells']) == 2:
                 # Interior edge.
                 coedge = self.cell_circumcenters[edge['cells'][0]] \
                     - self.cell_circumcenters[edge['cells'][1]]
                 coedge_midpoint = \
-                    0.5 * (self.cell_circumcenters[edge['cells'][0]]
-                           + self.cell_circumcenters[edge['cells'][1]]
+                    0.5 * (self.cell_circumcenters[edge['cells'][0]] +
+                           self.cell_circumcenters[edge['cells'][1]]
                            )
             else:
                 raise RuntimeError('Edge needs to have either one '
@@ -436,8 +410,8 @@ class meshTri(_base_mesh):
                                    )
 
             # Compute the coefficient r for both contributions
-            coeffs = numpy.sqrt(numpy.dot(coedge, coedge)
-                                / numpy.dot(edge_coords, edge_coords)
+            coeffs = numpy.sqrt(numpy.dot(coedge, coedge) /
+                                numpy.dot(edge_coords, edge_coords)
                                 ) / self.control_volumes[edge['nodes']]
 
             # Compute R*_{IJ} ((11) in [1]).
@@ -521,7 +495,9 @@ class meshTri(_base_mesh):
             cell0 = self.edges['cells'][edge_id][0]
             # This nonzero construct is an ugly replacement for the nonexisting
             # index() method. (Compare with Python lists.)
-            edge_lid = numpy.nonzero(self.cells['edges'][cell0] == edge_id)[0][0]
+            edge_lid = numpy.nonzero(
+                    self.cells['edges'][cell0] == edge_id
+                    )[0][0]
             # This makes use of the fact that cellsEdges and cellsNodes
             # are coordinated such that in cell #i, the edge cellsEdges[i][k]
             # opposes cellsNodes[i][k].
@@ -573,9 +549,10 @@ class meshTri(_base_mesh):
                     p = ccs.T
                 elif len(ccs) == 1:
                     edge_midpoint = \
-                        0.5 * (self.node_coords[self.edges['nodes'][edge_id][0]]
-                               + self.node_coords[self.edges['nodes'][edge_id][1]]
-                               )
+                        0.5 * (
+                            self.node_coords[self.edges['nodes'][edge_id][0]] +
+                            self.node_coords[self.edges['nodes'][edge_id][1]]
+                            )
                     p = numpy.c_[ccs[0], edge_midpoint]
                 else:
                     raise RuntimeError('An edge has to have either 1 '
@@ -604,7 +581,7 @@ class meshTri(_base_mesh):
         import matplotlib.pyplot as plt
 
         fig = plt.figure()
-        #ax = fig.gca(projection='3d')
+        # ax = fig.gca(projection='3d')
         ax = fig.gca()
         plt.axis('equal')
 
@@ -631,13 +608,16 @@ class meshTri(_base_mesh):
                         p = ccs.T
                         q = numpy.c_[ccs[0], ccs[1], self.node_coords[node_id]]
                     elif len(ccs) == 1:
-                        edge_midpoint = 0.5 * (self.node_coords[node_ids[0]]
-                                              +self.node_coords[node_ids[1]])
+                        edge_midpoint = 0.5 * (
+                                self.node_coords[node_ids[0]] +
+                                self.node_coords[node_ids[1]]
+                                )
                         p = numpy.c_[ccs[0], edge_midpoint]
-                        q = numpy.c_[ccs[0],
-                                  edge_midpoint,
-                                  self.node_coords[node_id]
-                                  ]
+                        q = numpy.c_[
+                                ccs[0],
+                                edge_midpoint,
+                                self.node_coords[node_id]
+                                ]
                     else:
                         raise RuntimeError('An edge has to have either 1 or 2'
                                            'adjacent cells.'
