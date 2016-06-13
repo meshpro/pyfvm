@@ -130,10 +130,13 @@ class IntegralEdge(object):
         body.extend(extra_body)
 
         # collect subdomain init code
-        init_subdomains = '[%s]' % ', '.join(
-                '\'%s\'' % sd.__name__
-                for sd in self.subdomains
-                )
+        if self.subdomains:
+            init_subdomains = '[%s]' % ', '.join(
+                    '\'%s\'' % sd.__name__
+                    for sd in self.subdomains
+                    )
+        else:
+            init_subdomains = '[\'everywhere\']'
 
         # template substitution
         filename = os.path.join(os.path.dirname(__file__), 'python.tpl')
