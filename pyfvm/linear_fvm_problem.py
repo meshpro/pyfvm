@@ -38,9 +38,8 @@ def _get_VIJ(
         rhs = None
     for edge_core in edge_cores:
         for subdomain in edge_core.subdomains:
-            for k in mesh.get_edges(subdomain):
-                # TODO fix this
-                k0, k1 = mesh.get_edge_vertices(k)
+            for k, verts in enumerate(mesh.get_edges(subdomain)):
+                v0, v1 = verts
                 vals_matrix, vals_rhs = edge_core.eval(k)
                 V += [vals_matrix]
                 I += [k0, k1]

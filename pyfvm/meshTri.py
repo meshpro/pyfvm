@@ -18,13 +18,28 @@ class meshTri(_base_mesh):
         super(meshTri, self).__init__(nodes, cells)
         self.edges = None
         num_cells = len(cells)
-        self.cells = numpy.empty(num_cells,
-                                 dtype=numpy.dtype([('nodes', (int, 3))])
-                                 )
+        self.cells = numpy.empty(
+                num_cells,
+                dtype=numpy.dtype([('nodes', (int, 3))])
+                )
         self.cells['nodes'] = cells
         self.cell_volumes = None
         self.cell_circumcenters = None
         self.control_volumes = None
+
+        self.create_adjacent_entities()
+
+        self.compute_edge_lengths()
+
+        return
+
+    def compute_edge_lengths(self):
+        self.edge_lengths = numpy.empty(len(self.edges))
+
+        for k, vertices in enumerate(self.edges['nodes']):
+            coord0 = self.node_coords[vertices[0]]
+            coord1 = self.node_coords[vertices[1]]
+            self.edge_lengths[k] = numpy.linalg.norm(coord0 - coord1)
 
         return
 
@@ -62,16 +77,18 @@ class meshTri(_base_mesh):
             # Project to 2D, compute circumcenter, get its barycentric
             # coordinates, and project those back to 3D.
             x2d = numpy.empty(3, dtype=numpy.dtype((float, 2)))
-            vtkTriangle.ProjectTo2D(x[0], x[1], x[2],
-                                    x2d[0], x2d[1], x2d[2])
+            vtkTriangle.ProjectTo2D(
+                    x[0], x[1], x[2],
+                    x2d[0], x2d[1], x2d[2]
+                    )
             cc2d = numpy.empty(2, dtype=float)
             vtkTriangle.Circumcircle(x2d[0], x2d[1], x2d[2], cc2d)
             bary = numpy.empty(3, dtype=float)
             vtkTriangle.BarycentricCoords(cc2d, x2d[0], x2d[1], x2d[2], bary)
             self.cell_circumcenters[cell_id] = \
-                bary[0] * x[0] \
-                + bary[1] * x[1] \
-                + bary[2] * x[2]
+                bary[0] * x[0] + \
+                bary[1] * x[1] + \
+                bary[2] * x[2]
         return
 
     def create_adjacent_entities(self):
@@ -135,6 +152,11 @@ class meshTri(_base_mesh):
         self.edges = self.edges[:new_edge_gid]
         return
 
+    def get_edges(self, subdomain):
+        if subdomain != 'everywhere':
+            raise NotImplemented('subdomains not yet implemented')
+        return self.edges
+
     def compute_control_volumes(self, variant='voronoi'):
         '''Compute the control volumes of all nodes in the mesh.
         '''
@@ -185,11 +207,16 @@ class meshTri(_base_mesh):
                 node_ids = self.edges['nodes'][edge_id]
 
                 # Get the local IDs.
-                edge_lid = \
-                    numpy.nonzero(self.cells['edges'][cell_id] == edge_id)[0][0]
+                edge_lid = numpy.nonzero(
+                            self.cells['edges'][cell_id] == edge_id
+                            )[0][0]
                 node_lids = numpy.array([
-                  numpy.nonzero(self.cells['nodes'][cell_id] == node_ids[0])[0][0],
-                  numpy.nonzero(self.cells['nodes'][cell_id] == node_ids[1])[0][0]
+                  numpy.nonzero(
+                      self.cells['nodes'][cell_id] == node_ids[0]
+                      )[0][0],
+                  numpy.nonzero(
+                      self.cells['nodes'][cell_id] == node_ids[1]
+                      )[0][0]
                   ])
 
                 # This makes use of the fact that cellsEdges and cellsNodes are
@@ -528,7 +555,7 @@ class meshTri(_base_mesh):
         import matplotlib.pyplot as plt
 
         fig = plt.figure()
-        #ax = fig.gca(projection='3d')
+        # ax = fig.gca(projection='3d')
         ax = fig.gca()
         plt.axis('equal')
 
