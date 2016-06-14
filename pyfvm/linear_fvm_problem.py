@@ -42,8 +42,8 @@ def _get_VIJ(
                 v0, v1 = verts
                 vals_matrix, vals_rhs = edge_core.eval(k)
                 V += [vals_matrix]
-                I += [k0, k1]
-                J += [k0, k1]
+                I += [v0, v1]
+                J += [v0, v1]
 
                 if compute_rhs:
                     rhs[k0] += vals_rhs[0]

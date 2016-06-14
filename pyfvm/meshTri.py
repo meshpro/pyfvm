@@ -154,6 +154,11 @@ class meshTri(_base_mesh):
             raise NotImplemented('subdomains not yet implemented')
         return self.edges
 
+    def get_vertices(self, subdomain):
+        if subdomain != 'everywhere':
+            raise NotImplemented('subdomains not yet implemented')
+        return range(len(self.nodes))
+
     def compute_control_volumes(self, variant='voronoi'):
         '''Compute the control volumes of all nodes in the mesh.
         '''
