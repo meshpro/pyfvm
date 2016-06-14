@@ -544,8 +544,7 @@ class meshTetra(_base_mesh):
             if node_id in edge['nodes']:
                 adjacent_edge_ids.append(edge_id)
 
-        # Loop over all adjacent edges and plot the edges and their
-        # covolumes.
+        # Loop over all adjacent edges and plot the edges and their covolumes.
         for k, edge_id in enumerate(adjacent_edge_ids):
             # get rainbow color
             h = float(k) / len(adjacent_edge_ids)

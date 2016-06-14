@@ -30,17 +30,14 @@ class meshTri(_base_mesh):
         self.create_adjacent_entities()
 
         self.compute_edge_lengths()
+        self.compute_covolumes()
 
         return
 
     def compute_edge_lengths(self):
-        self.edge_lengths = numpy.empty(len(self.edges))
-
-        for k, vertices in enumerate(self.edges['nodes']):
-            coord0 = self.node_coords[vertices[0]]
-            coord1 = self.node_coords[vertices[1]]
-            self.edge_lengths[k] = numpy.linalg.norm(coord0 - coord1)
-
+        edges = self.node_coords[self.edges['nodes'][:, 1]] \
+            - self.node_coords[self.edges['nodes'][:, 0]]
+        self.edge_lengths = numpy.sqrt(numpy.sum(edges**2, axis=1))
         return
 
     def mark_subdomains(self, subdomains):
@@ -652,4 +649,51 @@ class meshTri(_base_mesh):
                     ax.fill(q[0], q[1], color=covolume_area_col)
                     ax.plot(p[0], p[1], color=covolume_boundary_col)
         plt.show()
+        return
+
+    def compute_covolumes(self):
+        # make sure the mesh has edges
+        if self.edges is None:
+            self.create_adjacent_entities()
+
+        num_edges = len(self.edges)
+        self.covolumes = numpy.zeros(num_edges, dtype=float)
+
+        if self.cell_volumes is None:
+            self.create_cell_volumes()
+
+        # Precompute edges.
+        edges = self.node_coords[self.edges['nodes'][:, 1]] \
+            - self.node_coords[self.edges['nodes'][:, 0]]
+
+        # Calculate the edge contributions cell by cell.
+        for vol, cell in zip(self.cell_volumes, self.cells):
+            cell_edge_gids = cell['edges']
+            # Build the equation system:
+            # The equation
+            #
+            # |simplex| ||u||^2 = \sum_i \alpha_i <u,e_i> <e_i,u>
+            #
+            # has to hold for all vectors u in the plane spanned by the edges,
+            # particularly by the edges themselves.
+            A = numpy.dot(edges[cell_edge_gids], edges[cell_edge_gids].T)
+            # Careful here! As of NumPy 1.7, numpy.diag() returns a view.
+            rhs = vol * numpy.diag(A).copy()
+            A = A**2
+
+            # Append the the resulting coefficients to the coefficient cache.
+            # The system is posdef iff the simplex isn't degenerate.
+            try:
+                self.covolumes[cell_edge_gids] += numpy.linalg.solve(A, rhs)
+            except numpy.linalg.linalg.LinAlgError:
+                # The matrix A appears to be singular, and the only
+                # circumstance that makes this happening is the cell being
+                # degenerate.  Hence, it has volume 0, and so all the edge
+                # coefficients are 0, too.  Hence, do nothing.
+                pass
+
+        # Here, self.covolumes contains the covolume-edgelength ratios. Make
+        # sure we end up with the covolumes.
+        self.covolumes *= self.edge_lengths
+
         return
