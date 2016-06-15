@@ -59,10 +59,18 @@ class _base_mesh(object):
                 )
         else:
             a = self.node_coords
+
+        if self.cells['nodes'].shape[1] == 3:
+            cell_type = 'triangle'
+        elif self.cells['nodes'].shape[1] == 4:
+            cell_type = 'tetrahedron'
+        else:
+            raise RuntimeError('Only triangles/tetrahedra supported')
+
         meshio.write(
             filename,
             a,
-            self.cells['nodes'],
+            {cell_type: self.cells['nodes']},
             point_data=point_data,
             cell_data=cell_data,
             field_data=field_data
