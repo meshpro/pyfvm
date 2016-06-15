@@ -2,8 +2,7 @@
 
 [![Build Status](https://travis-ci.org/nschloe/pyfvm.svg?branch=master)](https://travis-ci.org/nschloe/pyfvm)
 [![Code Health](https://landscape.io/github/nschloe/pyfvm/master/landscape.png)](https://landscape.io/github/nschloe/pyfvm/master)
-[![Coverage Status](https://img.shields.io/coveralls/nschloe/pyfvm.svg)](https://coveralls.io/r/nschloe/pyfvm?branch=master)
-[![Documentation Status](https://readthedocs.org/projects/pyfvm/badge/?version=latest)](https://readthedocs.org/projects/pyfvm/?badge=latest)
+[![codecov](https://codecov.io/gh/nschloe/pyfvm/branch/master/graph/badge.svg)](https://codecov.io/gh/nschloe/pyfvm)
 [![PyPi Version](https://img.shields.io/pypi/v/pyfvm.svg)](https://pypi.python.org/pypi/pyfvm)
 [![PyPi Downloads](https://img.shields.io/pypi/dm/pyfvm.svg)](https://pypi.python.org/pypi/pyfvm)
 
