@@ -21,12 +21,15 @@ class LinearFvmProblem(object):
                 edge_cores,
                 vertex_cores,
                 boundary_cores,
-                dirichlets
+                dirichlets,
+                compute_rhs=True
                 )
 
         # One unknown per vertex
         n = len(mesh.node_coords)
         self.matrix = sparse.coo_matrix((V, (I, J)), shape=(n, n))
+        # Transform to CSR format for efficiency
+        self.matrix = self.matrix.tocsr()
         return
 
 
@@ -44,7 +47,7 @@ def _get_VIJ(
     I = []
     J = []
     if compute_rhs:
-        rhs = numpy.zeros(mesh.n)
+        rhs = numpy.zeros(len(mesh.node_coords))
     else:
         rhs = None
     for edge_core in edge_cores:
@@ -60,8 +63,8 @@ def _get_VIJ(
                 J += [v0, v1, v0, v1]
 
                 if compute_rhs:
-                    rhs[k0] += vals_rhs[0]
-                    rhs[k1] += vals_rhs[1]
+                    rhs[v0] += vals_rhs[0]
+                    rhs[v1] += vals_rhs[1]
 
             # # TODO fix those
             # for k in mesh.get_half_edges(subdomain):
@@ -95,8 +98,6 @@ def _get_VIJ(
                 I.append(k)
                 J.append(k)
                 V.append(1.0)
-
-                rhs = vals_rhs[0]
 
                 # overwrite rhs
                 if compute_rhs:
