@@ -38,27 +38,7 @@ setup(name='pyfvm',
           'Topic :: Scientific/Engineering :: Mathematics'
           ],
       scripts=[
-          'examples/ball',
-          'examples/cube',
-          'examples/cylinder_tri',
-          'examples/delaunay_checker',
-          'examples/delaunay_maker',
-          'examples/ellipse',
-          'examples/hexagon',
-          'examples/lshape',
-          'examples/lshape3d',
-          'examples/moebius2_tri',
-          'examples/moebius_tri',
-          'examples/moebius_tri_alt',
-          'examples/pacman',
-          'examples/pseudomoebius',
-          'examples/rectangle',
-          'examples/rectangle_with_hole',
-          'examples/simple_arrow',
-          'examples/sphere',
-          'examples/tetrahedron',
-          'examples/triangle',
-          'examples/tube'
+          'nfc/form-compiler',
           ],
       )
 # Don't install test files.
