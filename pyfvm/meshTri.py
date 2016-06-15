@@ -32,6 +32,8 @@ class meshTri(_base_mesh):
         self.compute_edge_lengths()
         self.compute_covolumes()
 
+        self.mark_default_subdomains()
+
         return
 
     def compute_edge_lengths(self):
@@ -40,8 +42,73 @@ class meshTri(_base_mesh):
         self.edge_lengths = numpy.sqrt(numpy.sum(edges**2, axis=1))
         return
 
+    def mark_default_subdomains(self):
+        self.subdomains = {}
+        self.subdomains['everywhere'] = {
+                'vertices': range(len(self.node_coords)),
+                'edges': range(len(self.edges)),
+                'half_edges': []
+                }
+
+        # Find the boundary edges, i.e., all edges that belong to just one
+        # cell.
+        boundary_edges = []
+        for k, edge_cells in enumerate(self.edges['cells']):
+            if len(edge_cells) == 1:
+                boundary_edges.append(k)
+
+        # Get vertices on the boundary edges
+        boundary_vertices = numpy.unique(
+                self.edges['nodes'][boundary_edges].flatten()
+                )
+
+        self.subdomains['boundary'] = {
+                'vertices': boundary_vertices,
+                'edges': boundary_edges,
+                'half_edges': []
+                }
+
+        return
+
     def mark_subdomains(self, subdomains):
-        # TODO
+        for subdomain in subdomains:
+            # find vertices in subdomain
+            if subdomain.is_boundary_only:
+                nodes = self.get_vertices('boundary')
+            else:
+                nodes = self.get_vertices('everywhere')
+
+            subdomain_vertices = []
+            for vertex_id in nodes:
+                if subdomain.is_inside(self.node_coords[vertex_id]):
+                    subdomain_vertices.append(vertex_id)
+            subdomain_vertices = numpy.unique(subdomain_vertices)
+
+            # extract all edges which are completely or half in the subdomain
+            if subdomain.is_boundary_only:
+                edges = self.get_edges('boundary')
+            else:
+                edges = self.get_edges('everywhere')
+
+            subdomain_edges = []
+            subdomain_half_edges = []
+            for edge_id in edges:
+                verts = self.edges['nodes'][edge_id]
+                if verts[0] in subdomain_vertices:
+                    if verts[1] in subdomain_vertices:
+                        subdomain_edges.append(edge_id)
+                    else:
+                        subdomain_half_edges.append(edge_id)
+
+            subdomain_edges = numpy.unique(subdomain_edges)
+            subdomain_half_edges = numpy.unique(subdomain_half_edges)
+
+            self.subdomains[subdomain.id] = {
+                    'vertices': subdomain_vertices,
+                    'edges': subdomain_edges,
+                    'half_edges': subdomain_half_edges
+                    }
+
         return
 
     def create_cell_volumes(self):
@@ -150,14 +217,10 @@ class meshTri(_base_mesh):
         return
 
     def get_edges(self, subdomain):
-        if subdomain != 'everywhere':
-            raise NotImplemented('subdomains not yet implemented')
-        return self.edges
+        return self.subdomains[subdomain]['edges']
 
     def get_vertices(self, subdomain):
-        if subdomain != 'everywhere':
-            raise NotImplemented('subdomains not yet implemented')
-        return range(len(self.nodes))
+        return self.subdomains[subdomain]['vertices']
 
     def compute_control_volumes(self, variant='voronoi'):
         '''Compute the control volumes of all nodes in the mesh.

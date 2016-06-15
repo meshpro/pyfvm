@@ -74,7 +74,7 @@ class SubdomainCode(object):
 
         obj = self.cls()
 
-        x = sympy.MatrixSymbol('x', 3, 1)
+        x = sympy.DeferredVector('x')
         result = obj.is_inside(x)
 
         expr_arguments = set([x])
