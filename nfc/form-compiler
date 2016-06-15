@@ -167,7 +167,7 @@ def _main():
 
         main_template_python = '''
 import pyfvm
-
+from numpy import *
 
 ${content}'''
         main_src = Template(main_template_python)

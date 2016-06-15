@@ -25,10 +25,9 @@ class meshTri(_base_mesh):
         self.cells['nodes'] = cells
         self.cell_volumes = None
         self.cell_circumcenters = None
-        self.control_volumes = None
 
+        self.compute_control_volumes()
         self.create_adjacent_entities()
-
         self.compute_edge_lengths()
         self.compute_covolumes()
 

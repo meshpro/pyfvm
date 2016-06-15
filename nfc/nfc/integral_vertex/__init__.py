@@ -179,12 +179,15 @@ class IntegralVertex(object):
                 )
         eval_body.extend(extra_body)
 
-        # handle subdomains
-        subdomain_init = '[%s]' % ', '.join(
-                '\'%s\'' % sd.__name__
-                for sd in self.subdomains
-                )
-        init.append('self.subdomains = %s ' % subdomain_init)
+        # collect subdomain init code
+        if self.subdomains:
+            init_subdomains = '[%s]' % ', '.join(
+                    '\'%s\'' % sd.__name__
+                    for sd in self.subdomains
+                    )
+        else:
+            init_subdomains = '[\'everywhere\']'
+        init.append('self.subdomains = %s ' % init_subdomains)
 
         # remove double lines
         eval_body = list_unique(eval_body)
@@ -417,7 +420,7 @@ def _get_python_extra(arguments, used_variables):
 
     x = sympy.MatrixSymbol('x', 3, 1)
     if x in undefined_symbols:
-        body.append('x = self.mesh.coords[k]')
+        body.append('x = self.mesh.node_coords[k]')
         undefined_symbols.remove(x)
         if vertex in unused_arguments:
             unused_arguments.remove(vertex)
