@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+#
+import numpy
 from scipy import sparse
 
 
@@ -20,8 +23,16 @@ class LinearFvmProblem(object):
                 boundary_cores,
                 dirichlets
                 )
+
+        # One unknown per vertex
+        n = len(mesh.node_coords)
         self.matrix = sparse.coo_matrix((V, (I, J)), shape=(n, n))
         return
+
+
+def find(lst, a):
+    # From <http://stackoverflow.com/a/16685428/353337>
+    return [i for i, x in enumerate(lst) if x == a]
 
 
 def _get_VIJ(
@@ -41,9 +52,12 @@ def _get_VIJ(
             for k, edge_id in enumerate(mesh.get_edges(subdomain)):
                 v0, v1 = mesh.edges['nodes'][edge_id]
                 vals_matrix, vals_rhs = edge_core.eval(k)
-                V += [vals_matrix]
-                I += [v0, v1]
-                J += [v0, v1]
+                V += [
+                    vals_matrix[0][0], vals_matrix[0][1],
+                    vals_matrix[1][0], vals_matrix[1][1]
+                    ]
+                I += [v0, v0, v1, v1]
+                J += [v0, v1, v0, v1]
 
                 if compute_rhs:
                     rhs[k0] += vals_rhs[0]
@@ -71,7 +85,16 @@ def _get_VIJ(
     for dirichlet in dirichlets:
         for subdomain in dirichlet.subdomains:
             for k in mesh.get_vertices(subdomain):
-                # TODO wipe out row k
+                # wipe out row k
+                indices = find(I, k)
+                I = numpy.delete(I, indices).tolist()
+                J = numpy.delete(J, indices).tolist()
+                V = numpy.delete(V, indices).tolist()
+
+                # Add entry 1.0 to the diagonal
+                I.append(k)
+                J.append(k)
+                V.append(1.0)
 
                 rhs = vals_rhs[0]
 
