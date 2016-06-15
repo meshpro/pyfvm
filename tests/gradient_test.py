@@ -66,13 +66,13 @@ class GradientTest(unittest.TestCase):
             self.assertAlmostEqual(grad_u[k][1], sol[k][1], delta=tol)
         return
 
-    def test_pacman(self):
-        filename = os.path.join(
-            os.path.dirname(os.path.realpath(__file__)), 'pacman.e'
-            )
-        mesh, _, _ = pyfvm.reader.read(filename)
-        self._run_test(mesh)
-        return
+    # def test_pacman(self):
+    #     filename = os.path.join(
+    #         os.path.dirname(os.path.realpath(__file__)), 'pacman.e'
+    #         )
+    #     mesh, _, _ = pyfvm.reader.read(filename)
+    #     self._run_test(mesh)
+    #     return
 
 if __name__ == '__main__':
     unittest.main()

@@ -47,7 +47,7 @@ class TestControlVolumes(unittest.TestCase):
         # Compute the control volumes.
         if mesh.control_volumes is None:
             mesh.compute_control_volumes()
-        tol = 1.0e-12
+        tol = 1.0e-6
         # Check the volume by summing over the cell volume.
         if mesh.cell_volumes is None:
             mesh.create_cell_volumes()
@@ -70,7 +70,7 @@ class TestControlVolumes(unittest.TestCase):
         total_vol = 2 * 0.5 * 0.1
         cv0 = 0.25 * 0.1/0.5 * (0.5**2 + 0.1**2)
         cv = [cv0, cv0, 0.5*(total_vol-2*cv0), 0.5 * (total_vol-2*cv0)]
-        #cells = numpy.array([[0, 1, 2], [0, 1, 3]])
+        # cells = numpy.array([[0, 1, 2], [0, 1, 3]])
         mesh = pyfvm.mesh2d.mesh2d(points, cells=None)
         actual_values = [numpy.linalg.norm(cv, ord=1),
                          numpy.linalg.norm(cv, ord=2),
@@ -103,9 +103,9 @@ class TestControlVolumes(unittest.TestCase):
                                   ])
         mesh = pyfvm.meshTetra.meshTetra(nodes, cellsNodes)
         # pull this to see what a negative covolume looks like
-        #if mesh.edgesNodes is None:
-            #mesh.create_adjacent_entities()
-        #mesh.show_edge(5)
+        # if mesh.edgesNodes is None:
+        #     mesh.create_adjacent_entities()
+        # mesh.show_edge(5)
         actual_values = [1.2,
                          0.58276428453480855,
                          0.459
@@ -117,11 +117,12 @@ class TestControlVolumes(unittest.TestCase):
         filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                 'tetrahedron.e')
         mesh, _, _ = pyfvm.reader.read(filename)
-        #mesh.show_edge(54)
-        actual_values = [64.150028545708011,
-                         15.243602636687179,
-                         7.7180603065060023
-                         ]
+        # mesh.show_edge(54)
+        actual_values = [
+                64.150028545707983,
+                15.243602636687179,
+                7.7180603065060023
+                ]
         self._run_test(mesh, actual_values)
         return
 

@@ -33,8 +33,8 @@ def read(filename, timestep=None):
     if 'triangle' in cells_nodes:
         return pyfvm.meshTri.meshTri(points, cells_nodes['triangle']), \
                point_data, field_data
-    elif 'tetrahedra' in cells_nodes:
-        return pyfvm.meshTetra.meshTetra(points, cells_nodes), \
+    elif 'tetra' in cells_nodes:
+        return pyfvm.meshTetra.meshTetra(points, cells_nodes['tetra']), \
                point_data, field_data
     else:
         raise RuntimeError('Unknown mesh type.')
