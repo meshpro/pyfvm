@@ -8,10 +8,52 @@ import re
 from string import Template
 import os
 import importlib.machinery
+import tokenize
+import io
+import autopep8
 
 import nfc
 
 from nfc.helpers import sanitize_identifier_cxx, run
+
+# Python 3 compat
+TokenInfo = getattr(tokenize, 'TokenInfo', lambda *a: a)
+
+
+def semicolon_to_newline(tokens):
+    '''Replaces semicolons in Python code with newlines and the appropriate
+    indentation.
+    '''
+    # From <http://stackoverflow.com/a/37788839/353337>.
+
+    line_offset = 0
+    last_indent = None
+    col_offset = None  # None or an integer
+    for ttype, tstr, (slno, scol), (elno, ecol), line in tokens:
+        slno, elno = slno + line_offset, elno + line_offset
+        if ttype in (tokenize.INDENT, tokenize.DEDENT):
+            last_indent = ecol  # block is indented to this column
+        elif ttype == tokenize.OP and tstr == ';':
+            # swap out semicolon with a newline
+            ttype = tokenize.NEWLINE
+            tstr = '\n'
+            line_offset += 1
+            if col_offset is not None:
+                scol, ecol = scol - col_offset, ecol - col_offset
+            col_offset = 0  # next tokens should start at the current indent
+        elif col_offset is not None:
+            if not col_offset:
+                # adjust column by starting column of next token
+                col_offset = scol - last_indent
+            scol, ecol = scol - col_offset, ecol - col_offset
+            if ttype == tokenize.NEWLINE:
+                col_offset = None
+        yield TokenInfo(ttype, tstr, (slno, scol), (elno, ecol), line)
+
+
+def _semicolons_to_newlines(source):
+    generator = tokenize.generate_tokens(io.StringIO(source).readline)
+    return tokenize.untokenize(semicolon_to_newline(generator))
 
 
 def _main():
@@ -125,11 +167,16 @@ def _main():
 
         main_template_python = '''
 import pyfvm
-
+from numpy import *
 
 ${content}'''
         main_src = Template(main_template_python)
         main_content = main_src.substitute({'content': code})
+        main_content = _semicolons_to_newlines(main_content)
+        main_content = autopep8.fix_code(
+                main_content,
+                options={'aggressive': 2}
+                )
     elif args.backend == 'nosh':
         code = '\n'.join(
                 class_object['code'] for class_object in class_objects

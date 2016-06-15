@@ -4,5 +4,5 @@ class ${name}(object):
         self.subdomains = ${init_subdomains}
         return
 
-    def eval(k):
+    def eval(self, k):
         return ${eval_return_value}

@@ -406,7 +406,7 @@ class meshTetra(_base_mesh):
         sum_cv = sum(self.control_volumes)
         sum_cells = sum(self.cell_volumes)
         alpha = sum_cv - sum_cells
-        if abs(alpha) > 1.0e-8:
+        if abs(alpha) > 1.0e-6:
             msg = ('Sum of control volumes sum does not coincide with the sum '
                    'of the cell volumes (|cv|-|cells| = %g - %g = %g.'
                    ) % (sum_cv, sum_cells, alpha)
@@ -544,8 +544,7 @@ class meshTetra(_base_mesh):
             if node_id in edge['nodes']:
                 adjacent_edge_ids.append(edge_id)
 
-        # Loop over all adjacent edges and plot the edges and their
-        # covolumes.
+        # Loop over all adjacent edges and plot the edges and their covolumes.
         for k, edge_id in enumerate(adjacent_edge_ids):
             # get rainbow color
             h = float(k) / len(adjacent_edge_ids)
