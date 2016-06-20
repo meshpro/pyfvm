@@ -85,6 +85,24 @@ Place PyFVM in a directory where Python can find it (e.g.,
 python setup.py install
 ```
 
+### Distribution
+
+To create a new release
+
+1. bump the `__version__` number,
+
+2. create a Git tag,
+    ```
+    $ git tag v0.3.1
+    $ git push --tags
+    ```
+    and
+
+3. upload to PyPi:
+    ```
+    $ make upload
+    ```
+
 ### License
 
 PyFVM is published under the [MIT license](https://en.wikipedia.org/wiki/MIT_License).
