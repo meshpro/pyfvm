@@ -110,7 +110,7 @@ class IntegralVertex(object):
             type = 'matrix_core_vertex'
             filename = os.path.join(
                     os.path.dirname(__file__),
-                    'matrix_core_vertex.tpl'
+                    'cxx_matrix_core_vertex.tpl'
                     )
             with open(filename, 'r') as f:
                 src = Template(f.read())
@@ -126,7 +126,7 @@ class IntegralVertex(object):
             type = 'operator_core_vertex'
             filename = os.path.join(
                     os.path.dirname(__file__),
-                    'operator_core_vertex.tpl'
+                    'cxx_operator_core_vertex.tpl'
                     )
             with open(filename, 'r') as f:
                 src = Template(f.read())
