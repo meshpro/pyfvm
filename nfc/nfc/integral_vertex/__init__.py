@@ -153,7 +153,6 @@ class IntegralVertex(object):
             arguments = set([sympy.Symbol('k')])
         else:
             arguments = set([sympy.Symbol('k'), sympy.Symbol('u')])
-        used_vars = self.expr.free_symbols
 
         eval_body = []
         init = []
@@ -174,11 +173,6 @@ class IntegralVertex(object):
         declare.extend(params_declare)
         methods.extend(params_methods)
 
-        extra_body = _get_python_extra(
-                arguments, used_vars
-                )
-        eval_body.extend(extra_body)
-
         # collect subdomain init code
         if self.subdomains:
             init_subdomains = '[%s]' % ', '.join(
@@ -195,10 +189,19 @@ class IntegralVertex(object):
         declare = list_unique(declare)
 
         if self.matrix_var:
-            coeff, affine = extract_linear_components(
-                    self.expr,
-                    sympy.Symbol('%s[k]' % self.matrix_var)
+            # Unfortunately, it's not too easy to differentiate with respect to
+            # an IndexedBase u with index k. For this reason, we'll simply
+            # replace u[k] by a variable uk0.
+            u = sympy.IndexedBase('%s' % self.matrix_var)
+            k0 = sympy.Symbol('k')
+            uk0 = sympy.Symbol('uk0')
+            expr = self.expr.subs([(u[k0], uk0)])
+            coeff, affine = extract_linear_components(expr, uk0)
+            used_vars = coeff.free_symbols.union(affine.free_symbols)
+            extra_body = _get_python_extra(
+                    arguments, used_vars
                     )
+            eval_body.extend(extra_body)
             type = 'matrix_core_vertex'
             filename = os.path.join(
                     os.path.dirname(__file__),
