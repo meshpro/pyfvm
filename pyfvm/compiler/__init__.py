@@ -19,10 +19,19 @@ import inspect
 import re
 from string import Template
 import os
-import importlib.machinery
+
+# <http://stackoverflow.com/a/67692/353337>
+# import importlib.machinery
+import imp
+
 import tokenize
-import io
 import autopep8
+
+# <http://stackoverflow.com/a/7472878/353337>
+# Python 2:
+import StringIO
+# Python 3:
+# import io
 
 # Python 3 compat
 TokenInfo = getattr(tokenize, 'TokenInfo', lambda *a: a)
@@ -60,16 +69,17 @@ def _semicolon_to_newline(tokens):
 
 
 def _semicolons_to_newlines(source):
-    generator = tokenize.generate_tokens(io.StringIO(source).readline)
+    generator = tokenize.generate_tokens(StringIO.StringIO(source).readline)
     return tokenize.untokenize(_semicolon_to_newline(generator))
 
 
 def compile(infile, outfile, backend):
     inmod_name = 'inmod'
-    inmod = importlib.machinery.SourceFileLoader(
-        inmod_name,
-        infile
-        ).load_module()
+    inmod = imp.load_source(inmod_name, infile)
+    # inmod = importlib.machinery.SourceFileLoader(
+    #     inmod_name,
+    #     infile
+    #     ).load_module()
 
     namespace = sanitize_identifier_cxx(
             os.path.splitext(os.path.basename(infile))[0]
