@@ -1,23 +1,15 @@
 # TODO create poisson.py by calling `form-compiler def.py poisson.py`
-import poisson
+import singular
 
 import meshzoo
 import pyfvm
 from scipy.sparse import linalg
 
-# Read the mesh using meshio
-# mesh, _, _ = pyfvm.reader.read('pacman.e')
-
 # Create mesh using meshzoo
-vertices, cells = meshzoo.rectangle.create_mesh(2.0, 1.0, 21, 11, zigzag=True)
+vertices, cells = meshzoo.rectangle.create_mesh(1.0, 1.0, 51, 51, zigzag=True)
 mesh = pyfvm.meshTri.meshTri(vertices, cells)
 
-mesh.mark_subdomains([
-        poisson.Gamma0(),
-        poisson.Gamma1()
-        ])
-
-problem = poisson.Poisson(mesh)
+problem = singular.Singular(mesh)
 
 x = linalg.spsolve(problem.matrix, problem.rhs)
 

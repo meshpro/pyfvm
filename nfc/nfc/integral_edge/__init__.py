@@ -78,12 +78,11 @@ class IntegralEdge(object):
 
         return edge_coeff, edge_affine, arguments, used_vars
 
-
     def get_cxx_class_object(self, dependency_class_objects):
         type = 'nosh::matrix_core_edge'
 
         edge_coeff, edge_affine, arguments, used_vars = \
-                self._collect_variables()
+            self._collect_variables()
 
         init, members_declare = \
             cxx_members_init_declare(
@@ -157,6 +156,7 @@ class IntegralEdge(object):
 
 
 def _extract_linear_components(expr, dvars):
+    # TODO replace by helpers.extract_linear_components?
     # Those are the variables in the expression, inserted by the edge
     # discretizer.
     if not is_affine_linear(expr, dvars):

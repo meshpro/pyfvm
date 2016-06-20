@@ -2,28 +2,107 @@
 
 [![Build Status](https://travis-ci.org/nschloe/pyfvm.svg?branch=master)](https://travis-ci.org/nschloe/pyfvm)
 [![Code Health](https://landscape.io/github/nschloe/pyfvm/master/landscape.png)](https://landscape.io/github/nschloe/pyfvm/master)
-[![Coverage Status](https://img.shields.io/coveralls/nschloe/pyfvm.svg)](https://coveralls.io/r/nschloe/pyfvm?branch=master)
-[![Documentation Status](https://readthedocs.org/projects/pyfvm/badge/?version=latest)](https://readthedocs.org/projects/pyfvm/?badge=latest)
+[![codecov](https://codecov.io/gh/nschloe/pyfvm/branch/master/graph/badge.svg)](https://codecov.io/gh/nschloe/pyfvm)
 [![PyPi Version](https://img.shields.io/pypi/v/pyfvm.svg)](https://pypi.python.org/pypi/pyfvm)
 [![PyPi Downloads](https://img.shields.io/pypi/dm/pyfvm.svg)](https://pypi.python.org/pypi/pyfvm)
 
-A package for handling simplex-meshes in two and three dimensions with support for Voronoi regions.
+Creating finite volume equation systems with ease.
 
-![](https://nschloe.github.io/pyfvm/moebius2.png)
+PyFVM provides everything that is needed for setting up finite volume equation
+systems. The user needs to specify the finite volume formulation in a
+configuration file, and PyFVM will create the matrix/right-hand side or the
+nonlinear system for it. This package is for everyone who wants to quickly
+construct FVM systems.
 
-*A twice-folded Möbius strip, created with PyFVM's `moebius_tri -i 2 out.e`. Visualization with [ParaView](http://www.paraview.org/).*
+### Examples
 
-This is of specific interest to everyone who wants to use the finite volume method, but many of the provided methods can come in handy for finite element problems, too.
+#### Linear equation systems
 
-For example, this package is for you if you want to:
+##### Poisson's equation
 
-* have an easy interface for I/O from/to VTK and Exodus files;
-* create relations between nodes, edges, faces, and cells of a mesh;
-* compute the control volumes of a given input mesh;
-* display meshes with corresponding Voronoi meshes in matplotlib.
+From the configuration file
+```python
+from nfl import *
+from sympy import sin
 
-Some of the methods in this packages are merely convenience wrappers around the VTK Python interface which needs to be installed in your system. Further dependencies include Numpy and SciPy.
+class Poisson(LinearFvmProblem):
+    def apply(u):
+        return integrate(lambda x: -n_dot_grad(u(x)), dS) \
+                - integrate(lambda x: 10 * sin(10*x[0]), dV)
+```
+one creates a Python module via
+```bash
+form-compiler def.py poisson.py
+```
+This can then used from any Python module, e.g., for solving the equation
+system with SciPy's sparse matrix capabilties:
+```python
+import poisson
+
+import meshzoo
+import pyfvm
+from scipy.sparse import linalg
+
+# Create mesh using meshzoo
+vertices, cells = meshzoo.rectangle.create_mesh(2.0, 1.0, 21, 11, zigzag=True)
+mesh = pyfvm.meshTri.meshTri(vertices, cells)
+
+problem = poisson.Poisson(mesh)
+
+x = linalg.spsolve(problem.matrix, problem.rhs)
+
+mesh.write('out.vtu', point_data={'x': x})
+```
+This example uses [meshzoo](https://pypi.python.org/pypi/meshzoo) for creating
+a simple mesh, but reading from a wide variety of mesh files is supported, too
+(via [meshio](https://pypi.python.org/pypi/meshio));
+```python
+mesh, _, _ = pyfvm.reader.read('pacman.e')
+```
+
+##### Singular perturbation
+
+#### Nonlinear equation systems
+
+### Installation
+
+#### Python Package Index
+
+PyFVM is [available from the Python Package
+Index](https://pypi.python.org/pypi/pyfvm/), so simply type
+```
+pip install -U pyfvm
+```
+to install or upgrade.
+
+#### Manual installation
+
+Download PyFVM from
+[the Python Package Index](https://pypi.python.org/pypi/pyfvm/).
+Place PyFVM in a directory where Python can find it (e.g.,
+`$PYTHONPATH`).  You can install it system-wide with
+```
+python setup.py install
+```
+
+### Distribution
+
+To create a new release
+
+1. bump the `__version__` number,
+
+2. create a Git tag,
+    ```
+    $ git tag v0.3.1
+    $ git push --tags
+    ```
+    and
+
+3. upload to PyPi:
+    ```
+    $ make upload
+    ```
 
 ### License
 
-PyFVM is released under the 3-clause BSD license.
+PyFVM is published under the [MIT license](https://en.wikipedia.org/wiki/MIT_License).

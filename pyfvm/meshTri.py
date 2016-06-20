@@ -61,7 +61,7 @@ class meshTri(_base_mesh):
                 self.edges['nodes'][boundary_edges].flatten()
                 )
 
-        self.subdomains['boundary'] = {
+        self.subdomains['Boundary'] = {
                 'vertices': boundary_vertices,
                 'edges': boundary_edges,
                 'half_edges': []
