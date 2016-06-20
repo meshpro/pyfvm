@@ -3,7 +3,6 @@
 import os
 from string import Template
 import sympy
-import nfl
 
 from ..code_generator_eigen import CodeGeneratorEigen
 from ..helpers import \
@@ -14,6 +13,7 @@ from ..helpers import \
         list_unique, \
         cxx_members_init_declare, \
         replace_nosh_functions
+from ..form_language import Expression
 
 
 class IntegralBoundary(object):
@@ -36,7 +36,7 @@ class IntegralBoundary(object):
                 self.vector_params.add(s)
 
         self.dependencies = set().union(
-            [type(atom) for atom in self.expr.atoms(nfl.Expression)],
+            [type(atom) for atom in self.expr.atoms(Expression)],
             subdomains
             )
         return

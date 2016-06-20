@@ -7,8 +7,7 @@ from ..helpers import \
         extract_c_expression, \
         get_uuid, \
         sanitize_identifier_cxx
-
-import nfl
+from ..form_language import Boundary
 
 
 class SubdomainCode(object):
@@ -22,7 +21,7 @@ class SubdomainCode(object):
         return set()
 
     def get_cxx_class_object(self, dep_class_objects):
-        if self.cls == nfl.Boundary:
+        if self.cls == Boundary:
             # 'Boundary' is already defined
             return {'code': '', 'class_name_cxx': 'boundary'}
 
@@ -68,7 +67,7 @@ class SubdomainCode(object):
             }
 
     def get_python_class_object(self, dep_class_objects):
-        if self.cls == nfl.Boundary:
+        if self.cls == Boundary:
             # 'Boundary' is already defined
             return {'code': '', 'class_name_cxx': 'boundary'}
 

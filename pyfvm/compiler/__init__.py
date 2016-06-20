@@ -1,8 +1,20 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
-import argparse
-import nfl
+from .code_generator_eigen import *
+# from .code_generator_tpetra import *
+from .dirichlet import *
+from .expression import *
+from .form_language import *
+from .fvm_matrix import *
+from .fvm_operator import *
+from .helpers import *
+from .linear_fvm_problem import *
+from .integral_boundary import *
+from .integral_edge import *
+from .integral_vertex import *
+from .operator import *
+from .subdomain import *
+
 import inspect
 import re
 from string import Template
@@ -12,15 +24,11 @@ import tokenize
 import io
 import autopep8
 
-import nfc
-
-from nfc.helpers import sanitize_identifier_cxx, run
-
 # Python 3 compat
 TokenInfo = getattr(tokenize, 'TokenInfo', lambda *a: a)
 
 
-def semicolon_to_newline(tokens):
+def _semicolon_to_newline(tokens):
     '''Replaces semicolons in Python code with newlines and the appropriate
     indentation.
     '''
@@ -53,20 +61,18 @@ def semicolon_to_newline(tokens):
 
 def _semicolons_to_newlines(source):
     generator = tokenize.generate_tokens(io.StringIO(source).readline)
-    return tokenize.untokenize(semicolon_to_newline(generator))
+    return tokenize.untokenize(_semicolon_to_newline(generator))
 
 
-def _main():
-    args = _parse_cmd_arguments()
-
+def compile(infile, outfile, backend):
     inmod_name = 'inmod'
     inmod = importlib.machinery.SourceFileLoader(
         inmod_name,
-        args.infile
+        infile
         ).load_module()
 
     namespace = sanitize_identifier_cxx(
-            os.path.splitext(os.path.basename(args.infile))[0]
+            os.path.splitext(os.path.basename(infile))[0]
             )
 
     # Loop over all locally defined entities and collect everything we can
@@ -79,19 +85,19 @@ def _main():
     # Build directed dependency graph as a dictionary, see
     # <https://www.python.org/doc/essays/graphs/>.
     def get_generator(cls):
-        if issubclass(cls, nfl.FvmMatrix):
-            return nfc.FvmMatrixCode(namespace, cls)
-        elif issubclass(cls, nfl.LinearFvmProblem):
-            return nfc.LinearFvmProblemCode(namespace, cls)
-        elif issubclass(cls, nfl.FvmOperator):
-            return nfc.FvmOperatorCode(namespace, cls)
-        elif issubclass(cls, nfl.Subdomain):
-            return nfc.SubdomainCode(cls)
-        # elif issubclass(var, nfl.EdgeCore):
+        if issubclass(cls, form_language.FvmMatrix):
+            return FvmMatrixCode(namespace, cls)
+        elif issubclass(cls, form_language.LinearFvmProblem):
+            return LinearFvmProblemCode(namespace, cls)
+        elif issubclass(cls, form_language.FvmOperator):
+            return FvmOperatorCode(namespace, cls)
+        elif issubclass(cls, form_language.Subdomain):
+            return SubdomainCode(cls)
+        # elif issubclass(var, form_language.EdgeCore):
         #     instance = var()
-        #     return nfc.get_code_matrix_core_edge(namespace, name, instance)
-        elif issubclass(cls, nfl.Expression):
-            return nfc.ExpressionCode(cls)
+        #     return get_code_matrix_core_edge(namespace, name, instance)
+        elif issubclass(cls, form_language.Expression):
+            return ExpressionCode(cls)
         else:
             raise RuntimeError('Unknown class \'%s\'.' % cls.__name__)
 
@@ -132,14 +138,14 @@ def _main():
         for dep in deps[name]:
             class_objects.extend(collect_class_objects(dep))
         if name not in visited:
-            if args.backend == 'scipy':
+            if backend == 'scipy':
                 class_object = \
                     generators[name].get_python_class_object(class_objects)
-            elif args.backend == 'nosh':
+            elif backend == 'nosh':
                 class_object = \
                     generators[name].get_cxx_class_object(class_objects)
             else:
-                raise ValueError('Illegal backend \'%s\'.' % args.backend)
+                raise ValueError('Illegal backend \'%s\'.' % backend)
             visited.add(name)
             class_objects.append(class_object)
             return class_objects
@@ -159,7 +165,7 @@ def _main():
         print()
 
     # Plug it all together in main
-    if args.backend == 'scipy':
+    if backend == 'scipy':
         # Python classes want two newlines between them
         code = '\n\n'.join(
                 class_object['code'] for class_object in class_objects
@@ -177,7 +183,7 @@ ${content}'''
                 main_content,
                 options={'aggressive': 2}
                 )
-    elif args.backend == 'nosh':
+    elif backend == 'nosh':
         code = '\n'.join(
                 class_object['code'] for class_object in class_objects
                 )
@@ -198,43 +204,16 @@ ${content}
             'content': code
             })
     else:
-        raise ValueError('Illegal backend \'%s\'.' % args.backend)
+        raise ValueError('Illegal backend \'%s\'.' % backend)
 
     # write it
-    # outfile = os.path.splitext(args.infile)[0] + '.hpp'
-    with open(args.outfile, 'w') as f:
+    # outfile = os.path.splitext(infile)[0] + '.hpp'
+    with open(outfile, 'w') as f:
         f.write(main_content)
 
-    if args.backend == 'nosh':
+    if backend == 'nosh':
         # Make sure it's formatted nicely.
         # TODO check out uncrustify
-        run('astyle --style=ansi -s2 %s' % args.outfile)
+        run('astyle --style=ansi -s2 %s' % outfile)
 
     return
-
-
-def _parse_cmd_arguments():
-    parser = argparse.ArgumentParser(
-        description='Convert NFL files into C++ headers.'
-        )
-    parser.add_argument(
-        'infile',
-        type=str,
-        help='input NFL file'
-        )
-    parser.add_argument(
-        'outfile',
-        type=str,
-        help='output C++ header file'
-        )
-    parser.add_argument(
-        '--backend', '-b',
-        type=str,
-        choices=['scipy', 'nosh'],
-        default='scipy'
-        )
-    return parser.parse_args()
-
-
-if __name__ == '__main__':
-    _main()

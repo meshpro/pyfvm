@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-from sympy import *
-from nfl import *
+from pyfvm.compiler.form_language import *
 
 
 class Singular(LinearFvmProblem):

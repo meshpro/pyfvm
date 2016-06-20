@@ -3,11 +3,11 @@
 import os
 from string import Template
 import sympy
-import nfl
 
 from ..code_generator_eigen import CodeGeneratorEigen
 from ..expression import *
 from ..subdomain import *
+from ..form_language import Expression, ScalarParameter
 from ..helpers import \
         extract_c_expression, \
         extract_linear_components, \
@@ -39,11 +39,11 @@ class IntegralVertex(object):
                 self.vector_params.add(s)
 
         # collect scalar parameters
-        self.scalar_params = self.expr.atoms(nfl.ScalarParameter)
+        self.scalar_params = self.expr.atoms(ScalarParameter)
 
         self.dependencies = set().union(
             [ExpressionCode(type(atom))
-                for atom in self.expr.atoms(nfl.Expression)],
+                for atom in self.expr.atoms(Expression)],
             [SubdomainCode(sd) for sd in subdomains]
             )
 
