@@ -8,10 +8,6 @@
 
 Creating finite volume equation systems with ease.
 
-![](https://nschloe.github.io/pyfvm/moebius2.png)
-
-*A twice-folded Möbius strip, created with PyFVM's `moebius_tri -i 2 out.e`. Visualization with [ParaView](http://www.paraview.org/).*
-
 PyFVM provides everything that is needed for setting up finite volume equation
 systems. The user needs to specify the finite volume formulation in a
 configuration file, and PyFVM will create the matrix/right-hand side or the
