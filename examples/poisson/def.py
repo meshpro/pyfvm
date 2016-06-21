@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from nfl import *
+from pyfvm.compiler.form_language import *
 from sympy import sin
 
 
@@ -14,6 +14,7 @@ class Gamma1(Subdomain):
 
 
 class Poisson(LinearFvmProblem):
+    @staticmethod
     def apply(u):
         return integrate(lambda x: -n_dot_grad(u(x)), dS) \
                 - integrate(lambda x: 10 * sin(10*x[0]), dV)
