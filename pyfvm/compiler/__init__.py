@@ -98,8 +98,17 @@ def compile(infile, outfile, backend=None):
     return compile_classes(namespace, classes, outfile, backend)
 
 
-def compile_classes(namespace, classes, outfile, backend=None):
-    if backend is None:
+def compile_classes(classes, namespace, outfile=None, backend='scipy'):
+    if outfile is None and backend is None:
+        raise RuntimeError('One of outfile and backend must be specified.')
+    elif outfile is None:
+        if backend == 'scipy':
+            outfile = namespace + '.py'
+        elif backend == 'nosh':
+            outfile = namespace + '.hpp'
+        else:
+            raise ValueError('Illegal backend \'%s\'.' % backend)
+    elif backend is None:
         if os.path.splitext(os.path.basename(outfile))[1] == '.py':
             backend = 'scipy'
         elif os.path.splitext(os.path.basename(outfile))[1] == '.hpp':
