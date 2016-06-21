@@ -73,7 +73,18 @@ def _semicolons_to_newlines(source):
     return tokenize.untokenize(_semicolon_to_newline(generator))
 
 
-def compile(infile, outfile, backend):
+def compile(infile, outfile, backend=None):
+    if backend is None:
+        if os.path.splitext(os.path.basename(infile))[1] == '.py':
+            backend = 'scipy'
+        elif os.path.splitext(os.path.basename(infile))[1] == '.hpp':
+            backend = 'nosh'
+        else:
+            raise ValueError(
+                'Not backend specified and coudn\'t determine '
+                'from filename extension'
+                )
+
     inmod_name = 'inmod'
     inmod = imp.load_source(inmod_name, infile)
     # inmod = importlib.machinery.SourceFileLoader(

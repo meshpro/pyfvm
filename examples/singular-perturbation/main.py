@@ -1,8 +1,9 @@
-# TODO create poisson.py by calling `form-compiler def.py poisson.py`
+import pyfvm
+pyfvm.compiler.compile('def.py', 'singular.py')
+
 import singular
 
 import meshzoo
-import pyfvm
 from scipy.sparse import linalg
 
 # Create mesh using meshzoo
