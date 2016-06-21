@@ -74,17 +74,6 @@ def _semicolons_to_newlines(source):
 
 
 def compile(infile, outfile, backend=None):
-    if backend is None:
-        if os.path.splitext(os.path.basename(infile))[1] == '.py':
-            backend = 'scipy'
-        elif os.path.splitext(os.path.basename(infile))[1] == '.hpp':
-            backend = 'nosh'
-        else:
-            raise ValueError(
-                'Not backend specified and coudn\'t determine '
-                'from filename extension'
-                )
-
     inmod_name = 'inmod'
     inmod = imp.load_source(inmod_name, infile)
     # inmod = importlib.machinery.SourceFileLoader(
@@ -95,6 +84,31 @@ def compile(infile, outfile, backend=None):
     namespace = sanitize_identifier_cxx(
             os.path.splitext(os.path.basename(infile))[0]
             )
+
+    # Collect relevant classes
+    classes = []
+    for name, obj in inmod.__dict__.items():
+        # Only inspect classes from inmod
+        if not inspect.isclass(obj) or obj.__module__ != inmod_name:
+            continue
+        classes.append(obj)
+
+    print(classes)
+
+    return compile_classes(namespace, classes, outfile, backend)
+
+
+def compile_classes(namespace, classes, outfile, backend=None):
+    if backend is None:
+        if os.path.splitext(os.path.basename(outfile))[1] == '.py':
+            backend = 'scipy'
+        elif os.path.splitext(os.path.basename(outfile))[1] == '.hpp':
+            backend = 'nosh'
+        else:
+            raise ValueError(
+                'Not backend specified and coudn\'t determine '
+                'from filename extension'
+                )
 
     # Loop over all locally defined entities and collect everything we can
     # convert.
@@ -138,10 +152,7 @@ def compile(infile, outfile, backend=None):
             insert_dependencies(dep)
 
     # Loop over all inmod classes to create the dependency tree
-    for name, obj in inmod.__dict__.items():
-        # Only inspect classes from inmod
-        if not inspect.isclass(obj) or obj.__module__ != inmod_name:
-            continue
+    for obj in classes:
         generator = get_generator(obj)
         insert_dependencies(generator)
 
