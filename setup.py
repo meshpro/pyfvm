@@ -28,7 +28,7 @@ setup(name='pyfvm',
       download_url='https://github.com/nschloe/pyfvm/releases',
       license='License :: OSI Approved :: MIT License',
       platforms='any',
-      requires=['numpy', 'scipy', 'vtk'],
+      requires=['numpy', 'scipy', 'sympy', 'vtk'],
       classifiers=[
           'Development Status :: 4 - Beta',
           'Intended Audience :: Science/Research',
@@ -41,9 +41,3 @@ setup(name='pyfvm',
           'tools/pyfvm-compiler',
           ],
       )
-# Don't install test files.
-#        data_files=[('tests', ['tests/cubesmall.e',
-#                               'tests/pacman.e',
-#                               'tests/rectanglesmall.e',
-#                               'tests/test.e',
-#                               'tests/tetrahedron.e'])]
