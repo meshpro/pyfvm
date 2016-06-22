@@ -50,7 +50,6 @@ class IntegralBoundary(object):
         for vector_var in self.vector_vars:
             if vector_var in used_vars:
                 used_vars.remove(vector_var)
-        unused_arguments = arguments - used_vars
         extra_body, extra_init, extra_declare = \
             _get_extra(arguments, used_vars)
 
@@ -88,6 +87,7 @@ class IntegralBoundary(object):
                     })
         else:
             type = 'matrix_core_operator'
+            unused_args = arguments - used_vars
             with open('operator_core_boundary.tpl', 'r') as f:
                 src = Template(f.read())
                 code = src.substitute({
