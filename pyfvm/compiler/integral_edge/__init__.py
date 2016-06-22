@@ -164,7 +164,7 @@ def _extract_linear_components(expr, dvars):
             'The given expression\n'
             '    f(x) = %s\n'
             'does not seem to be affine linear in u.')
-            % expr(x)
+            % expr(sympy.Symbol('x'))
             )
 
     # Get the coefficients of u0, u1.
