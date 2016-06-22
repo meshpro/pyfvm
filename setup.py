@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 #
+#from distutils.core import setup
+from setuptools import setup, find_packages
 import os
-from setuptools import setup
 import codecs
 
 from pyfvm import __version__, __author__, __author_email__
@@ -22,7 +23,7 @@ setup(
     version=__version__,
     author=__author__,
     author_email=__author_email__,
-    packages=['pyfvm'],
+    packages=find_packages(),
     description='Finite Volume Discretizations for Python',
     long_description=read('README.rst'),
     url='https://github.com/nschloe/pyfvm',
