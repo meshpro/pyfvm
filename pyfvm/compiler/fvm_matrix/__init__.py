@@ -12,7 +12,7 @@ from ..integral_boundary import IntegralBoundary
 from ..dirichlet import Dirichlet
 from ..integral_edge import IntegralEdge
 from ..integral_vertex import IntegralVertex
-from ..helpers import get_uuid, sanitize_identifier_cxx
+from ..helpers import sanitize_identifier_cxx
 
 
 class FvmMatrixCode(object):

@@ -56,8 +56,8 @@ def run(command):
     return output
 
 
-def is_affine_linear(expr, vars):
-    for var in vars:
+def is_affine_linear(expr, variables):
+    for var in variables:
         if not sympy.Eq(sympy.diff(expr, var, var), 0):
             return False
     return True

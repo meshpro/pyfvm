@@ -16,7 +16,6 @@ from .operator import *
 from .subdomain import *
 
 import inspect
-import re
 from string import Template
 import os
 
@@ -87,7 +86,7 @@ def compile(infile, outfile, backend=None):
 
     # Collect relevant classes
     classes = []
-    for name, obj in inmod.__dict__.items():
+    for _, obj in inmod.__dict__.items():
         # Only inspect classes from inmod
         if not inspect.isclass(obj) or obj.__module__ != inmod_name:
             continue

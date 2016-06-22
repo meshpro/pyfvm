@@ -2,8 +2,7 @@
 #
 import logging
 import sympy
-from sympy.matrices.expressions.matexpr import \
-        MatrixElement, MatrixExpr, MatrixSymbol
+from sympy.matrices.expressions.matexpr import MatrixExpr, MatrixSymbol
 
 
 def discretize_edge_integral(integrand):
@@ -45,7 +44,6 @@ class DiscretizeEdgeIntegral(object):
                 return node
 
         raise RuntimeError('Unknown node type \"', type(node), '\".')
-        return
 
     def generate(self, node):
         '''Entrance point to this class.
@@ -82,29 +80,27 @@ class DiscretizeEdgeIntegral(object):
             'Should never be called. __name__:', type(node).__name__
             )
         self.visit(node)
-        return
 
     def visit_Load(self, node):
         logging.debug('> Load >')
-        pass
 
     def visit_Call(self, node):
         '''Handles calls for operators A(u) and pointwise functions sin(u).
         '''
         try:
-            id = node.func.__name__
+            ident = node.func.__name__
         except AttributeError:
-            id = repr(node)
-        logging.debug('> Call %s' % id)
+            ident = repr(node)
+        logging.debug('> Call %s' % ident)
         # Handle special functions
-        if id == 'dot':
+        if ident == 'dot':
             assert(len(node.args) == 2)
             assert(isinstance(node.args[0], MatrixExpr))
             assert(isinstance(node.args[1], MatrixExpr))
             arg0 = self.visit(node.args[0])
             arg1 = self.visit(node.args[1])
             out = node.func(arg0, arg1)
-        elif id == 'n_dot_grad':
+        elif ident == 'n_dot_grad':
             assert(len(node.args) == 1)
             fx = node.args[0]
             f = fx.func

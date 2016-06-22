@@ -31,10 +31,6 @@ class LinearFvmProblemCode(object):
         return self.dependencies
 
     def get_cxx_class_object(self, dep_class_objects):
-        filename = os.path.join(
-                os.path.dirname(__file__),
-                'linear_fvm_problem.tpl'
-                )
         code = get_code_linear_problem_cxx(
             'linear_fvm_problem.tpl',
             self.class_name_cxx,

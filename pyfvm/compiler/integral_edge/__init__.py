@@ -9,7 +9,6 @@ from ..code_generator_eigen import CodeGeneratorEigen
 from ..expression import *
 from ..subdomain import *
 from ..helpers import \
-        extract_c_expression, \
         is_affine_linear, \
         list_unique, \
         get_uuid, \
@@ -79,8 +78,6 @@ class IntegralEdge(object):
         return edge_coeff, edge_affine, arguments, used_vars
 
     def get_cxx_class_object(self, dependency_class_objects):
-        type = 'nosh::matrix_core_edge'
-
         edge_coeff, edge_affine, arguments, used_vars = \
             self._collect_variables()
 

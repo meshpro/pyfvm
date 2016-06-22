@@ -30,7 +30,7 @@ class TpetraCodeGenerator(object):
         self._required_fvm_matrices = []
         return
 
-    def visit(self, node, out_vector=None):
+    def visit(self, node):
         if isinstance(node, int):
             return Pointwise(node)
         elif isinstance(node, float):
@@ -49,12 +49,11 @@ class TpetraCodeGenerator(object):
                 return a
 
         raise RuntimeError('Unknown node type \"', type(node), '\".')
-        return
 
     def generate(self, node, arg_translate):
         '''Entrance point to this class.
         '''
-        self_arg_translate = arg_translate
+        self._arg_translate = arg_translate
         self._intermediate_count = 0
         self._get_data = set([])
         self._code = ''
