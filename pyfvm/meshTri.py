@@ -73,7 +73,7 @@ class meshTri(_base_mesh):
         for subdomain in subdomains:
             # find vertices in subdomain
             if subdomain.is_boundary_only:
-                nodes = self.get_vertices('boundary')
+                nodes = self.get_vertices('Boundary')
             else:
                 nodes = self.get_vertices('everywhere')
 
@@ -85,7 +85,7 @@ class meshTri(_base_mesh):
 
             # extract all edges which are completely or half in the subdomain
             if subdomain.is_boundary_only:
-                edges = self.get_edges('boundary')
+                edges = self.get_edges('Boundary')
             else:
                 edges = self.get_edges('everywhere')
 

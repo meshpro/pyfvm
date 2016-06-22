@@ -5,7 +5,6 @@ import os
 from string import Template
 import sympy
 
-import nfl
 from .code_generator_tpetra import get_code_tpetra
 from ..helpers import extract_c_expression
 

@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
 #
-import nfl
 import os
 from string import Template
 import sympy
 
+from ..form_language import \
+        ControlVolumeSurface, \
+        ControlVolume, \
+        BoundarySurface
 from ..integral_boundary import IntegralBoundary
 from ..dirichlet import Dirichlet
 from ..integral_edge import IntegralEdge
@@ -51,7 +54,7 @@ class FvmMatrixCode(object):
 def gather_core_dependencies(namespace, res, dirichlets, matrix_var):
     dependencies = set()
     for integral in res.integrals:
-        if isinstance(integral.measure, nfl.ControlVolumeSurface):
+        if isinstance(integral.measure, ControlVolumeSurface):
             dependencies.add(
                 IntegralEdge(
                     namespace,
@@ -60,7 +63,7 @@ def gather_core_dependencies(namespace, res, dirichlets, matrix_var):
                     matrix_var=matrix_var
                     )
                 )
-        elif isinstance(integral.measure, nfl.ControlVolume):
+        elif isinstance(integral.measure, ControlVolume):
             dependencies.add(
                 IntegralVertex(
                     namespace,
@@ -69,7 +72,7 @@ def gather_core_dependencies(namespace, res, dirichlets, matrix_var):
                     matrix_var=matrix_var
                     )
                 )
-        elif isinstance(integral.measure, nfl.BoundarySurface):
+        elif isinstance(integral.measure, BoundarySurface):
             dependencies.add(
                 IntegralBoundary(
                     namespace,

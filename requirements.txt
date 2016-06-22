@@ -1,4 +1,6 @@
+autopep8
 sphinxcontrib-bibtex
 meshio
 numpy
 scipy
+sympy

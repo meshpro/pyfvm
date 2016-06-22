@@ -3,7 +3,6 @@
 import os
 from string import Template
 import sympy
-import nfl
 
 from .discretize_edge_integral import discretize_edge_integral
 from ..code_generator_eigen import CodeGeneratorEigen
@@ -15,7 +14,7 @@ from ..helpers import \
         list_unique, \
         get_uuid, \
         cxx_members_init_declare
-
+from ..form_language import n, neg_n, Expression
 
 class IntegralEdge(object):
     def __init__(self, namespace, integrand, subdomains, matrix_var=None):
@@ -38,7 +37,7 @@ class IntegralEdge(object):
         # gather expressions and subdomains as dependencies
         self.dependencies = set().union(
             [ExpressionCode(type(atom))
-                for atom in self.expr.atoms(nfl.Expression)],
+                for atom in self.expr.atoms(Expression)],
             [SubdomainCode(sd) for sd in subdomains]
             )
 
@@ -175,12 +174,12 @@ def _extract_linear_components(expr, dvars):
     coeff10 = coeff01.subs([
         (dvars[0], dvars[1]),
         (dvars[1], dvars[0]),
-        (nfl.n, nfl.neg_n)
+        (n, neg_n)
         ])
     coeff11 = coeff00.subs([
         (dvars[0], dvars[1]),
         (dvars[1], dvars[0]),
-        (nfl.n, nfl.neg_n)
+        (n, neg_n)
         ])
 
     affine = expr.subs([(dvars[0], 0), (dvars[1], 0)])
@@ -250,7 +249,7 @@ def _get_cxx_extra(arguments, used_variables):
         if edge in unused_arguments:
             unused_arguments.remove(edge)
 
-    if nfl.n in undefined_symbols:
+    if n in undefined_symbols:
         init.append('mesh_(mesh)')
         declare.append('const std::shared_ptr<const nosh::mesh> mesh_;')
         body.append('const auto verts = this->mesh_->get_vertex_tuple(edge);')
@@ -261,7 +260,7 @@ def _get_cxx_extra(arguments, used_variables):
         body.append('const auto k = this->mesh_->local_index(edge);')
         body.append('const auto edge_length = this->edge_data_[k].length;')
         body.append('const auto n = (x1 - x0) / edge_length;')
-        undefined_symbols.remove(nfl.n)
+        undefined_symbols.remove(n)
         if edge in unused_arguments:
             unused_arguments.remove(edge)
 
@@ -316,12 +315,12 @@ def _get_python_extra(arguments, used_variables):
         if edge in unused_arguments:
             unused_arguments.remove(edge)
 
-    if nfl.n in undefined_symbols:
+    if n in undefined_symbols:
         body.append('x0 = self.mesh.coords[edge_vertices[k][0]]')
         body.append('x1 = self.mesh.coords[edge_vertices[k][1]]')
         body.append('edge_length = mesh.edge_lengths[k]')
         body.append('n = (x1 - x0) / edge_length')
-        undefined_symbols.remove(nfl.n)
+        undefined_symbols.remove(n)
         if edge in unused_arguments:
             unused_arguments.remove(edge)
 

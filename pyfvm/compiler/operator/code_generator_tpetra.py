@@ -3,7 +3,7 @@
 import logging
 import sympy
 
-import nfl
+from ..form_language import FvmMatrix
 
 
 def get_code_tpetra(expr, arg_translate=None):
@@ -113,7 +113,7 @@ for (size_t k = 0; k < %sData.size(); k++) {
         # output variable will be `y`.
         assert(len(node.args) == 1)  # one argument, e.g., A(x)
         ret = self.visit(node.args[0])
-        if isinstance(node, nfl.FvmMatrix):
+        if isinstance(node, FvmMatrix):
             # The argument to A(.) must be of vector type.
             if isinstance(ret, Vector):
                 arg_name = ret

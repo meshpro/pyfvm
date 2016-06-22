@@ -5,8 +5,6 @@ import os
 from string import Template
 import sympy
 
-import nfl
-
 from ..fvm_matrix import \
         FvmMatrixCode, \
         gather_core_dependencies

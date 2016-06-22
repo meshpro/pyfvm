@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 #
+from . import compiler
 from . import linear_fvm_problem
 from . import mesh2d
 from . import meshTri
@@ -13,6 +14,7 @@ __all__ = [
     'meshTetra',
     'reader'
     ]
+
 __version__ = '0.1.0'
 __author__ = 'Nico Schlömer'
 __author_email__ = 'nico.schloemer@gmail.com'

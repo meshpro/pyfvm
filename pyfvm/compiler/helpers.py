@@ -6,8 +6,6 @@ import sympy
 import sys
 import uuid
 
-import nfl
-
 
 def get_uuid():
     return str(uuid.uuid4())[:8]
@@ -82,7 +80,7 @@ def compare_variables(arguments, expressions):
         try:
             used_symbols.update(expr.free_symbols)
             used_expressions.update(set([
-                    type(atom) for atom in expr.atoms(nfl.Expression)
+                    type(atom) for atom in expr.atoms(form_language.Expression)
                     ]))
         except AttributeError:
             pass
