@@ -50,6 +50,7 @@ class IntegralBoundary(object):
         for vector_var in self.vector_vars:
             if vector_var in used_vars:
                 used_vars.remove(vector_var)
+        unused_arguments = arguments - used_vars
         extra_body, extra_init, extra_declare = \
             _get_extra(arguments, used_vars)
 
@@ -91,8 +92,8 @@ class IntegralBoundary(object):
                 src = Template(f.read())
                 code = src.substitute({
                     'name': self.class_name_cxx,
-                    'coeff': extract_c_expression(boundary_coeff),
-                    'affine': extract_c_expression(-boundary_affine),
+                    'coeff': extract_c_expression(coeff),
+                    'affine': extract_c_expression(-affine),
                     'body': '\n'.join(
                         ('(void) %s;' % name) for name in unused_args
                         ),

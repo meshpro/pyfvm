@@ -16,6 +16,7 @@ from ..helpers import \
         cxx_members_init_declare
 from ..form_language import n, neg_n, Expression
 
+
 class IntegralEdge(object):
     def __init__(self, namespace, integrand, subdomains, matrix_var=None):
         self.namespace = namespace
@@ -160,10 +161,10 @@ def _extract_linear_components(expr, dvars):
     # discretizer.
     if not is_affine_linear(expr, dvars):
         raise RuntimeError((
-            'The given function\n'
+            'The given expression\n'
             '    f(x) = %s\n'
             'does not seem to be affine linear in u.')
-            % function(x)
+            % expr(x)
             )
 
     # Get the coefficients of u0, u1.

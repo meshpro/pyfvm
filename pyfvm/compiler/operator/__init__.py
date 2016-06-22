@@ -15,7 +15,7 @@ def get_code_operator(namespace, name, var):
     if (len(inspect.getargspec(var.eval).args) == 1):
         code = _get_code_operator_plain(name, var)
     elif (len(inspect.getargspec(var.eval).args) == 2):
-        code = _get_code_operator_with_rebuild(name, var)
+        code = _get_code_operator_with_rebuild()
     else:
         raise ValueError('Only methods with one or two arguments allowed.')
 
