@@ -85,10 +85,10 @@ class CoreList(object):
         assert(isinstance(other, float) or isinstance(other, int))
         # flip the sign on the integrand of all 'self' cores
         new_integrals = [Integral(
-                lambda x: other * integrals.integrand(x),
+                lambda x: other * integral.integrand(x),
                 integral.measure,
                 integral.subdomains
-                ) for integrals in self.integrals]
+                ) for integral in self.integrals]
         self.integrals = new_integrals
         return self
 
