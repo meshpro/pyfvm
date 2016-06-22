@@ -74,7 +74,6 @@ class CodeGeneratorEigen(object):
 
     def visit_Load(self, node):
         logging.debug('> Load >')
-        pass
 
     def visit_Call(self, node):
         '''Handles calls for operators A(u) and pointwise functions sin(u).

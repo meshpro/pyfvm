@@ -6,6 +6,8 @@ import sympy
 import sys
 import uuid
 
+import form_language
+
 
 def get_uuid():
     return str(uuid.uuid4())[:8]
@@ -54,8 +56,8 @@ def run(command):
     return output
 
 
-def is_affine_linear(expr, vars):
-    for var in vars:
+def is_affine_linear(expr, variables):
+    for var in variables:
         if not sympy.Eq(sympy.diff(expr, var, var), 0):
             return False
     return True
@@ -133,7 +135,10 @@ def cxx_members_init_declare(namespace, parent_name, dependency_class_objects):
     members_init.insert(
         0,
         'nosh::%s({%s})' %
-        (parent_name, ', '.join(['"%s"' % s for s in subdomain_class_name_cxxs]))
+        (
+            parent_name,
+            ', '.join(['"%s"' % s for s in subdomain_class_name_cxxs])
+        )
         )
     return members_init, members_declare
 

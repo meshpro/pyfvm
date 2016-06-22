@@ -54,7 +54,7 @@ class CoreList(object):
 
     def __sub__(self, other):
         if other.fvm_matrices:
-            raise NotImplemented('Cannot negate FvmMatrices yet.')
+            raise NotImplementedError('Cannot negate FvmMatrices yet.')
         # flip the sign on the integrand of all 'other' cores
         new_integrals = [Integral(
                 lambda x: -integral.integrand(x),
@@ -69,7 +69,7 @@ class CoreList(object):
 
     def __neg__(self):
         if self.fvm_matrices:
-            raise NotImplemented('Cannot negate FvmMatrices yet.')
+            raise NotImplementedError('Cannot negate FvmMatrices yet.')
         # flip the sign on the integrand of all 'self' cores
         new_integrals = [Integral(
                 lambda x: -integral.integrand(x),
@@ -81,14 +81,14 @@ class CoreList(object):
 
     def __mul__(self, other):
         if self.fvm_matrices:
-            raise NotImplemented('Cannot multiply FvmMatrices yet.')
+            raise NotImplementedError('Cannot multiply FvmMatrices yet.')
         assert(isinstance(other, float) or isinstance(other, int))
         # flip the sign on the integrand of all 'self' cores
         new_integrals = [Integral(
-                lambda x: other * integrals.integrand(x),
+                lambda x: other * integral.integrand(x),
                 integral.measure,
                 integral.subdomains
-                ) for integrals in self.integrals]
+                ) for integral in self.integrals]
         self.integrals = new_integrals
         return self
 
@@ -171,7 +171,3 @@ class n_dot_grad(sympy.Function):
 
 n = sympy.MatrixSymbol('n', 3, 1)
 neg_n = sympy.MatrixSymbol('neg_n', 3, 1)
-
-
-def grad(a):
-    return Vector()

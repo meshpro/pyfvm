@@ -1,15 +1,12 @@
 # -*- coding: utf-8 -*-
 #
-import os
 from string import Template
 import sympy
 
-from ..code_generator_eigen import CodeGeneratorEigen
 from ..helpers import \
         extract_c_expression, \
         extract_linear_components, \
         get_uuid, \
-        is_affine_linear, \
         list_unique, \
         cxx_members_init_declare, \
         replace_nosh_functions
@@ -74,7 +71,7 @@ class IntegralBoundary(object):
                     self.expr,
                     sympy.Symbol('%s[k]' % self.matrix_var)
                     )
-            type = 'matrix_core_boundary'
+            obj_type = 'matrix_core_boundary'
             with open('matrix_core_boundary.tpl', 'r') as f:
                 src = Template(f.read())
                 code = src.substitute({
@@ -86,13 +83,14 @@ class IntegralBoundary(object):
                     'members_declare': '\n'.join(members_declare)
                     })
         else:
-            type = 'matrix_core_operator'
+            obj_type = 'matrix_core_operator'
+            unused_args = arguments - used_vars
             with open('operator_core_boundary.tpl', 'r') as f:
                 src = Template(f.read())
                 code = src.substitute({
                     'name': self.class_name_cxx,
-                    'coeff': extract_c_expression(boundary_coeff),
-                    'affine': extract_c_expression(-boundary_affine),
+                    'coeff': extract_c_expression(coeff),
+                    'affine': extract_c_expression(-affine),
                     'body': '\n'.join(
                         ('(void) %s;' % name) for name in unused_args
                         ),
@@ -101,7 +99,7 @@ class IntegralBoundary(object):
                     })
 
         return {
-            'type': type,
+            'type': obj_type,
             'code': code,
             'class_name_cxx': self.class_name_cxx,
             'constructor_args': []

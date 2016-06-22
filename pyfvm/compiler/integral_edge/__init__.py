@@ -9,12 +9,12 @@ from ..code_generator_eigen import CodeGeneratorEigen
 from ..expression import *
 from ..subdomain import *
 from ..helpers import \
-        extract_c_expression, \
         is_affine_linear, \
         list_unique, \
         get_uuid, \
         cxx_members_init_declare
 from ..form_language import n, neg_n, Expression
+
 
 class IntegralEdge(object):
     def __init__(self, namespace, integrand, subdomains, matrix_var=None):
@@ -78,8 +78,6 @@ class IntegralEdge(object):
         return edge_coeff, edge_affine, arguments, used_vars
 
     def get_cxx_class_object(self, dependency_class_objects):
-        type = 'nosh::matrix_core_edge'
-
         edge_coeff, edge_affine, arguments, used_vars = \
             self._collect_variables()
 
@@ -160,10 +158,10 @@ def _extract_linear_components(expr, dvars):
     # discretizer.
     if not is_affine_linear(expr, dvars):
         raise RuntimeError((
-            'The given function\n'
+            'The given expression\n'
             '    f(x) = %s\n'
             'does not seem to be affine linear in u.')
-            % function(x)
+            % expr(sympy.Symbol('x'))
             )
 
     # Get the coefficients of u0, u1.

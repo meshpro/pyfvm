@@ -4,7 +4,6 @@ import os
 from string import Template
 import sympy
 
-from ..code_generator_eigen import CodeGeneratorEigen
 from ..expression import *
 from ..subdomain import *
 from ..form_language import Expression, ScalarParameter
@@ -12,7 +11,6 @@ from ..helpers import \
         extract_c_expression, \
         extract_linear_components, \
         get_uuid, \
-        is_affine_linear, \
         list_unique, \
         cxx_members_init_declare, \
         replace_nosh_functions
@@ -107,7 +105,7 @@ class IntegralVertex(object):
                     self.expr,
                     sympy.Symbol('%s[k]' % self.matrix_var)
                     )
-            type = 'matrix_core_vertex'
+            obj_type = 'matrix_core_vertex'
             filename = os.path.join(
                     os.path.dirname(__file__),
                     'cxx_matrix_core_vertex.tpl'
@@ -123,7 +121,7 @@ class IntegralVertex(object):
                     'members_declare': '\n'.join(declare)
                     })
         else:
-            type = 'operator_core_vertex'
+            obj_type = 'operator_core_vertex'
             filename = os.path.join(
                     os.path.dirname(__file__),
                     'cxx_operator_core_vertex.tpl'
@@ -140,7 +138,7 @@ class IntegralVertex(object):
                     })
 
         return {
-            'type': type,
+            'type': obj_type,
             'code': code,
             'class_name_cxx': self.class_name_cxx,
             'constructor_args': [],
@@ -202,7 +200,7 @@ class IntegralVertex(object):
                     arguments, used_vars
                     )
             eval_body.extend(extra_body)
-            type = 'matrix_core_vertex'
+            obj_type = 'matrix_core_vertex'
             filename = os.path.join(
                     os.path.dirname(__file__),
                     'python_matrix_core_vertex.tpl'
@@ -218,7 +216,7 @@ class IntegralVertex(object):
                     'members_declare': '\n'.join(declare)
                     })
         else:
-            type = 'operator_core_vertex'
+            obj_type = 'operator_core_vertex'
             filename = os.path.join(
                     os.path.dirname(__file__),
                     'python_operator_core_vertex.tpl'
@@ -235,7 +233,7 @@ class IntegralVertex(object):
                     })
 
         return {
-            'type': type,
+            'type': obj_type,
             'code': code,
             'class_name_cxx': self.class_name_cxx,
             'constructor_args': [],
@@ -331,7 +329,8 @@ def _handle_parameters_cxx(scalar_params, vector_params):
     for v in vector_params:
         params_init.extend([
             'mesh_(mesh)',
-            '%s_vec_(std::make_shared<%s>(Teuchos::rcp(mesh->map())))' % (v, tpetra_str),
+            '%s_vec_(std::make_shared<%s>(Teuchos::rcp(mesh->map())))'
+            % (v, tpetra_str),
             '%s(%s_vec_->getData())' % (v, v)
             ])
         params_declare.extend([

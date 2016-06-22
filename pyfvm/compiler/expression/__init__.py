@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 #
-import os
 from string import Template
 import sympy
 from ..helpers import \

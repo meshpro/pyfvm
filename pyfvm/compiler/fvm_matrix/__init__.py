@@ -12,7 +12,7 @@ from ..integral_boundary import IntegralBoundary
 from ..dirichlet import Dirichlet
 from ..integral_edge import IntegralEdge
 from ..integral_vertex import IntegralVertex
-from ..helpers import get_uuid, sanitize_identifier_cxx
+from ..helpers import sanitize_identifier_cxx
 
 
 class FvmMatrixCode(object):
@@ -82,7 +82,9 @@ def gather_core_dependencies(namespace, res, dirichlets, matrix_var):
                     )
                 )
         else:
-            raise RuntimeError('Illegal measure type \'%s\'.' % measure)
+            raise RuntimeError(
+                    'Illegal measure type \'%s\'.' % integral.measure
+                    )
 
     for dirichlet in dirichlets:
         f, subdomains = dirichlet

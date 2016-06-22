@@ -16,7 +16,6 @@ from .operator import *
 from .subdomain import *
 
 import inspect
-import re
 from string import Template
 import os
 
@@ -87,7 +86,7 @@ def compile(infile, outfile, backend=None):
 
     # Collect relevant classes
     classes = []
-    for name, obj in inmod.__dict__.items():
+    for _, obj in inmod.__dict__.items():
         # Only inspect classes from inmod
         if not inspect.isclass(obj) or obj.__module__ != inmod_name:
             continue
@@ -129,18 +128,18 @@ def compile_classes(classes, namespace, outfile=None, backend='scipy'):
     # Build directed dependency graph as a dictionary, see
     # <https://www.python.org/doc/essays/graphs/>.
     def get_generator(cls):
-        if issubclass(cls, form_language.FvmMatrix):
+        if issubclass(cls, FvmMatrix):
             return FvmMatrixCode(namespace, cls)
-        elif issubclass(cls, form_language.LinearFvmProblem):
+        elif issubclass(cls, LinearFvmProblem):
             return LinearFvmProblemCode(namespace, cls)
-        elif issubclass(cls, form_language.FvmOperator):
+        elif issubclass(cls, FvmOperator):
             return FvmOperatorCode(namespace, cls)
-        elif issubclass(cls, form_language.Subdomain):
+        elif issubclass(cls, Subdomain):
             return SubdomainCode(cls)
-        # elif issubclass(var, form_language.EdgeCore):
+        # elif issubclass(var, EdgeCore):
         #     instance = var()
         #     return get_code_matrix_core_edge(namespace, name, instance)
-        elif issubclass(cls, form_language.Expression):
+        elif issubclass(cls, Expression):
             return ExpressionCode(cls)
         else:
             raise RuntimeError('Unknown class \'%s\'.' % cls.__name__)
