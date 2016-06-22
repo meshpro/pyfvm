@@ -19,7 +19,7 @@ def read(fname):
     return content
 
 setup(
-    name='pyfvm',
+    name='PyFVM',
     version=__version__,
     author=__author__,
     author_email=__author_email__,
