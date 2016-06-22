@@ -38,7 +38,7 @@ setup(name='pyfvm',
           'Topic :: Scientific/Engineering :: Mathematics'
           ],
       scripts=[
-          'nfc/form-compiler',
+          'tools/pyfvm-compiler',
           ],
       )
 # Don't install test files.
