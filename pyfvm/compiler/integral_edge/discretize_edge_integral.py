@@ -22,6 +22,7 @@ class DiscretizeEdgeIntegral(object):
         self.x0 = sympy.Symbol('x0')
         self.x1 = sympy.Symbol('x1')
         self.edge_length = sympy.Symbol('edge_length')
+        self.edge_covolume = sympy.Symbol('edge_covolume')
         return
 
     def visit(self, node):
@@ -57,7 +58,7 @@ class DiscretizeEdgeIntegral(object):
             if hasattr(f, 'nosh'):
                 function_vars.append(f.func)
 
-        out = sympy.Symbol('edge_covolume') * self.visit(expr)
+        out = self.edge_covolume * self.visit(expr)
 
         vector_vars = []
         for f in function_vars:
