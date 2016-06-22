@@ -82,7 +82,9 @@ def gather_core_dependencies(namespace, res, dirichlets, matrix_var):
                     )
                 )
         else:
-            raise RuntimeError('Illegal measure type \'%s\'.' % measure)
+            raise RuntimeError(
+                    'Illegal measure type \'%s\'.' % integral.measure
+                    )
 
     for dirichlet in dirichlets:
         f, subdomains = dirichlet
