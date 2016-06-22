@@ -196,8 +196,11 @@ class mesh2D_shell( mesh2d ):
                     edge_normals[edge_id] /= np.linalg.norm(edge_normals[edge_id])
         return edge_normals
     # --------------------------------------------------------------------------
-    def show(self, highlight_nodes = []):
+    def show(self, highlight_nodes = None):
         '''Plot the mesh.'''
+        if highlight_nodes is None:
+            highlight_nodes = []
+
         if self.edgesNodes is None:
             raise RuntimeError('Can only show mesh when edges are created.')
 
