@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 from . import compiler
+from . import discretize
 from . import linear_fvm_problem
 from . import mesh2d
 from . import meshTri

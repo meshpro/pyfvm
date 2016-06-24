@@ -5,8 +5,8 @@ import sympy
 from sympy.matrices.expressions.matexpr import MatrixExpr, MatrixSymbol
 
 
-def discretize_edge_integral(integrand):
-    discretizer = DiscretizeEdgeIntegral()
+def discretize_edge_integral(integrand, edge_length, edge_covolume):
+    discretizer = DiscretizeEdgeIntegral(edge_length, edge_covolume)
     return discretizer.generate(integrand)
 
 
@@ -16,12 +16,14 @@ if debug:
 
 
 class DiscretizeEdgeIntegral(object):
-    def __init__(self):
+    def __init__(self, edge_length, edge_covolume):
         self.arg_translate = {}
         self.x0 = sympy.Symbol('x0')
         self.x1 = sympy.Symbol('x1')
-        self.edge_length = sympy.Symbol('edge_length')
-        self.edge_covolume = sympy.Symbol('edge_covolume')
+        self.edge_length = edge_length
+        self.edge_covolume = edge_covolume
+        # self.edge_length = sympy.Symbol('edge_length')
+        # self.edge_covolume = sympy.Symbol('edge_covolume')
         return
 
     def visit(self, node):
@@ -50,11 +52,10 @@ class DiscretizeEdgeIntegral(object):
         '''
         x = sympy.MatrixSymbol('x', 3, 1)
         expr = node(x)
-        # Collect all nosh function variables.
+        # Collect all function variables.
         function_vars = []
         for f in expr.atoms(sympy.Function):
-            if hasattr(f, 'nosh'):
-                function_vars.append(f.func)
+            function_vars.append(f.func)
 
         out = self.edge_covolume * self.visit(expr)
 

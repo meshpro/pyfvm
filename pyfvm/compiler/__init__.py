@@ -92,8 +92,6 @@ def compile(infile, outfile, backend=None):
             continue
         classes.append(obj)
 
-    print(classes)
-
     return compile_classes(namespace, classes, outfile, backend)
 
 

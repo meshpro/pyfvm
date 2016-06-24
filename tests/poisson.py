@@ -14,20 +14,16 @@ class TestControlVolumes(unittest.TestCase):
         return
 
     def test_poisson(self):
+        import meshzoo
+        from scipy.sparse import linalg
+
+        # Define the problem
         class Poisson(LinearFvmProblem):
             @staticmethod
             def apply(u):
                 return integrate(lambda x: - n_dot_grad(u(x)), dS) \
                        - integrate(lambda x: 1.0, dV)
-            dirichlet = [(lambda x: 0.0, Boundary)]
-        # ======================================================================
-        import pyfvm
-        pyfvm.compiler.compile_classes([Poisson], 'poisson_def')
-
-        import poisson_def
-
-        import meshzoo
-        from scipy.sparse import linalg
+            dirichlet = [(lambda x: 0.0, ['Boundary'])]
 
         # Create mesh using meshzoo
         vertices, cells = meshzoo.rectangle.create_mesh(
@@ -37,9 +33,9 @@ class TestControlVolumes(unittest.TestCase):
                 )
         mesh = pyfvm.meshTri.meshTri(vertices, cells)
 
-        problem = poisson_def.Poisson(mesh)
+        linear_system = pyfvm.discretize.discretize(Poisson, mesh)
 
-        x = linalg.spsolve(problem.matrix, problem.rhs)
+        x = linalg.spsolve(linear_system.matrix, linear_system.rhs)
 
         k0 = -1
         for k, coord in enumerate(mesh.node_coords):
@@ -48,6 +44,7 @@ class TestControlVolumes(unittest.TestCase):
                 k0 = k
                 break
 
+        # self.assertNotEqual(k0, -1)
         self.assertAlmostEqual(x[k0], 0.0735267092334, delta=1.0e-7)
 
         return
