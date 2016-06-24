@@ -9,13 +9,18 @@ from scipy.sparse import linalg
 class Singular(LinearFvmProblem):
     @staticmethod
     def apply(u):
-        return integrate(lambda x: - 0.01 * n_dot_grad(u(x)), dS) \
+        return integrate(lambda x: - 1.0e-2 * n_dot_grad(u(x)), dS) \
                + integrate(lambda x: u(x), dV) \
                - integrate(lambda x: 1.0, dV)
     dirichlet = [(lambda x: 0.0, ['Boundary'])]
 
 # Create mesh using meshzoo
-vertices, cells = meshzoo.rectangle.create_mesh(1.0, 1.0, 51, 51, zigzag=True)
+vertices, cells = meshzoo.rectangle.create_mesh(
+        0.0, 1.0,
+        0.0, 1.0,
+        51, 51,
+        zigzag=True
+        )
 mesh = pyfvm.meshTri.meshTri(vertices, cells)
 
 linear_system = pyfvm.discretize(Singular, mesh)

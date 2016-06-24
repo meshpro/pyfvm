@@ -38,6 +38,6 @@ mesh.mark_subdomains([Gamma0(), Gamma1()])
 
 linear_system = pyfvm.discretize(Poisson, mesh)
 
-x = linalg.spsolve(problem.matrix, problem.rhs)
+x = linalg.spsolve(linear_system.matrix, linear_system.rhs)
 
 mesh.write('out.vtu', point_data={'x': x})
