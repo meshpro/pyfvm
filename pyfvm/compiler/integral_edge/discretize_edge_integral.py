@@ -55,7 +55,8 @@ class DiscretizeEdgeIntegral(object):
         # Collect all function variables.
         function_vars = []
         for f in expr.atoms(sympy.Function):
-            function_vars.append(f.func)
+            if hasattr(f, 'nosh'):
+                function_vars.append(f.func)
 
         out = self.edge_covolume * self.visit(expr)
 

@@ -8,7 +8,7 @@ import pyfvm
 from pyfvm.compiler.form_language import *
 
 
-class TestControlVolumes(unittest.TestCase):
+class TestPDEs(unittest.TestCase):
 
     def setUp(self):
         return
@@ -33,7 +33,7 @@ class TestControlVolumes(unittest.TestCase):
                 )
         mesh = pyfvm.meshTri.meshTri(vertices, cells)
 
-        linear_system = pyfvm.discretize.discretize(Poisson, mesh)
+        linear_system = pyfvm.discretize(Poisson, mesh)
 
         x = linalg.spsolve(linear_system.matrix, linear_system.rhs)
 

@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
-# ==============================================================================
+import pyfvm
 from pyfvm.compiler.form_language import *
+import meshzoo
+from scipy.sparse import linalg
 from sympy import sin
 
 
@@ -24,14 +26,6 @@ class Poisson(LinearFvmProblem):
             (lambda x: 0.0, Gamma0),
             (lambda x: 1.0, Gamma1)
             ]
-# ==============================================================================
-import pyfvm
-pyfvm.compiler.compile_classes([Gamma0, Gamma1, Poisson], 'poisson')
-
-import poisson
-
-import meshzoo
-from scipy.sparse import linalg
 
 # Read the mesh using meshio
 # mesh, _, _ = pyfvm.reader.read('pacman.e')
@@ -40,12 +34,9 @@ from scipy.sparse import linalg
 vertices, cells = meshzoo.rectangle.create_mesh(2.0, 1.0, 21, 11, zigzag=True)
 mesh = pyfvm.meshTri.meshTri(vertices, cells)
 
-mesh.mark_subdomains([
-        poisson.Gamma0(),
-        poisson.Gamma1()
-        ])
+mesh.mark_subdomains([Gamma0(), Gamma1()])
 
-problem = poisson.Poisson(mesh)
+linear_system = pyfvm.discretize(Poisson, mesh)
 
 x = linalg.spsolve(problem.matrix, problem.rhs)
 

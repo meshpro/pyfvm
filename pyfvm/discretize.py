@@ -128,6 +128,8 @@ def _discretize_expression(expr, control_volume):
 
 def discretize(cls, mesh):
     u = sympy.Function('u')
+    u.nosh = True  # TODO get rid
+
     res = cls.apply(u)
 
     edge_kernels = set()
