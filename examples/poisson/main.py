@@ -31,7 +31,12 @@ class Poisson(LinearFvmProblem):
 # mesh, _, _ = pyfvm.reader.read('pacman.e')
 
 # Create mesh using meshzoo
-vertices, cells = meshzoo.rectangle.create_mesh(2.0, 1.0, 21, 11, zigzag=True)
+vertices, cells = meshzoo.rectangle.create_mesh(
+        0.0, 2.0,
+        0.0, 1.0,
+        21, 11,
+        zigzag=True
+        )
 mesh = pyfvm.meshTri.meshTri(vertices, cells)
 
 mesh.mark_subdomains([Gamma0(), Gamma1()])

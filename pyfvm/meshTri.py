@@ -102,7 +102,8 @@ class meshTri(_base_mesh):
             subdomain_edges = numpy.unique(subdomain_edges)
             subdomain_half_edges = numpy.unique(subdomain_half_edges)
 
-            self.subdomains[subdomain.id] = {
+            name = subdomain.__class__.__name__
+            self.subdomains[name] = {
                     'vertices': subdomain_vertices,
                     'edges': subdomain_edges,
                     'half_edges': subdomain_half_edges
