@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 #
 from . import linear_fvm_problem
-from . import mesh2d
 from . import meshTri
 from . import meshTetra
 from . import reader
