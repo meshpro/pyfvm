@@ -158,7 +158,8 @@ def discretize(cls, mesh):
             # Unfortunately, it's not too easy to differentiate with respect to
             # an IndexedBase u with index k. For this reason, we'll simply
             # replace u[k] by a variable uk0.
-            x = sympy.MatrixSymbol('x', 3, 1)
+            # x = sympy.MatrixSymbol('x', 3, 1)
+            x = sympy.DeferredVector('x')
             control_volume = sympy.Symbol('control_volume')
             fx = integral.integrand(x)
             expr, vector_vars = _discretize_expression(fx, control_volume)
