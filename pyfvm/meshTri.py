@@ -16,7 +16,6 @@ class meshTri(_base_mesh):
         '''Initialization.
         '''
         super(meshTri, self).__init__(nodes, cells)
-        self.edges = None
         num_cells = len(cells)
         self.cells = numpy.empty(
                 num_cells,
@@ -26,12 +25,14 @@ class meshTri(_base_mesh):
         self.cell_volumes = None
         self.cell_circumcenters = None
 
-        self.compute_control_volumes()
         self.create_adjacent_entities()
+        self.compute_control_volumes()
         self.compute_edge_lengths()
         self.compute_covolumes()
 
         self.mark_default_subdomains()
+
+        self.compute_surface_areas()
 
         return
 
@@ -158,8 +159,6 @@ class meshTri(_base_mesh):
     def create_adjacent_entities(self):
         '''Setup edge-node and edge-cell relations.
         '''
-        if self.edges is not None:
-            return
         # Get upper bound for number of edges; trim later.
         max_num_edges = 3 * len(self.cells['nodes'])
 
@@ -243,9 +242,6 @@ class meshTri(_base_mesh):
         # compute cell circumcenters
         # if self.cell_circumcenters is None:
         #    self.compute_cell_circumcenters()
-
-        if self.edges is None:
-            self.create_adjacent_entities()
 
         # For flat meshes, the control volume contributions on a per-edge
         # basis by computing the distance between the circumcenters
@@ -764,4 +760,14 @@ class meshTri(_base_mesh):
         # sure we end up with the covolumes.
         self.covolumes *= self.edge_lengths
 
+        return
+
+    def compute_surface_areas(self):
+        # loop over all boundary edges
+        self.surface_areas = numpy.zeros(len(self.get_vertices('everywhere')))
+        for edge in self.get_edges('Boundary'):
+            vertex0 = self.edges['nodes'][edge][0]
+            self.surface_areas[vertex0] += 0.5 * self.edge_lengths[edge]
+            vertex1 = self.edges['nodes'][edge][1]
+            self.surface_areas[vertex1] += 0.5 * self.edge_lengths[edge]
         return
