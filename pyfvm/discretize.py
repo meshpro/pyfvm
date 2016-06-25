@@ -161,13 +161,12 @@ def discretize(cls, mesh):
                     edge_length,
                     edge_covolume
                     )
-            edge_coeff, edge_affine, arguments, used_vars = \
-                _collect_variables(expr, u)
+            coeff, affine, arguments, used_vars = _collect_variables(expr, u)
             edge_kernels.add(
                 EdgeKernel(
                     mesh,
-                    sympy.lambdify((edge_covolume, edge_length), edge_coeff),
-                    sympy.lambdify((edge_covolume, edge_length), edge_affine)
+                    sympy.lambdify((edge_covolume, edge_length), coeff),
+                    sympy.lambdify((edge_covolume, edge_length), affine)
                     )
                 )
         elif isinstance(integral.measure, form_language.ControlVolume):

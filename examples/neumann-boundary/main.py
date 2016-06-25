@@ -3,8 +3,6 @@ import pyfvm
 from pyfvm.compiler.form_language import *
 import meshzoo
 from scipy.sparse import linalg
-from sympy import sin
-from numpy import pi
 
 
 class D1(Subdomain):
