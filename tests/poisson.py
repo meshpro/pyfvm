@@ -5,7 +5,7 @@ import numpy
 import unittest
 
 import pyfvm
-from pyfvm.compiler.form_language import *
+from pyfvm.form_language import *
 
 
 class TestPDEs(unittest.TestCase):

@@ -4,7 +4,7 @@ import os
 from string import Template
 import sympy
 
-from ..form_language import \
+from pyfvm.form_language import \
         ControlVolumeSurface, \
         ControlVolume, \
         BoundarySurface

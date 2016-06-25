@@ -2,7 +2,7 @@
 #
 import meshzoo
 import pyfvm
-from pyfvm.compiler.form_language import *
+from pyfvm.form_language import *
 from scipy.sparse import linalg
 
 

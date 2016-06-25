@@ -5,7 +5,7 @@ import sympy
 from sympy.matrices.expressions.matexpr import \
         MatrixElement, MatrixExpr, MatrixSymbol
 
-from .form_language import n, neg_n
+from ..form_language import n, neg_n
 
 debug = False
 if debug:

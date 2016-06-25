@@ -6,7 +6,7 @@ import sympy
 
 from ..expression import *
 from ..subdomain import *
-from ..form_language import Expression, ScalarParameter
+from pyfvm.form_language import Expression, ScalarParameter
 from ..helpers import \
         extract_c_expression, \
         extract_linear_components, \

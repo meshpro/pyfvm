@@ -3,7 +3,7 @@
 import logging
 import sympy
 
-from ..form_language import FvmMatrix
+from pyfvm.form_language import FvmMatrix
 
 
 def get_code_tpetra(expr, arg_translate=None):

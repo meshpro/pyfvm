@@ -9,8 +9,10 @@ from ..helpers import \
         extract_c_expression, \
         get_uuid, \
         list_unique, \
-        replace_nosh_functions, \
-        sanitize_identifier_cxx
+        replace_nosh_functions
+
+from ..helpers import sanitize_identifier_cxx
+
 from ..subdomain import *
 
 

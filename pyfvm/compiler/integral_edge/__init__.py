@@ -8,12 +8,13 @@ from .discretize_edge_integral import discretize_edge_integral
 from ..code_generator_eigen import CodeGeneratorEigen
 from ..expression import *
 from ..subdomain import *
+
 from ..helpers import \
         is_affine_linear, \
         list_unique, \
         get_uuid, \
         cxx_members_init_declare
-from ..form_language import n, neg_n, Expression
+from pyfvm.form_language import n, neg_n, Expression
 
 
 class IntegralEdge(object):

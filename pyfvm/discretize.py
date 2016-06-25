@@ -1,14 +1,13 @@
 # -*- coding: utf-8 -*-
 #
 import sympy
-from .compiler import form_language
-from .compiler.integral_edge.discretize_edge_integral import \
-    discretize_edge_integral
-from .compiler.helpers import \
+from .discretize_edge_integral import discretize_edge_integral
+from .helpers import \
         extract_linear_components, \
         is_affine_linear, \
         replace_nosh_functions
-from .compiler.form_language import n, neg_n, Expression
+from . import form_language
+from .form_language import n, neg_n, Expression
 import linear_fvm_problem
 
 

@@ -10,7 +10,7 @@ from ..helpers import \
         list_unique, \
         cxx_members_init_declare, \
         replace_nosh_functions
-from ..form_language import Expression
+from pyfvm.form_language import Expression
 
 
 class IntegralBoundary(object):

@@ -5,9 +5,11 @@ from string import Template
 import sympy
 from ..helpers import \
         extract_c_expression, \
-        get_uuid, \
-        sanitize_identifier_cxx
-from ..form_language import Boundary
+        sanitize_identifier_cxx, \
+        get_uuid
+
+
+from pyfvm.form_language import Boundary
 
 
 class SubdomainCode(object):
