@@ -33,20 +33,25 @@ class TestControlVolumes(unittest.TestCase):
         self.assertAlmostEqual(actual_values[2], norm, delta=tol)
         return
 
-    def test_degenerate_small(self):
-        points = numpy.array([[0, 0], [1, 0], [0.5, 0.1], [0.5, -0.1]])
-        # Manually compute the volumes.
-        total_vol = 2 * 0.5 * 0.1
-        cv0 = 0.25 * 0.1/0.5 * (0.5**2 + 0.1**2)
-        cv = [cv0, cv0, 0.5*(total_vol-2*cv0), 0.5 * (total_vol-2*cv0)]
-        # cells = numpy.array([[0, 1, 2], [0, 1, 3]])
-        mesh = pyfvm.mesh2d.mesh2d(points, cells=None)
-        actual_values = [numpy.linalg.norm(cv, ord=1),
-                         numpy.linalg.norm(cv, ord=2),
-                         numpy.linalg.norm(cv, ord=numpy.Inf)
-                         ]
-        self._run_test(mesh, actual_values)
-        return
+    # def test_degenerate_small(self):
+    #     points = numpy.array([
+    #         [0, 0, 0],
+    #         [1, 0, 0],
+    #         [0.5, 0.1, 0.0],
+    #         [0.5, -0.1, 0.0]
+    #         ])
+    #     # Manually compute the volumes.
+    #     total_vol = 2 * 0.5 * 0.1
+    #     cv0 = 0.25 * 0.1/0.5 * (0.5**2 + 0.1**2)
+    #     cv = [cv0, cv0, 0.5*(total_vol-2*cv0), 0.5 * (total_vol-2*cv0)]
+    #     cells = numpy.array([[0, 1, 2], [0, 1, 3]])
+    #     mesh = pyfvm.meshTri.meshTri(points, cells)
+    #     actual_values = [numpy.linalg.norm(cv, ord=1),
+    #                      numpy.linalg.norm(cv, ord=2),
+    #                      numpy.linalg.norm(cv, ord=numpy.Inf)
+    #                      ]
+    #     self._run_test(mesh, actual_values)
+    #     return
 
     def test_rectanglesmall(self):
         filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
