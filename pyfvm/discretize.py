@@ -46,8 +46,24 @@ class VertexKernel(object):
             )
 
 
-class DirichletKernel(object):
+class BoundaryKernel(object):
+    def __init__(self, mesh, coeff, affine):
+        self.mesh = mesh
+        self.coeff = coeff
+        self.affine = affine
+        self.subdomains = ['everywhere']
+        return
 
+    def eval(self, k):
+        surface_area = self.mesh.surface_areas[k]
+        x = self.mesh.node_coords[k]
+        return (
+            self.coeff(surface_area, x),
+            self.affine(surface_area, x)
+            )
+
+
+class DirichletKernel(object):
     def __init__(self, mesh, val, subdomains):
         self.mesh = mesh
         self.val = val
@@ -121,9 +137,9 @@ def _extract_linear_components(expr, dvars):
         )
 
 
-def _discretize_expression(expr, control_volume):
+def _discretize_expression(expr, multiplier):
     expr, fks = replace_nosh_functions(expr)
-    return sympy.Symbol('control_volume') * expr, fks
+    return multiplier * expr, fks
 
 
 def discretize(cls, mesh):
@@ -176,7 +192,26 @@ def discretize(cls, mesh):
                     )
                 )
         elif isinstance(integral.measure, form_language.BoundarySurface):
-            raise NotImplementedError('Not yet implemented.')
+            # Unfortunately, it's not too easy to differentiate with respect to
+            # an IndexedBase u with index k. For this reason, we'll simply
+            # replace u[k] by a variable uk0.
+            # x = sympy.MatrixSymbol('x', 3, 1)
+            x = sympy.DeferredVector('x')
+            surface_area = sympy.Symbol('surface_area')
+            fx = integral.integrand(x)
+            expr, vector_vars = _discretize_expression(fx, surface_area)
+            u = sympy.IndexedBase('%s' % u)
+            k0 = sympy.Symbol('k')
+            uk0 = sympy.Symbol('uk0')
+            expr = expr.subs([(u[k0], uk0)])
+            coeff, affine = extract_linear_components(expr, uk0)
+            vertex_kernels.add(
+                BoundaryKernel(
+                    mesh,
+                    sympy.lambdify((surface_area, x), coeff),
+                    sympy.lambdify((surface_area, x), affine)
+                    )
+                )
         else:
             raise RuntimeError(
                     'Illegal measure type \'%s\'.' % integral.measure
