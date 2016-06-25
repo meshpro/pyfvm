@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 #
-from . import compiler
 from . import linear_fvm_problem
-from . import mesh2d
 from . import meshTri
 from . import meshTetra
 from . import reader
+
+from .discretize import *
 
 __all__ = [
     'linear_fvm_problem',

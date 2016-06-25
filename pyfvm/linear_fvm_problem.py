@@ -63,8 +63,8 @@ def _get_VIJ(
                 J += [v0, v1, v0, v1]
 
                 if compute_rhs:
-                    rhs[v0] += vals_rhs[0]
-                    rhs[v1] += vals_rhs[1]
+                    rhs[v0] -= vals_rhs[0]
+                    rhs[v1] -= vals_rhs[1]
 
             # # TODO fix those
             # for k in mesh.get_half_edges(subdomain):
@@ -83,7 +83,18 @@ def _get_VIJ(
                 J += [k]
 
                 if compute_rhs:
-                    rhs[k] += val_rhs
+                    rhs[k] -= val_rhs
+
+    for boundary_core in boundary_cores:
+        for subdomain in boundary_core.subdomains:
+            for k in mesh.get_vertices(subdomain):
+                val_matrix, val_rhs = boundary_core.eval(k)
+                V += [val_matrix]
+                I += [k]
+                J += [k]
+
+                if compute_rhs:
+                    rhs[k] -= val_rhs
 
     for dirichlet in dirichlets:
         for subdomain in dirichlet.subdomains:
