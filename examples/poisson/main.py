@@ -23,8 +23,8 @@ class Poisson(LinearFvmProblem):
                 - integrate(lambda x: 10 * sin(10*x[0]), dV)
 
     dirichlet = [
-            (lambda x: 0.0, Gamma0),
-            (lambda x: 1.0, Gamma1)
+            (lambda x: 0.0, ['Gamma0']),
+            (lambda x: 1.0, ['Gamma1'])
             ]
 
 # Read the mesh using meshio
@@ -34,7 +34,7 @@ class Poisson(LinearFvmProblem):
 vertices, cells = meshzoo.rectangle.create_mesh(
         0.0, 2.0,
         0.0, 1.0,
-        21, 11,
+        101, 51,
         zigzag=True
         )
 mesh = pyfvm.meshTri.meshTri(vertices, cells)
