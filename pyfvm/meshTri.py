@@ -22,7 +22,7 @@ class meshTri(_base_mesh):
                 dtype=numpy.dtype([('nodes', (int, 3))])
                 )
         self.cells['nodes'] = cells
-        self.cell_volumes = None
+        self.create_cell_volumes()
         self.cell_circumcenters = None
 
         self.create_adjacent_entities()
@@ -305,8 +305,6 @@ class meshTri(_base_mesh):
                     self._edge_comp(edge_lid, node_lids, x2d, cc)
 
         # Sanity checks.
-        if self.cell_volumes is None:
-            self.create_cell_volumes()
         sum_cv = sum(self.control_volumes)
         sum_cells = sum(self.cell_volumes)
         alpha = sum_cv - sum_cells
@@ -398,8 +396,6 @@ class meshTri(_base_mesh):
         # The barycentric midpoint "divides the triangle" into three areas of
         # equal volume. Hence, just assign one third of the volumes to the
         # corner points of each cell.
-        if self.cell_volumes is None:
-            self.create_cell_volumes()
         num_nodes = len(self.node_coords)
         self.control_volumes = numpy.zeros(num_nodes, dtype=float)
         for k, cell in enumerate(self.cells):
