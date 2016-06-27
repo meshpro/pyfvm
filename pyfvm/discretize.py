@@ -20,11 +20,20 @@ class EdgeKernel(object):
         return
 
     def eval(self, k):
+        edge = self.mesh.node_coords[self.mesh.edges['nodes'][k][1]] - \
+           self.mesh.node_coords[self.mesh.edges['nodes'][k][0]]
         edge_covolume = self.mesh.covolumes[k]
         edge_length = self.mesh.edge_lengths[k]
+        val = self.coeff(edge, edge_covolume, edge_length)
+        if hasattr(val[0][0], '__len__'):
+            assert len(val[0][0]) == 1
+            val[0][0] = val[0][0][0]
+            val[1][0] = val[1][0][0]
+            val[0][1] = val[0][1][0]
+            val[1][1] = val[1][1][0]
         return (
-            self.coeff(edge_covolume, edge_length),
-            self.affine(edge_covolume, edge_length)
+            val,
+            self.affine(edge, edge_covolume, edge_length)
             )
 
 
@@ -153,19 +162,30 @@ def discretize(cls, mesh):
     dirichlet_kernels = set()
     for integral in res.integrals:
         if isinstance(integral.measure, form_language.ControlVolumeSurface):
-            edge_covolume = sympy.Symbol('edge_covolume')
+            edge = sympy.Symbol('edge')
             edge_length = sympy.Symbol('edge_length')
+            edge_covolume = sympy.Symbol('edge_covolume')
             expr, vector_vars = discretize_edge_integral(
                     integral.integrand,
+                    edge,
                     edge_length,
                     edge_covolume
                     )
             coeff, affine, arguments, used_vars = _collect_variables(expr, u)
+            print(coeff, affine)
             edge_kernels.add(
                 EdgeKernel(
                     mesh,
-                    sympy.lambdify((edge_covolume, edge_length), coeff),
-                    sympy.lambdify((edge_covolume, edge_length), affine)
+                    sympy.lambdify(
+                        (edge, edge_covolume, edge_length),
+                        coeff,
+                        'numpy'
+                        ),
+                    sympy.lambdify(
+                        (edge, edge_covolume, edge_length),
+                        affine,
+                        'numpy'
+                        )
                     )
                 )
         elif isinstance(integral.measure, form_language.ControlVolume):
