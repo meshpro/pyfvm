@@ -234,22 +234,11 @@ class meshTri(_base_mesh):
             raise ValueError('Unknown volume variant ''%s''.' % variant)
         return
 
-    def _get_lids(self, cell_id, node_ids):
-        # Get the local IDs.
-        l = self.cells['nodes'][cell_id].tolist()
-        return [
-            l.index(node_ids[0]),
-            l.index(node_ids[1])
-            ]
-
-    def _edge_comp(self, edge_lid, node_lids, x2d, cc):
+    def _edge_comp(self, node_lids, other_lid, x2d, cc):
         # Move the system such that one of the two end points is in the
         # origin. Deliberately take x2d[0].
 
-        # This makes use of the fact that cellsEdges and cellsNodes are
-        # coordinated such that in cell #i, the edge cellsEdges[i][k]
-        # opposes cellsNodes[i][k].
-        other0 = x2d[edge_lid] - x2d[node_lids[0]]
+        other0 = x2d[other_lid] - x2d[node_lids[0]]
 
         # Compute edge midpoint.
         edge_midpoint = 0.5 * (x2d[node_lids[0]] + x2d[node_lids[1]]) - \
@@ -280,16 +269,15 @@ class meshTri(_base_mesh):
 
         # For flat meshes, the control volume contributions on a per-edge basis
         # by computing the distance between the circumcenters of two adjacent
-        # cells.
-        # If the mesh is not flat, however, this does not work. Hence, compute
-        # the control volume contributions for each side in a cell separately.
+        # cells. If the mesh is not flat, however, this does not work. Hence,
+        # compute the control volume contributions for each side in a cell
+        # separately.
 
         num_cells = len(self.cells)
         for cell_id in range(num_cells):
             # Project the triangle to 2D.
             x = self.node_coords[self.cells['nodes'][cell_id]]
-            # Project to 2D, compute circumcenter, get its barycentric
-            # coordinates, and project those back to 3D.
+            # Project to 2D, compute circumcenter.
             x2d = numpy.empty(3, dtype=numpy.dtype((float, 2)))
             vtkTriangle.ProjectTo2D(
                     x[0], x[1], x[2],
@@ -298,11 +286,11 @@ class meshTri(_base_mesh):
             # Compute circumcenter.
             cc = numpy.empty(2)
             vtkTriangle.Circumcircle(x2d[0], x2d[1], x2d[2], cc)
-            for edge_lid, edge_id in enumerate(self.cells['edges'][cell_id]):
-                node_ids = self.edges['nodes'][edge_id]
-                node_lids = self._get_lids(cell_id, node_ids)
+            for other_lid in range(3):
+                node_lids = range(3)[:other_lid] + range(3)[other_lid+1:]
+                node_ids = self.cells['nodes'][cell_id][node_lids]
                 self.control_volumes[node_ids] += \
-                    self._edge_comp(edge_lid, node_lids, x2d, cc)
+                    self._edge_comp(node_lids, other_lid, x2d, cc)
 
         # Sanity checks.
         sum_cv = sum(self.control_volumes)
