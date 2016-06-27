@@ -117,23 +117,6 @@ class DiscretizeEdgeIntegral(object):
         logging.debug('  Call >')
         return out
 
-    def visit_UnaryOp(self, node):
-        '''Handles unary operations (e.g., +, -,...).
-        '''
-        code_op = self.visit(node.op)
-        logging.debug('> UnaryOp %s' % code_op)
-        ret = self.visit(node.operand)
-        if isinstance(ret, Vector):
-            code = self._to_pointwise(ret)
-        elif isinstance(ret, Pointwise):
-            code = ret
-        else:
-            raise ValueError('Illegal input type')
-        # plug it together
-        pointwise_code = '%s%s' % (code_op, code)
-        logging.debug('  UnaryOp >')
-        return Pointwise(pointwise_code)
-
     def visit_ChainOp(self, node, operator):
         '''Handles binary operations (e.g., +, -, *,...).
         '''
