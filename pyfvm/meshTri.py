@@ -698,19 +698,13 @@ class meshTri(_base_mesh):
         return
 
     def compute_covolumes(self):
-        # make sure the mesh has edges
-        if self.edges is None:
-            self.create_adjacent_entities()
-
         num_edges = len(self.edges)
         self.covolumes = numpy.zeros(num_edges, dtype=float)
 
-        if self.cell_volumes is None:
-            self.create_cell_volumes()
-
         # Precompute edges.
-        edges = self.node_coords[self.edges['nodes'][:, 1]] \
-            - self.node_coords[self.edges['nodes'][:, 0]]
+        edges = \
+            self.node_coords[self.edges['nodes'][:, 1]] - \
+            self.node_coords[self.edges['nodes'][:, 0]]
 
         # Calculate the edge contributions cell by cell.
         for vol, cell in zip(self.cell_volumes, self.cells):
@@ -736,7 +730,7 @@ class meshTri(_base_mesh):
                 # circumstance that makes this happening is the cell being
                 # degenerate.  Hence, it has volume 0, and so all the edge
                 # coefficients are 0, too.  Hence, do nothing.
-                pass
+                assert(vol == 0.0)
 
         # Here, self.covolumes contains the covolume-edgelength ratios. Make
         # sure we end up with the covolumes.
