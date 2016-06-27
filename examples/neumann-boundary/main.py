@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import pyfvm
-from pyfvm.compiler.form_language import *
+from pyfvm.form_language import *
 import meshzoo
 from scipy.sparse import linalg
 

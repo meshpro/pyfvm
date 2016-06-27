@@ -38,4 +38,3 @@ def read(filename, timestep=None):
                point_data, field_data
     else:
         raise RuntimeError('Unknown mesh type.')
-    return

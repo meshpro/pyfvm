@@ -9,7 +9,6 @@ from .discretize import *
 
 __all__ = [
     'linear_fvm_problem',
-    'mesh2d',
     'meshTri',
     'meshTetra',
     'reader'

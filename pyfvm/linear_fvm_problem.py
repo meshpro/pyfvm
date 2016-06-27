@@ -4,6 +4,29 @@ import numpy
 from scipy import sparse
 
 
+def _wipe_row_csr(matrix, i):
+    # Wipes a row of a matrix in CSR format and puts 1.0 on the diagonal.
+    if not isinstance(matrix, sparse.csr_matrix):
+        raise ValueError('works only for CSR format -- use .tocsr() first')
+
+    n = matrix.indptr[i+1] - matrix.indptr[i]
+    if n == 0:
+        raise ValueError('row %d not present in matrix' % i)
+
+    matrix.data[matrix.indptr[i]+1:-n+1] = matrix.data[matrix.indptr[i+1]:]
+    matrix.data[matrix.indptr[i]] = 1.0
+    matrix.data = matrix.data[:-n+1]
+
+    matrix.indices[matrix.indptr[i]+1:-n+1] = \
+        matrix.indices[matrix.indptr[i+1]:]
+    matrix.indices[matrix.indptr[i]] = i
+    matrix.indices = matrix.indices[:-n+1]
+
+    matrix.indptr[i+1:] -= n-1
+
+    return
+
+
 class LinearFvmProblem(object):
     def __init__(
             self,
@@ -21,7 +44,6 @@ class LinearFvmProblem(object):
                 edge_cores,
                 vertex_cores,
                 boundary_cores,
-                dirichlets,
                 compute_rhs=True
                 )
 
@@ -30,17 +52,24 @@ class LinearFvmProblem(object):
         self.matrix = sparse.coo_matrix((V, (I, J)), shape=(n, n))
         # Transform to CSR format for efficiency
         self.matrix = self.matrix.tocsr()
+
+        for dirichlet in dirichlets:
+            for subdomain in dirichlet.subdomains:
+                boundary_verts = mesh.get_vertices(subdomain)
+
+                for k in boundary_verts:
+                    _wipe_row_csr(self.matrix, k)
+
+                # overwrite rhs
+                for k in mesh.get_vertices(subdomain):
+                    self.rhs[k] = dirichlet.eval(k)
+
         return
-
-
-def find(lst, a):
-    # From <http://stackoverflow.com/a/16685428/353337>
-    return [i for i, x in enumerate(lst) if x == a]
 
 
 def _get_VIJ(
         mesh,
-        edge_cores, vertex_cores, boundary_cores, dirichlets,
+        edge_cores, vertex_cores, boundary_cores,
         compute_rhs=False
         ):
     V = []
@@ -95,23 +124,5 @@ def _get_VIJ(
 
                 if compute_rhs:
                     rhs[k] -= val_rhs
-
-    for dirichlet in dirichlets:
-        for subdomain in dirichlet.subdomains:
-            for k in mesh.get_vertices(subdomain):
-                # wipe out row k
-                indices = find(I, k)
-                I = numpy.delete(I, indices).tolist()
-                J = numpy.delete(J, indices).tolist()
-                V = numpy.delete(V, indices).tolist()
-
-                # Add entry 1.0 to the diagonal
-                I.append(k)
-                J.append(k)
-                V.append(1.0)
-
-                # overwrite rhs
-                if compute_rhs:
-                    rhs[k] = dirichlet.eval(k)
 
     return V, I, J, rhs

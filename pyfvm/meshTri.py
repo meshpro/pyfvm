@@ -16,13 +16,12 @@ class meshTri(_base_mesh):
         '''Initialization.
         '''
         super(meshTri, self).__init__(nodes, cells)
-        num_cells = len(cells)
         self.cells = numpy.empty(
-                num_cells,
+                len(cells),
                 dtype=numpy.dtype([('nodes', (int, 3))])
                 )
         self.cells['nodes'] = cells
-        self.cell_volumes = None
+        self.create_cell_volumes()
         self.cell_circumcenters = None
 
         self.create_adjacent_entities()
@@ -234,81 +233,59 @@ class meshTri(_base_mesh):
             raise ValueError('Unknown volume variant ''%s''.' % variant)
         return
 
+    def _edge_comp(self, coords, other_coord, cc):
+        # Move the system such that one of the two end points is in the
+        # origin. Deliberately take x2d[0].
+
+        other0 = other_coord - coords[0]
+
+        # Compute edge midpoint.
+        # edge_midpoint = 0.5 * (coords[0] + coords[1]) - coords[0]
+        edge_midpoint = 0.5 * (coords[1] - coords[0])
+
+        cc_tmp = cc - coords[0]
+
+        # Compute the area of the triangle {node[0], cc, edge_midpoint}. Gauge
+        # with the sign of the area {node[0], other0, edge_midpoint}.
+
+        # Computing the triangle volume like this is called the shoelace
+        # formula and can be interpreted as the z-component of the
+        # cross-product of other0 and edge_midpoint.
+        val = 0.5 * (
+                cc_tmp[0] * edge_midpoint[1] -
+                cc_tmp[1] * edge_midpoint[0]
+                )
+        if other0[0] * edge_midpoint[1] > other0[1] * edge_midpoint[0]:
+            return val
+        else:
+            return -val
+
     def _compute_voronoi_volumes(self):
-        from vtk import vtkTriangle
-        num_nodes = len(self.node_coords)
-        self.control_volumes = numpy.zeros(num_nodes, dtype=float)
-
-        # compute cell circumcenters
-        # if self.cell_circumcenters is None:
-        #    self.compute_cell_circumcenters()
-
-        # For flat meshes, the control volume contributions on a per-edge
-        # basis by computing the distance between the circumcenters
-        # of two adjacent cells.
-        # If the mesh is not flat, however, this does not work. Hence, compute
-        # the control volume contributions for each side in a cell separately.
-
-        num_cells = len(self.cells)
-        for cell_id in range(num_cells):
-            # Project the triangle to 2D.
-            x = self.node_coords[self.cells['nodes'][cell_id]]
-            # Project to 2D, compute circumcenter, get its barycentric
-            # coordinates, and project those back to 3D.
+        # For flat meshes, the control volume contributions on a per-edge basis
+        # by computing the distance between the circumcenters of two adjacent
+        # cells. If the mesh is not flat, however, this does not work. Hence,
+        # compute the control volume contributions for each side in a cell
+        # separately.
+        self.control_volumes = numpy.zeros(len(self.node_coords), dtype=float)
+        for node_ids in self.cells['nodes']:
+            # Project to 2D, compute circumcenter.
+            from vtk import vtkTriangle
+            x = self.node_coords[node_ids]
             x2d = numpy.empty(3, dtype=numpy.dtype((float, 2)))
-            vtkTriangle.ProjectTo2D(x[0], x[1], x[2],
-                                    x2d[0], x2d[1], x2d[2])
+            vtkTriangle.ProjectTo2D(
+                    x[0], x[1], x[2],
+                    x2d[0], x2d[1], x2d[2]
+                    )
             # Compute circumcenter.
             cc = numpy.empty(2)
             vtkTriangle.Circumcircle(x2d[0], x2d[1], x2d[2], cc)
+            for other_lid in range(3):
+                node_lids = range(3)[:other_lid] + range(3)[other_lid+1:]
+                my_node_ids = node_ids[node_lids]
+                self.control_volumes[my_node_ids] += \
+                    self._edge_comp(x2d[node_lids], x2d[other_lid], cc)
 
-            for edge_id in self.cells['edges'][cell_id]:
-                # Move the system such that one of the two end points is in the
-                # origin. Deliberately take x2d[0].
-                node_ids = self.edges['nodes'][edge_id]
-
-                # Get the local IDs.
-                edge_lid = numpy.nonzero(
-                            self.cells['edges'][cell_id] == edge_id
-                            )[0][0]
-                node_lids = numpy.array([
-                  numpy.nonzero(
-                      self.cells['nodes'][cell_id] == node_ids[0]
-                      )[0][0],
-                  numpy.nonzero(
-                      self.cells['nodes'][cell_id] == node_ids[1]
-                      )[0][0]
-                  ])
-
-                # This makes use of the fact that cellsEdges and cellsNodes are
-                # coordinated such that in cell #i, the edge cellsEdges[i][k]
-                # opposes cellsNodes[i][k].
-                other0 = x2d[edge_lid] - x2d[node_lids[0]]
-
-                # Compute edge midpoint.
-                edge_midpoint = 0.5 * (x2d[node_lids[0]] + x2d[node_lids[1]]) \
-                    - x2d[node_lids[0]]
-
-                cc_tmp = cc - x2d[node_lids[0]]
-
-                # Compute the area of the triangle {node[0], cc,
-                # edge_midpoint}.  Gauge the sign with the sign of the area
-                # {node[0], other0, edge_midpoint}.
-
-                # Computing the triangle volume like this is called the
-                # shoelace formula and can be interpreted as the z-component of
-                # the cross-product of other0 and edge_midpoint.
-                gauge = other0[0] * edge_midpoint[1] \
-                    - other0[1] * edge_midpoint[0]
-
-                self.control_volumes[node_ids] += \
-                    numpy.sign(gauge) * 0.5 * (
-                            cc_tmp[0] * edge_midpoint[1] -
-                            cc_tmp[1] * edge_midpoint[0]
-                            )
         # Sanity checks.
-        if self.cell_volumes is None:
-            self.create_cell_volumes()
         sum_cv = sum(self.control_volumes)
         sum_cells = sum(self.cell_volumes)
         alpha = sum_cv - sum_cells
@@ -400,8 +377,6 @@ class meshTri(_base_mesh):
         # The barycentric midpoint "divides the triangle" into three areas of
         # equal volume. Hence, just assign one third of the volumes to the
         # corner points of each cell.
-        if self.cell_volumes is None:
-            self.create_cell_volumes()
         num_nodes = len(self.node_coords)
         self.control_volumes = numpy.zeros(num_nodes, dtype=float)
         for k, cell in enumerate(self.cells):
@@ -716,19 +691,13 @@ class meshTri(_base_mesh):
         return
 
     def compute_covolumes(self):
-        # make sure the mesh has edges
-        if self.edges is None:
-            self.create_adjacent_entities()
-
         num_edges = len(self.edges)
         self.covolumes = numpy.zeros(num_edges, dtype=float)
 
-        if self.cell_volumes is None:
-            self.create_cell_volumes()
-
         # Precompute edges.
-        edges = self.node_coords[self.edges['nodes'][:, 1]] \
-            - self.node_coords[self.edges['nodes'][:, 0]]
+        edges = \
+            self.node_coords[self.edges['nodes'][:, 1]] - \
+            self.node_coords[self.edges['nodes'][:, 0]]
 
         # Calculate the edge contributions cell by cell.
         for vol, cell in zip(self.cell_volumes, self.cells):
@@ -754,7 +723,7 @@ class meshTri(_base_mesh):
                 # circumstance that makes this happening is the cell being
                 # degenerate.  Hence, it has volume 0, and so all the edge
                 # coefficients are 0, too.  Hence, do nothing.
-                pass
+                assert(vol == 0.0)
 
         # Here, self.covolumes contains the covolume-edgelength ratios. Make
         # sure we end up with the covolumes.
