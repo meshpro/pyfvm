@@ -35,7 +35,7 @@ class LinearFvmProblem(object):
 
 def find(lst, a):
     # From <http://stackoverflow.com/a/16685428/353337>
-    return [i for i, x in enumerate(lst) if x == a]
+    return [i for i, x in enumerate(lst) if x in a]
 
 
 def _get_VIJ(
@@ -98,20 +98,22 @@ def _get_VIJ(
 
     for dirichlet in dirichlets:
         for subdomain in dirichlet.subdomains:
-            for k in mesh.get_vertices(subdomain):
-                # wipe out row k
-                indices = find(I, k)
-                I = numpy.delete(I, indices).tolist()
-                J = numpy.delete(J, indices).tolist()
-                V = numpy.delete(V, indices).tolist()
+            boundary_verts = mesh.get_vertices(subdomain)
 
-                # Add entry 1.0 to the diagonal
-                I.append(k)
-                J.append(k)
-                V.append(1.0)
+            # wipe out row k
+            indices = find(I, boundary_verts)
+            I = numpy.delete(I, indices).tolist()
+            J = numpy.delete(J, indices).tolist()
+            V = numpy.delete(V, indices).tolist()
 
+            # Add entry 1.0 to the diagonal for each vert
+            I.extend(boundary_verts)
+            J.extend(boundary_verts)
+            V.extend(numpy.ones(len(boundary_verts)))
+
+            if compute_rhs:
                 # overwrite rhs
-                if compute_rhs:
+                for k in mesh.get_vertices(subdomain):
                     rhs[k] = dirichlet.eval(k)
 
     return V, I, J, rhs
