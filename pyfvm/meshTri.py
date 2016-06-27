@@ -234,33 +234,32 @@ class meshTri(_base_mesh):
             raise ValueError('Unknown volume variant ''%s''.' % variant)
         return
 
-    def _edge_comp(self, node_lids, other_lid, x2d, cc):
+    def _edge_comp(self, coords, other_coord, cc):
         # Move the system such that one of the two end points is in the
         # origin. Deliberately take x2d[0].
 
-        other0 = x2d[other_lid] - x2d[node_lids[0]]
+        other0 = other_coord - coords[0]
 
         # Compute edge midpoint.
-        edge_midpoint = 0.5 * (x2d[node_lids[0]] + x2d[node_lids[1]]) - \
-            x2d[node_lids[0]]
+        # edge_midpoint = 0.5 * (coords[0] + coords[1]) - coords[0]
+        edge_midpoint = 0.5 * (coords[1] - coords[0])
 
-        cc_tmp = cc - x2d[node_lids[0]]
+        cc_tmp = cc - coords[0]
 
         # Compute the area of the triangle {node[0], cc, edge_midpoint}. Gauge
-        # the sign with the sign of the area {node[0], other0, edge_midpoint}.
+        # with the sign of the area {node[0], other0, edge_midpoint}.
 
         # Computing the triangle volume like this is called the shoelace
         # formula and can be interpreted as the z-component of the
         # cross-product of other0 and edge_midpoint.
-        gauge = numpy.sign(
-            other0[0] * edge_midpoint[1] -
-            other0[1] * edge_midpoint[0]
-            )
-
-        return gauge * 0.5 * (
+        val = 0.5 * (
                 cc_tmp[0] * edge_midpoint[1] -
                 cc_tmp[1] * edge_midpoint[0]
                 )
+        if other0[0] * edge_midpoint[1] > other0[1] * edge_midpoint[0]:
+            return val
+        else:
+            return -val
 
     def _compute_voronoi_volumes(self):
         from vtk import vtkTriangle
@@ -290,7 +289,7 @@ class meshTri(_base_mesh):
                 node_lids = range(3)[:other_lid] + range(3)[other_lid+1:]
                 node_ids = self.cells['nodes'][cell_id][node_lids]
                 self.control_volumes[node_ids] += \
-                    self._edge_comp(node_lids, other_lid, x2d, cc)
+                    self._edge_comp(x2d[node_lids], x2d[other_lid], cc)
 
         # Sanity checks.
         sum_cv = sum(self.control_volumes)
