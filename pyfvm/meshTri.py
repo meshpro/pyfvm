@@ -16,9 +16,8 @@ class meshTri(_base_mesh):
         '''Initialization.
         '''
         super(meshTri, self).__init__(nodes, cells)
-        num_cells = len(cells)
         self.cells = numpy.empty(
-                num_cells,
+                len(cells),
                 dtype=numpy.dtype([('nodes', (int, 3))])
                 )
         self.cells['nodes'] = cells
@@ -262,21 +261,16 @@ class meshTri(_base_mesh):
             return -val
 
     def _compute_voronoi_volumes(self):
-        from vtk import vtkTriangle
-        num_nodes = len(self.node_coords)
-        self.control_volumes = numpy.zeros(num_nodes, dtype=float)
-
         # For flat meshes, the control volume contributions on a per-edge basis
         # by computing the distance between the circumcenters of two adjacent
         # cells. If the mesh is not flat, however, this does not work. Hence,
         # compute the control volume contributions for each side in a cell
         # separately.
-
-        num_cells = len(self.cells)
-        for cell_id in range(num_cells):
-            # Project the triangle to 2D.
-            x = self.node_coords[self.cells['nodes'][cell_id]]
+        self.control_volumes = numpy.zeros(len(self.node_coords), dtype=float)
+        for node_ids in self.cells['nodes']:
             # Project to 2D, compute circumcenter.
+            from vtk import vtkTriangle
+            x = self.node_coords[node_ids]
             x2d = numpy.empty(3, dtype=numpy.dtype((float, 2)))
             vtkTriangle.ProjectTo2D(
                     x[0], x[1], x[2],
@@ -287,8 +281,8 @@ class meshTri(_base_mesh):
             vtkTriangle.Circumcircle(x2d[0], x2d[1], x2d[2], cc)
             for other_lid in range(3):
                 node_lids = range(3)[:other_lid] + range(3)[other_lid+1:]
-                node_ids = self.cells['nodes'][cell_id][node_lids]
-                self.control_volumes[node_ids] += \
+                my_node_ids = node_ids[node_lids]
+                self.control_volumes[my_node_ids] += \
                     self._edge_comp(x2d[node_lids], x2d[other_lid], cc)
 
         # Sanity checks.
