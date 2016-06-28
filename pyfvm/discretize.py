@@ -20,11 +20,11 @@ class EdgeKernel(object):
         return
 
     def eval(self, k):
-        edge = self.mesh.node_coords[self.mesh.edges['nodes'][k][1]] - \
-           self.mesh.node_coords[self.mesh.edges['nodes'][k][0]]
+        x0 = self.mesh.node_coords[self.mesh.edges['nodes'][k][0]]
+        x1 = self.mesh.node_coords[self.mesh.edges['nodes'][k][1]]
         edge_covolume = self.mesh.covolumes[k]
         edge_length = self.mesh.edge_lengths[k]
-        val = self.coeff(edge, edge_covolume, edge_length)
+        val = self.coeff(x0, x1, edge_covolume, edge_length)
         if hasattr(val[0][0], '__len__'):
             assert len(val[0][0]) == 1
             val[0][0] = val[0][0][0]
@@ -33,7 +33,7 @@ class EdgeKernel(object):
             val[1][1] = val[1][1][0]
         return (
             val,
-            self.affine(edge, edge_covolume, edge_length)
+            self.affine(x0, x1, edge_covolume, edge_length)
             )
 
 
@@ -113,28 +113,26 @@ def _extract_linear_components(expr, dvars):
     # TODO replace by helpers.extract_linear_components?
     # Those are the variables in the expression, inserted by the edge
     # discretizer.
-    if not is_affine_linear(expr, dvars):
-        raise RuntimeError((
-            'The given expression\n'
-            '    f(x) = %s\n'
-            'does not seem to be affine linear in u.')
-            % expr(sympy.Symbol('x'))
-            )
+    assert is_affine_linear(expr, dvars)
 
     # Get the coefficients of u0, u1.
     coeff00 = sympy.diff(expr, dvars[0])
     coeff01 = sympy.diff(expr, dvars[1])
 
+    x0 = sympy.Symbol('x0')
+    x1 = sympy.Symbol('x1')
     # Now construct the coefficients for the other way around.
     coeff10 = coeff01.subs([
         (dvars[0], dvars[1]),
         (dvars[1], dvars[0]),
-        (n, neg_n)
+        (n, neg_n),
+        (x0, x1)
         ])
     coeff11 = coeff00.subs([
         (dvars[0], dvars[1]),
         (dvars[1], dvars[0]),
-        (n, neg_n)
+        (n, neg_n),
+        (x0, x1)
         ])
 
     affine = expr.subs([(dvars[0], 0), (dvars[1], 0)])
@@ -162,27 +160,27 @@ def discretize(cls, mesh):
     dirichlet_kernels = set()
     for integral in res.integrals:
         if isinstance(integral.measure, form_language.ControlVolumeSurface):
-            edge = sympy.Symbol('edge')
+            x0 = sympy.Symbol('x0')
+            x1 = sympy.Symbol('x1')
             edge_length = sympy.Symbol('edge_length')
             edge_covolume = sympy.Symbol('edge_covolume')
             expr, vector_vars = discretize_edge_integral(
                     integral.integrand,
-                    edge,
+                    x0, x1,
                     edge_length,
                     edge_covolume
                     )
             coeff, affine, arguments, used_vars = _collect_variables(expr, u)
-            print(coeff, affine)
             edge_kernels.add(
                 EdgeKernel(
                     mesh,
                     sympy.lambdify(
-                        (edge, edge_covolume, edge_length),
+                        (x0, x1, edge_covolume, edge_length),
                         coeff,
                         'numpy'
                         ),
                     sympy.lambdify(
-                        (edge, edge_covolume, edge_length),
+                        (x0, x1, edge_covolume, edge_length),
                         affine,
                         'numpy'
                         )

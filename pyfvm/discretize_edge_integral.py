@@ -5,8 +5,8 @@ import sympy
 from sympy.matrices.expressions.matexpr import MatrixExpr, MatrixSymbol
 
 
-def discretize_edge_integral(integrand, edge, edge_length, edge_covolume):
-    discretizer = DiscretizeEdgeIntegral(edge, edge_length, edge_covolume)
+def discretize_edge_integral(integrand, x0, x1, edge_length, edge_covolume):
+    discretizer = DiscretizeEdgeIntegral(x0, x1, edge_length, edge_covolume)
     return discretizer.generate(integrand)
 
 
@@ -16,11 +16,10 @@ if debug:
 
 
 class DiscretizeEdgeIntegral(object):
-    def __init__(self, edge, edge_length, edge_covolume):
+    def __init__(self, x0, x1, edge_length, edge_covolume):
         self.arg_translate = {}
-        self.x0 = sympy.Symbol('x0')
-        self.x1 = sympy.Symbol('x1')
-        self.edge = edge
+        self.x0 = x0
+        self.x1 = x1
         self.edge_length = edge_length
         self.edge_covolume = edge_covolume
         return
@@ -77,7 +76,7 @@ class DiscretizeEdgeIntegral(object):
 
         # Replace n by the normalized edge
         n = sympy.MatrixSymbol('n', 3, 1)
-        out = out.subs(n, self.edge / self.edge_length)
+        out = out.subs(n, (self.x1 - self.x0) / self.edge_length)
 
         return out, vector_vars
 

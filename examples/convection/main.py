@@ -8,7 +8,7 @@ from scipy.sparse import linalg
 class DC(LinearFvmProblem):
     @staticmethod
     def apply(u):
-        a = sympy.Matrix([0, 1, 0])
+        a = sympy.Matrix([1, 1, 0])
         return \
             integrate(lambda x: -n_dot_grad(u(x)) + dot(n, a) * u(x), dS) - \
             integrate(lambda x: 1.0, dV)
