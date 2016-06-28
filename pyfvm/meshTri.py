@@ -620,6 +620,7 @@ class meshTri(_base_mesh):
         :type show_covolume: bool, optional
         '''
         fig = plt.figure()
+        ax = fig.gca()
         plt.axis('equal')
 
         # plot edges
@@ -661,7 +662,6 @@ class meshTri(_base_mesh):
                                            )
                     ax.fill(q[0], q[1], color=covolume_area_col)
                     ax.plot(p[0], p[1], color=covolume_boundary_col)
-        plt.show()
         return
 
     def compute_covolumes(self):

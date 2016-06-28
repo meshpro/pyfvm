@@ -22,6 +22,7 @@ class TestIo(unittest.TestCase):
 
         import matplotlib.pyplot as plt
         mesh.show()
+        mesh.show_node(0)
         # plt.show()
 
         mesh.write('test.vtu')
