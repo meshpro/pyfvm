@@ -38,8 +38,5 @@ setup(
         'Operating System :: OS Independent',
         'Programming Language :: Python',
         'Topic :: Scientific/Engineering :: Mathematics'
-        ],
-    scripts=[
-        'tools/pyfvm-compiler',
         ]
     )

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 #
+import numpy
 import sympy
 from .discretize_edge_integral import discretize_edge_integral
 from .helpers import \
@@ -20,11 +21,21 @@ class EdgeKernel(object):
         return
 
     def eval(self, k):
+        x0 = self.mesh.node_coords[self.mesh.edges['nodes'][k][0]]
+        x1 = self.mesh.node_coords[self.mesh.edges['nodes'][k][1]]
         edge_covolume = self.mesh.covolumes[k]
         edge_length = self.mesh.edge_lengths[k]
+        val = self.coeff(x0, x1, edge_covolume, edge_length)
+        if hasattr(val[0][0], '__len__'):
+            assert len(val[0][0]) == 1
+            val = [
+                [val[0][0][0], val[0][1][0]],
+                [val[1][0][0], val[1][1][0]]
+                ]
+            print(val)
         return (
-            self.coeff(edge_covolume, edge_length),
-            self.affine(edge_covolume, edge_length)
+            val,
+            self.affine(x0, x1, edge_covolume, edge_length)
             )
 
 
@@ -100,33 +111,30 @@ def _collect_variables(expr, matrix_var):
     return edge_coeff, edge_affine, arguments, used_vars
 
 
+def _swap(expr, a, b):
+    expr = expr.subs({a: b, b: a}, simultaneous=True)
+    return expr
+
+
 def _extract_linear_components(expr, dvars):
     # TODO replace by helpers.extract_linear_components?
     # Those are the variables in the expression, inserted by the edge
     # discretizer.
-    if not is_affine_linear(expr, dvars):
-        raise RuntimeError((
-            'The given expression\n'
-            '    f(x) = %s\n'
-            'does not seem to be affine linear in u.')
-            % expr(sympy.Symbol('x'))
-            )
+    assert is_affine_linear(expr, dvars)
 
     # Get the coefficients of u0, u1.
     coeff00 = sympy.diff(expr, dvars[0])
     coeff01 = sympy.diff(expr, dvars[1])
 
+    x0 = sympy.Symbol('x0')
+    x1 = sympy.Symbol('x1')
     # Now construct the coefficients for the other way around.
-    coeff10 = coeff01.subs([
-        (dvars[0], dvars[1]),
-        (dvars[1], dvars[0]),
-        (n, neg_n)
-        ])
-    coeff11 = coeff00.subs([
-        (dvars[0], dvars[1]),
-        (dvars[1], dvars[0]),
-        (n, neg_n)
-        ])
+    coeff10 = coeff01
+    coeff10 = _swap(coeff10, dvars[0], dvars[1])
+    coeff10 = _swap(coeff10, x0, x1)
+    coeff11 = coeff00
+    coeff11 = _swap(coeff11, dvars[0], dvars[1])
+    coeff11 = _swap(coeff11, x0, x1)
 
     affine = expr.subs([(dvars[0], 0), (dvars[1], 0)])
 
@@ -147,16 +155,22 @@ def discretize(cls, mesh):
 
     res = cls.apply(u)
 
+    # See <http://docs.sympy.org/dev/modules/utilities/lambdify.html>.
+    array2array = [{'ImmutableMatrix': numpy.array}, 'numpy']
+
     edge_kernels = set()
     vertex_kernels = set()
     boundary_kernels = set()
     dirichlet_kernels = set()
     for integral in res.integrals:
         if isinstance(integral.measure, form_language.ControlVolumeSurface):
-            edge_covolume = sympy.Symbol('edge_covolume')
+            x0 = sympy.Symbol('x0')
+            x1 = sympy.Symbol('x1')
             edge_length = sympy.Symbol('edge_length')
+            edge_covolume = sympy.Symbol('edge_covolume')
             expr, vector_vars = discretize_edge_integral(
                     integral.integrand,
+                    x0, x1,
                     edge_length,
                     edge_covolume
                     )
@@ -164,8 +178,16 @@ def discretize(cls, mesh):
             edge_kernels.add(
                 EdgeKernel(
                     mesh,
-                    sympy.lambdify((edge_covolume, edge_length), coeff),
-                    sympy.lambdify((edge_covolume, edge_length), affine)
+                    sympy.lambdify(
+                        (x0, x1, edge_covolume, edge_length),
+                        coeff,
+                        modules=array2array
+                        ),
+                    sympy.lambdify(
+                        (x0, x1, edge_covolume, edge_length),
+                        affine,
+                        modules=array2array
+                        )
                     )
                 )
         elif isinstance(integral.measure, form_language.ControlVolume):

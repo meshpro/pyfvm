@@ -5,8 +5,8 @@ import sympy
 from sympy.matrices.expressions.matexpr import MatrixExpr, MatrixSymbol
 
 
-def discretize_edge_integral(integrand, edge_length, edge_covolume):
-    discretizer = DiscretizeEdgeIntegral(edge_length, edge_covolume)
+def discretize_edge_integral(integrand, x0, x1, edge_length, edge_covolume):
+    discretizer = DiscretizeEdgeIntegral(x0, x1, edge_length, edge_covolume)
     return discretizer.generate(integrand)
 
 
@@ -16,14 +16,12 @@ if debug:
 
 
 class DiscretizeEdgeIntegral(object):
-    def __init__(self, edge_length, edge_covolume):
+    def __init__(self, x0, x1, edge_length, edge_covolume):
         self.arg_translate = {}
-        self.x0 = sympy.Symbol('x0')
-        self.x1 = sympy.Symbol('x1')
+        self.x0 = x0
+        self.x1 = x1
         self.edge_length = edge_length
         self.edge_covolume = edge_covolume
-        # self.edge_length = sympy.Symbol('edge_length')
-        # self.edge_covolume = sympy.Symbol('edge_covolume')
         return
 
     def visit(self, node):
@@ -75,6 +73,11 @@ class DiscretizeEdgeIntegral(object):
 
         # Replace x by 0.5*(x0 + x1) (the edge midpoint)
         out = out.subs(x, 0.5 * (self.x0 + self.x1))
+
+        # Replace n by the normalized edge
+        n = sympy.MatrixSymbol('n', 3, 1)
+        out = out.subs(n, (self.x1 - self.x0) / self.edge_length)
+
         return out, vector_vars
 
     def generic_visit(self, node):
