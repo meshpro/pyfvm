@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 #
+import numpy
 import sympy
 from .discretize_edge_integral import discretize_edge_integral
 from .helpers import \
@@ -154,6 +155,9 @@ def discretize(cls, mesh):
 
     res = cls.apply(u)
 
+    # See <http://docs.sympy.org/dev/modules/utilities/lambdify.html>.
+    array2array = [{'ImmutableMatrix': numpy.array}, 'numpy']
+
     edge_kernels = set()
     vertex_kernels = set()
     boundary_kernels = set()
@@ -177,12 +181,12 @@ def discretize(cls, mesh):
                     sympy.lambdify(
                         (x0, x1, edge_covolume, edge_length),
                         coeff,
-                        'numpy'
+                        modules=array2array
                         ),
                     sympy.lambdify(
                         (x0, x1, edge_covolume, edge_length),
                         affine,
-                        'numpy'
+                        modules=array2array
                         )
                     )
                 )
