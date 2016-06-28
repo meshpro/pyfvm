@@ -405,48 +405,6 @@ class meshTetra(_base_mesh):
                                )
         return
 
-    def compute_face_normals(self):
-        '''Compute the face normals, pointing either in the direction of the
-        cell with larger GID (for interior faces), or towards the outside of
-        the domain (for boundary faces).
-
-        :returns face_normals: List of all face normals.
-        :type face_normals: numpy.ndarray(num_faces, numpy.dtype((float, 3)))
-        '''
-        # TODO VTK has ComputeNormal() for triangles, check
-        # http://www.vtk.org/doc/nightly/html/classvtkTriangle.html
-
-        num_faces = len(self.faces['nodes'])
-        face_normals = numpy.zeros(num_faces, dtype=numpy.dtype((float, 3)))
-        for cell_id, cell in enumerate(self.cells):
-            # Loop over the local faces.
-            for k in range(4):
-                face_id = cell['faces'][k]
-                # Compute the normal in the direction of the higher cell ID,
-                # or if this is a boundary face, to the outside of the domain.
-                neighbor_cell_ids = self.faces['cells'][face_id]
-                if cell_id == neighbor_cell_ids[0]:
-                    # The current cell is the one with the lower ID.
-                    # Compute the normal as a cross product.
-                    face_nodes = self.node_coords[self.faces['nodes'][face_id]]
-                    face_normals[face_id] = \
-                        numpy.cross(face_nodes[1] - face_nodes[0],
-                                    face_nodes[2] - face_nodes[0]
-                                    )
-                    # Normalize.
-                    face_normals[face_id] /= \
-                        numpy.linalg.norm(face_normals[face_id])
-
-                    # Make sure it points outwards.
-                    other_node_id = self.cells['nodes'][cell_id][k]
-                    other_node_coords = self.node_coords[other_node_id]
-                    if numpy.dot(face_nodes[0] - other_node_coords,
-                                 face_normals[face_id]
-                                 ) < 0.0:
-                        face_normals[face_id] *= -1
-
-        return face_normals
-
     def check_delaunay(self):
         if self.faces is None:
             self.create_adjacent_entities()
