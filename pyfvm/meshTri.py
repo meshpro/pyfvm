@@ -489,23 +489,31 @@ class meshTri(_base_mesh):
         point-based, the curl will be cell-based. The approximation is based on
 
         .. math::
-            \lim_{A\\to 0} n\cdot curl(F) = |A|^{-1} \int_{dA} F dr;
+            n\cdot curl(F) = \lim_{A\\to 0} |A|^{-1} \int_{dGamma} F dr;
 
-        see http://en.wikipedia.org/wiki/Curl_(mathematics). Actually, to
+        see <https://en.wikipedia.org/wiki/Curl_(mathematics)>. Actually, to
         approximate the integral, one would only need the projection of the
         vector field onto the edges at the midpoint of the edges.
         '''
-        if self.edges is None:
-            self.create_adjacent_entities()
-        curl = numpy.zeros((len(self.cells), 3), dtype=vector_field.dtype)
+        curl = numpy.zeros(
+            (len(self.cells), 3),
+            dtype=vector_field.dtype
+            )
         for edge in self.edges:
-            edge_coords = self.node_coords[edge['nodes'][1]] \
-                - self.node_coords[edge['nodes'][0]]
-            # Calculate A at the edge midpoint.
+            x0 = self.node_coords[edge['nodes'][0]]
+            x1 = self.node_coords[edge['nodes'][1]]
+            edge_coords = x1 - x0
+            # Compute A at the edge midpoint.
             A = 0.5 * (vector_field[edge['nodes'][0]] +
                        vector_field[edge['nodes'][1]]
                        )
-            curl[edge['cells'], :] += edge_coords * numpy.dot(edge_coords, A)
+            for k in edge['cells']:
+                center = 1./3. * sum(self.node_coords[self.cells['nodes'][k]])
+                direction = numpy.cross(x0 - center, x1 - center)
+                direction /= numpy.linalg.norm(direction)
+                curl[k, :] += direction * numpy.dot(edge_coords, A)
+        for k in range(len(curl)):
+            curl[k, :] /= self.cell_volumes[k]
         return curl
 
     def check_delaunay(self):
