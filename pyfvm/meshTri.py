@@ -314,9 +314,6 @@ class meshTri(_base_mesh):
         if self.cell_circumcenters is None:
             self.compute_cell_circumcenters()
 
-        if self.edges is None:
-            self.create_adjacent_entities()
-
         # Compute covolumes and control volumes.
         num_edges = len(self.edges['nodes'])
         for edge_id in range(num_edges):

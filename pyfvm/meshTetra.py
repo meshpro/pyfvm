@@ -30,12 +30,10 @@ class meshTetra(_base_mesh):
                 )
         self.cells['nodes'] = cells
 
-        self.edges = None
-        self.faces = None
-
-        self.cell_circumcenters = None
-        self.cell_volumes = None
-        self.control_volumes = None
+        self.create_adjacent_entities()
+        self.create_cell_volumes()
+        self.create_cell_circumcenters()
+        self.create_control_volumes()
         return
 
     def create_cell_volumes(self):
@@ -181,7 +179,7 @@ class meshTetra(_base_mesh):
         self.faces = self.faces[:new_face_gid]
         return
 
-    def compute_cell_circumcenters(self):
+    def create_cell_circumcenters(self):
         '''Computes the center of the circumsphere of each cell.
         '''
         from vtk import vtkTetra
@@ -274,19 +272,9 @@ class meshTetra(_base_mesh):
         #         ) / omega
         # return
 
-    def compute_control_volumes(self, variant='voronoi'):
+    def create_control_volumes(self):
         '''Compute the control volumes of all nodes in the mesh.
         '''
-        if variant != 'voronoi':
-            raise ValueError('Unknown volume variant ''%s''.' % variant)
-
-        if self.edges is None:
-            self.create_adjacent_entities()
-
-        # Get cell circumcenters.
-        if self.cell_circumcenters is None:
-            self.compute_cell_circumcenters()
-
         # Compute covolumes and control volumes.
         num_nodes = len(self.node_coords)
         self.control_volumes = numpy.zeros(num_nodes, dtype=float)
@@ -388,8 +376,6 @@ class meshTetra(_base_mesh):
             self.control_volumes[edge_node_ids] += alpha / 12.0
 
         # Sanity checks.
-        if self.cell_volumes is None:
-            self.create_cell_volumes()
         sum_cv = sum(self.control_volumes)
         sum_cells = sum(self.cell_volumes)
         alpha = sum_cv - sum_cells
@@ -406,10 +392,6 @@ class meshTetra(_base_mesh):
         return
 
     def check_delaunay(self):
-        if self.faces is None:
-            self.create_adjacent_entities()
-        if self.cell_circumcenters is None:
-            self.compute_cell_circumcenters()
         # is_delaunay = True
         num_faces = len(self.faces['nodes'])
         num_interior_faces = 0
@@ -470,8 +452,6 @@ class meshTetra(_base_mesh):
         plt.axis('equal')
 
         # get cell circumcenters
-        if self.cell_circumcenters is None:
-            self.compute_cell_circumcenters()
         cell_ccs = self.cell_circumcenters
 
         # There are not node->edge relations so manually build the list.
@@ -550,8 +530,6 @@ class meshTetra(_base_mesh):
                 color=col, linewidth=3.0)
 
         # get cell circumcenters
-        if self.cell_circumcenters is None:
-            self.compute_cell_circumcenters()
         cell_ccs = self.cell_circumcenters
 
         edge_midpoint = 0.5 * (edge_nodes[0] + edge_nodes[1])
