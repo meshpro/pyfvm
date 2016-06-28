@@ -20,7 +20,9 @@ class TestIo(unittest.TestCase):
         mesh = pyfvm.meshTri.meshTri(vertices, cells)
         assert mesh.check_delaunay()
 
-        mesh.show(save_as='test.tex')
+        import matplotlib.pyplot as plt
+        mesh.show()
+        # plt.show()
 
         mesh.write('test.vtu')
 
@@ -42,8 +44,8 @@ class TestIo(unittest.TestCase):
         assert mesh.check_delaunay()
 
         import matplotlib.pyplot as plt
-        mesh.show_control_volume(0)
-        mesh.show_edge(0)
+        # mesh.show_control_volume(0)
+        # mesh.show_edge(0)
         # plt.show()
 
         mesh.write('test.vtu')

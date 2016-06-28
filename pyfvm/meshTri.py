@@ -579,12 +579,13 @@ class meshTri(_base_mesh):
                 num_delaunay_violations += 1
         return num_delaunay_violations, num_interior_edges
 
-    def show(self, show_covolumes=True, save_as=None):
+    def show(self, show_covolumes=True):
         '''Show the mesh using matplotlib.
 
         :param show_covolumes: If true, show all covolumes of the mesh, too.
         :type show_covolumes: bool, optional
         '''
+        # from mpl_toolkits.mplot3d import Axes3D
         import matplotlib.pyplot as plt
 
         fig = plt.figure()
@@ -619,11 +620,6 @@ class meshTri(_base_mesh):
                                        'or 2 adjacent cells.'
                                        )
                 ax.plot(p[0], p[1], color=covolume_col)
-        if save_as:
-            import matplotlib2tikz
-            matplotlib2tikz.save(save_as)
-        else:
-            plt.show()
         return
 
     def show_node(self, node_id, show_covolume=True):
@@ -635,14 +631,9 @@ class meshTri(_base_mesh):
         :param show_covolume: If true, shows the covolume of the node, too.
         :type show_covolume: bool, optional
         '''
-        if self.edges['nodes'] is None:
-            self.create_adjacent_entities()
-
         import matplotlib.pyplot as plt
 
         fig = plt.figure()
-        # ax = fig.gca(projection='3d')
-        ax = fig.gca()
         plt.axis('equal')
 
         # plot edges
