@@ -179,9 +179,10 @@ class meshTetra(_base_mesh):
         '''
         from vtk import vtkTetra
         num_cells = len(self.cells['nodes'])
-        self.cell_circumcenters = numpy.empty(num_cells,
-                                              dtype=numpy.dtype((float, 3))
-                                              )
+        self.cell_circumcenters = numpy.empty(
+                num_cells,
+                dtype=numpy.dtype((float, 3))
+                )
         for cell_id, cell in enumerate(self.cells):
             # Explicitly cast indices to 'int' here as the array node_coords
             # might only accept those. (This is the case with tetgen arrays,
@@ -199,11 +200,11 @@ class meshTetra(_base_mesh):
 
             # if abs(omega) < 1.0e-10:
             #    raise ZeroDivisionError('Tetrahedron is degenerate.')
-            self.cell_circumcenters[cell_id] = x[0] + (
-                    numpy.dot(b, b) * numpy.cross(c, d) +
-                    numpy.dot(c, c) * numpy.cross(d, b) +
-                    numpy.dot(d, d) * numpy.cross(b, c)
-                    ) / omega
+            # self.cell_circumcenters[cell_id] = x[0] + (
+            #         numpy.dot(b, b) * numpy.cross(c, d) +
+            #         numpy.dot(c, c) * numpy.cross(d, b) +
+            #         numpy.dot(d, d) * numpy.cross(b, c)
+            #         ) / omega
         return
 
     def _get_face_circumcenter(self, face_id):
