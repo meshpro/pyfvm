@@ -176,6 +176,42 @@ class TestPDEs(unittest.TestCase):
 
         return
 
+    def test_convection(self):
+        import meshzoo
+        from scipy.sparse import linalg
+
+        # Define the problem
+        class Poisson(LinearFvmProblem):
+            @staticmethod
+            def apply(u):
+                a = sympy.Matrix([1, 1, 0])
+                return integrate(lambda x: - n_dot_grad(u(x)) + dot(n, a) * u(x), dS) - \
+                       integrate(lambda x: 1.0, dV)
+            dirichlet = [(lambda x: 0.0, ['Boundary'])]
+
+        # Create mesh using meshzoo
+        vertices, cells = meshzoo.rectangle.create_mesh(
+                0.0, 1.0, 0.0, 1.0,
+                21, 21,
+                zigzag=True
+                )
+        mesh = pyfvm.meshTri.meshTri(vertices, cells)
+
+        linear_system = pyfvm.discretize(Poisson, mesh)
+
+        x = linalg.spsolve(linear_system.matrix, linear_system.rhs)
+
+        k0 = -1
+        for k, coord in enumerate(mesh.node_coords):
+            if numpy.linalg.norm(coord - [0.5, 0.5, 0.0]) < 1.0e-5:
+                k0 = k
+                break
+
+        self.assertNotEqual(k0, -1)
+        self.assertAlmostEqual(x[k0], 0.021412461923688571, delta=1.0e-7)
+
+        return
+
 
 if __name__ == '__main__':
     unittest.main()
