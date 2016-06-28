@@ -44,8 +44,8 @@ class TestIo(unittest.TestCase):
         assert mesh.check_delaunay()
 
         import matplotlib.pyplot as plt
-        # mesh.show_control_volume(0)
-        # mesh.show_edge(0)
+        mesh.show_control_volume(0)
+        mesh.show_edge(0)
         # plt.show()
 
         mesh.write('test.vtu')
