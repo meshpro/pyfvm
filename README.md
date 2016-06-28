@@ -5,7 +5,6 @@
 [![Code Health](https://landscape.io/github/nschloe/pyfvm/master/landscape.png)](https://landscape.io/github/nschloe/pyfvm/master)
 [![codecov](https://codecov.io/gh/nschloe/pyfvm/branch/master/graph/badge.svg)](https://codecov.io/gh/nschloe/pyfvm)
 [![PyPi Version](https://img.shields.io/pypi/v/pyfvm.svg)](https://pypi.python.org/pypi/pyfvm)
-[![PyPi Downloads](https://img.shields.io/pypi/dm/pyfvm.svg)](https://pypi.python.org/pypi/pyfvm)
 
 Creating finite volume equation systems with ease.
 
