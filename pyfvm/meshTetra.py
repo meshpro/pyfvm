@@ -564,7 +564,6 @@ class meshTetra(_base_mesh):
                         )
                 else:
                     raise RuntimeError('???')
-        plt.show()
         return
 
     def show_edge(self, edge_id):
@@ -579,9 +578,6 @@ class meshTetra(_base_mesh):
         fig = plt.figure()
         ax = fig.gca(projection='3d')
         plt.axis('equal')
-
-        if self.edges is None:
-            self.create_adjacent_entities()
 
         edge_nodes = self.node_coords[self.edges['nodes'][edge_id]]
 
@@ -669,6 +665,4 @@ class meshTetra(_base_mesh):
             for edge in self.cells['edges'][cell_id]:
                 x = self.node_coords[self.edges['nodes'][edge]]
                 ax.plot(x[:, 0], x[:, 1], x[:, 2], col, linestyle='dashed')
-
-        plt.show()
         return
