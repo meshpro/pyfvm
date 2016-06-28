@@ -4,6 +4,7 @@ import numpy
 import warnings
 from pyfvm.base import _base_mesh
 import matplotlib as mpl
+import os
 if 'DISPLAY' not in os.environ:
     # headless mode, for remote executions (and travis)
     mpl.use('Agg')
