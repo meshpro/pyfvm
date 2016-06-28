@@ -3,6 +3,11 @@
 import numpy
 import warnings
 from pyfvm.base import _base_mesh
+import matplotlib as mpl
+if 'DISPLAY' not in os.environ:
+    # headless mode, for remote executions (and travis)
+    mpl.use('Agg')
+from matplotlib import pyplot as plt
 
 __all__ = ['meshTri']
 
@@ -586,8 +591,6 @@ class meshTri(_base_mesh):
         :type show_covolumes: bool, optional
         '''
         # from mpl_toolkits.mplot3d import Axes3D
-        import matplotlib.pyplot as plt
-
         fig = plt.figure()
         # ax = fig.gca(projection='3d')
         ax = fig.gca()
@@ -631,8 +634,6 @@ class meshTri(_base_mesh):
         :param show_covolume: If true, shows the covolume of the node, too.
         :type show_covolume: bool, optional
         '''
-        import matplotlib.pyplot as plt
-
         fig = plt.figure()
         plt.axis('equal')
 
