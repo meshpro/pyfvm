@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 #
-__all__ = ['meshTetra']
-
 import numpy
 from pyfvm.base import _base_mesh
+
+__all__ = ['meshTetra']
 
 
 class meshTetra(_base_mesh):
@@ -16,14 +16,11 @@ class meshTetra(_base_mesh):
         '''
         super(meshTetra, self).__init__(node_coords, cells)
 
-        # Wait for Numpy 1.6.1 for this
-        #     self.cells = numpy.array(cells, dtype=numpy.dtype([('nodes', (int, 4))]))
-        # to work. Check out
-        # http://stackoverflow.com/questions/9467547/how-to-properly-initialize-numpy-array-with-named-fields
         num_cells = len(cells)
-        self.cells = numpy.empty(num_cells,
-                                 dtype=numpy.dtype([('nodes', (int, 4))])
-                                 )
+        self.cells = numpy.empty(
+                num_cells,
+                dtype=numpy.dtype([('nodes', (int, 4))])
+                )
         self.cells['nodes'] = cells
 
         self.edges = None
@@ -41,23 +38,25 @@ class meshTetra(_base_mesh):
         num_cells = len(self.cells['nodes'])
         self.cell_volumes = numpy.empty(num_cells, dtype=float)
         for cell_id, cell in enumerate(self.cells):
-            #edge0 = node0 - node1
-            #edge1 = node1 - node2
-            #edge2 = node2 - node3
-            #edge3 = node3 - node0
+            # edge0 = node0 - node1
+            # edge1 = node1 - node2
+            # edge2 = node2 - node3
+            # edge3 = node3 - node0
 
-            #alpha = numpy.vdot(edge0, numpy.cross(edge1, edge2))
-            #norm_prod = numpy.linalg.norm(edge0) \
-                      #* numpy.linalg.norm(edge1) \
-                      #* numpy.linalg.norm(edge2)
-            #if abs(alpha) / norm_prod < 1.0e-5:
-                ## Edges probably conplanar. Take a different set.
-                #alpha = numpy.vdot(edge0, numpy.cross(edge1, edge3))
-                #norm_prod = numpy.linalg.norm(edge0) \
-                          #* numpy.linalg.norm(edge1) \
-                          #* numpy.linalg.norm(edge3)
+            # alpha = numpy.vdot(edge0, numpy.cross(edge1, edge2))
+            # norm_prod = \
+            #     numpy.linalg.norm(edge0) * \
+            #     numpy.linalg.norm(edge1) * \
+            #     numpy.linalg.norm(edge2)
+            # if abs(alpha) / norm_prod < 1.0e-5:
+            #     # Edges probably conplanar. Take a different set.
+            #     alpha = numpy.vdot(edge0, numpy.cross(edge1, edge3))
+            #     norm_prod = \
+            #         numpy.linalg.norm(edge0) * \
+            #         numpy.linalg.norm(edge1) * \
+            #         numpy.linalg.norm(edge3)
 
-            #self.cell_volumes[cell_id] = abs(alpha) / 6.0
+            # self.cell_volumes[cell_id] = abs(alpha) / 6.0
 
             x = self.node_coords[cell['nodes']]
             self.cell_volumes[cell_id] = \
@@ -190,20 +189,21 @@ class meshTetra(_base_mesh):
             x = self.node_coords[cell['nodes']]
             vtkTetra.Circumsphere(x[0], x[1], x[2], x[3],
                                   self.cell_circumcenters[cell_id])
-            ## http://www.cgafaq.info/wiki/Tetrahedron_Circumsphere
-            #x = self.node_coords[cell['nodes']]
-            #b = x[1] - x[0]
-            #c = x[2] - x[0]
-            #d = x[3] - x[0]
+            # # http://www.cgafaq.info/wiki/Tetrahedron_Circumsphere
+            # x = self.node_coords[cell['nodes']]
+            # b = x[1] - x[0]
+            # c = x[2] - x[0]
+            # d = x[3] - x[0]
 
-            #omega = (2.0 * numpy.dot(b, numpy.cross(c, d)))
+            # omega = (2.0 * numpy.dot(b, numpy.cross(c, d)))
 
-            #if abs(omega) < 1.0e-10:
-                #raise ZeroDivisionError('Tetrahedron is degenerate.')
-            #self.cell_circumcenters[cell_id] = x[0] + (  numpy.dot(b, b) * numpy.cross(c, d)
-                            #+ numpy.dot(c, c) * numpy.cross(d, b)
-                            #+ numpy.dot(d, d) * numpy.cross(b, c)
-                          #) / omega
+            # if abs(omega) < 1.0e-10:
+            #    raise ZeroDivisionError('Tetrahedron is degenerate.')
+            self.cell_circumcenters[cell_id] = x[0] + (
+                    numpy.dot(b, b) * numpy.cross(c, d) +
+                    numpy.dot(c, c) * numpy.cross(d, b) +
+                    numpy.dot(d, d) * numpy.cross(b, c)
+                    ) / omega
         return
 
     def _get_face_circumcenter(self, face_id):
@@ -229,35 +229,42 @@ class meshTetra(_base_mesh):
         vtkTriangle.BarycentricCoords(cc_2d, v[0], v[1], v[2], bcoords)
         return bcoords[0] * x[0] + bcoords[1] * x[1] + bcoords[2] * x[2]
 
-        #a = x[0] - x[1]
-        #b = x[1] - x[2]
-        #c = x[2] - x[0]
-        #w = numpy.cross(a, b)
-        #omega = 2.0 * numpy.dot(w, w)
-        #if abs(omega) < 1.0e-10:
-            #raise ZeroDivisionError('The nodes don''t seem to form '
-                                    #+ 'a proper triangle.')
-        #alpha = -numpy.dot(b, b) * numpy.dot(a, c) / omega
-        #beta  = -numpy.dot(c, c) * numpy.dot(b, a) / omega
-        #gamma = -numpy.dot(a, a) * numpy.dot(c, b) / omega
-        #m = alpha * x[0] + beta * x[1] + gamma * x[2]
+        # a = x[0] - x[1]
+        # b = x[1] - x[2]
+        # c = x[2] - x[0]
+        # w = numpy.cross(a, b)
+        # omega = 2.0 * numpy.dot(w, w)
+        # if abs(omega) < 1.0e-10:
+        #     raise ZeroDivisionError(
+        #             'The nodes don''t seem to form a proper triangle.'
+        #             )
+        # alpha = -numpy.dot(b, b) * numpy.dot(a, c) / omega
+        # beta = -numpy.dot(c, c) * numpy.dot(b, a) / omega
+        # gamma = -numpy.dot(a, a) * numpy.dot(c, b) / omega
+        # m = alpha * x[0] + beta * x[1] + gamma * x[2]
 
-        ## Alternative implementation from
-        ## https://www.ics.uci.edu/~eppstein/junkyard/circumcenter.html
-        #a = x[1] - x[0]
-        #b = x[2] - x[0]
-        #alpha = numpy.dot(a, a)
-        #beta = numpy.dot(b, b)
-        #w = numpy.cross(a, b)
-        #omega = 2.0 * numpy.dot(w, w)
-        #m = numpy.empty(3)
-        #m[0] = x[0][0] + ((alpha * b[1] - beta * a[1]) * w[2]
-                          #-(alpha * b[2] - beta * a[2]) * w[1]) / omega
-        #m[1] = x[0][1] + ((alpha * b[2] - beta * a[2]) * w[0]
-                          #-(alpha * b[0] - beta * a[0]) * w[2]) / omega
-        #m[2] = x[0][2] + ((alpha * b[0] - beta * a[0]) * w[1]
-                          #-(alpha * b[1] - beta * a[1]) * w[0]) / omega
-        #return
+        # # Alternative implementation from
+        # # https://www.ics.uci.edu/~eppstein/junkyard/circumcenter.html
+        # a = x[1] - x[0]
+        # b = x[2] - x[0]
+        # alpha = numpy.dot(a, a)
+        # beta = numpy.dot(b, b)
+        # w = numpy.cross(a, b)
+        # omega = 2.0 * numpy.dot(w, w)
+        # m = numpy.empty(3)
+        # m[0] = x[0][0] + (
+        #         (alpha * b[1] - beta * a[1]) * w[2] -
+        #         (alpha * b[2] - beta * a[2]) * w[1]
+        #         ) / omega
+        # m[1] = x[0][1] + (
+        #         (alpha * b[2] - beta * a[2]) * w[0] -
+        #         (alpha * b[0] - beta * a[0]) * w[2]
+        #         ) / omega
+        # m[2] = x[0][2] + (
+        #         (alpha * b[0] - beta * a[0]) * w[1] -
+        #         (alpha * b[1] - beta * a[1]) * w[0]
+        #         ) / omega
+        # return
 
     def compute_control_volumes(self, variant='voronoi'):
         '''Compute the control volumes of all nodes in the mesh.
@@ -282,9 +289,10 @@ class meshTetra(_base_mesh):
             # for example.)
             edge = self.node_coords[edge_node_ids[1]] \
                 - self.node_coords[edge_node_ids[0]]
-            edge_midpoint = 0.5 * (self.node_coords[edge_node_ids[0]]
-                                   + self.node_coords[edge_node_ids[1]]
-                                   )
+            edge_midpoint = 0.5 * (
+                    self.node_coords[edge_node_ids[0]] +
+                    self.node_coords[edge_node_ids[1]]
+                    )
 
             # 0.5 * alpha / edge_length = covolume.
             # This is chosen to avoid unnecessary calculation (such as
@@ -305,8 +313,9 @@ class meshTetra(_base_mesh):
                 #
                 # Find the edge in the list of edges of this face.
                 # http://projects.scipy.org/numpy/ticket/1673
-                edge_idx = \
-                    numpy.nonzero(self.faces['edges'][face_id] == edge_id)[0][0]
+                edge_idx = numpy.nonzero(
+                    self.faces['edges'][face_id] == edge_id
+                    )[0][0]
                 # faceNodes and faceEdges need to be coordinates such that
                 # the node faceNodes[face_id][k] and the edge
                 # faceEdges[face_id][k] are opposing in the face face_id.
@@ -330,15 +339,16 @@ class meshTetra(_base_mesh):
                 if len(cc) == 2:
                     # Get opposing point of the other cell.
                     cell1 = self.faces['cells'][face_id][1]
-                    face1_idx = \
-                        numpy.nonzero(self.cells['faces'][cell0] == face_id)[0][0]
+                    face1_idx = numpy.nonzero(
+                        self.cells['faces'][cell0] == face_id
+                        )[0][0]
                     other1 = \
                         self.node_coords[self.cells['nodes'][cell1][face1_idx]]
-                    gauge = \
-                        numpy.dot(edge,
-                                  numpy.cross(other1 - other0,
-                                              opposing_point - edge_midpoint
-                                              ))
+                    gauge = numpy.dot(
+                            edge,
+                            numpy.cross(
+                                other1 - other0, opposing_point - edge_midpoint
+                                ))
                     alpha += numpy.sign(gauge) \
                         * numpy.dot(edge, numpy.cross(cc[1] - edge_midpoint,
                                                       cc[0] - edge_midpoint
@@ -434,7 +444,7 @@ class meshTetra(_base_mesh):
             self.create_adjacent_entities()
         if self.cell_circumcenters is None:
             self.compute_cell_circumcenters()
-        #is_delaunay = True
+        # is_delaunay = True
         num_faces = len(self.faces['nodes'])
         num_interior_faces = 0
         num_delaunay_violations = 0
@@ -463,7 +473,8 @@ class meshTetra(_base_mesh):
             cell0 = self.faces['cells'][face_id][0]
             # This nonzero construct is an ugly replacement for the nonexisting
             # index() method. (Compare with Python lists.)
-            face_lid = numpy.nonzero(self.cells['faces'][cell0] == face_id)[0][0]
+            face_lid = \
+                numpy.nonzero(self.cells['faces'][cell0] == face_id)[0][0]
             # This makes use of the fact that cellsEdges and cellsNodes
             # are coordinated such that in cell #i, the edge cellsEdges[i][k]
             # opposes cellsNodes[i][k].
@@ -489,15 +500,13 @@ class meshTetra(_base_mesh):
         :type node_id: int
         '''
         import matplotlib as mpl
-        #from mpl_toolkits.mplot3d import Axes3D
+        from mpl_toolkits.mplot3d import Axes3D
         import matplotlib.pyplot as plt
-        #import mpl_toolkits.mplot3d as mpl3
+        # import mpl_toolkits.mplot3d as mpl3
 
         fig = plt.figure()
         ax = fig.gca(projection='3d')
-        # 3D axis aspect ratio isn't implemented in matplotlib yet
-        # (2012-02-21).
-        #plt.axis('equal')
+        plt.axis('equal')
 
         # get cell circumcenters
         if self.cell_circumcenters is None:
@@ -520,36 +529,38 @@ class meshTetra(_base_mesh):
             edge_nodes = self.node_coords[self.edges['nodes'][edge_id]]
 
             # highlight edge
-            ax.plot(edge_nodes[:, 0], edge_nodes[:, 1], edge_nodes[:, 2],
-                    color=col, linewidth=3.0
-                    )
+            ax.plot(
+                edge_nodes[:, 0], edge_nodes[:, 1], edge_nodes[:, 2],
+                color=col, linewidth=3.0
+                )
 
-            #edge_midpoint = 0.5 * (edge_nodes[0] + edge_nodes[1])
+            # edge_midpoint = 0.5 * (edge_nodes[0] + edge_nodes[1])
 
             # Plot covolume.
-            #face_col = '0.7'
+            # face_col = '0.7'
             edge_col = 'k'
             for k, face_id in enumerate(self.edges['faces'][edge_id]):
                 ccs = cell_ccs[self.faces['cells'][face_id]]
                 if len(ccs) == 2:
                     ax.plot(ccs[:, 0], ccs[:, 1], ccs[:, 2], color=edge_col)
-                    #tri = mpl3.art3d.Poly3DCollection(
-                    #    [numpy.vstack((ccs, edge_midpoint))]
-                    #    )
-                    #tri.set_color(face_col)
-                    #ax.add_collection3d(tri)
+                    # tri = mpl3.art3d.Poly3DCollection(
+                    #     [numpy.vstack((ccs, edge_midpoint))]
+                    #     )
+                    # tri.set_color(face_col)
+                    # ax.add_collection3d(tri)
                 elif len(ccs) == 1:
                     face_cc = self._get_face_circumcenter(face_id)
-                    #tri = mpl3.art3d.Poly3DCollection(
-                    #    [numpy.vstack((ccs[0], face_cc, edge_midpoint))]
-                    #    )
-                    #tri.set_color(face_col)
-                    #ax.add_collection3d(tri)
-                    ax.plot([ccs[0][0], face_cc[0]],
-                            [ccs[0][1], face_cc[1]],
-                            [ccs[0][2], face_cc[2]],
-                            color=edge_col
-                            )
+                    # tri = mpl3.art3d.Poly3DCollection(
+                    #     [numpy.vstack((ccs[0], face_cc, edge_midpoint))]
+                    #     )
+                    # tri.set_color(face_col)
+                    # ax.add_collection3d(tri)
+                    ax.plot(
+                        [ccs[0][0], face_cc[0]],
+                        [ccs[0][1], face_cc[1]],
+                        [ccs[0][2], face_cc[2]],
+                        color=edge_col
+                        )
                 else:
                     raise RuntimeError('???')
         plt.show()
@@ -562,13 +573,11 @@ class meshTetra(_base_mesh):
         :type edge_id: int
         '''
         import matplotlib as mpl
-        #from mpl_toolkits.mplot3d import Axes3D
+        from mpl_toolkits.mplot3d import Axes3D
         import matplotlib.pyplot as plt
         fig = plt.figure()
         ax = fig.gca(projection='3d')
-        # 3D axis aspect ratio isn't implemented in matplotlib yet
-        # (2012-02-21).
-        #plt.axis('equal')
+        plt.axis('equal')
 
         if self.edges is None:
             self.create_adjacent_entities()
@@ -606,7 +615,7 @@ class meshTetra(_base_mesh):
             face_nodes = self.node_coords[self.faces['nodes'][face_id]]
             tri = mpl3.art3d.Poly3DCollection([face_nodes])
             tri.set_color(mpl.colors.rgb2hex(col))
-            #tri.set_alpha(0.5)
+            # tri.set_alpha(0.5)
             ax.add_collection3d(tri)
 
             # mark face circumcenters
@@ -620,7 +629,9 @@ class meshTetra(_base_mesh):
         for k, face_id in enumerate(self.edges['faces'][edge_id]):
             ccs = cell_ccs[self.faces['cells'][face_id]]
             if len(ccs) == 2:
-                tri = mpl3.art3d.Poly3DCollection([numpy.vstack((ccs, edge_midpoint))])
+                tri = mpl3.art3d.Poly3DCollection([
+                    numpy.vstack((ccs, edge_midpoint))
+                    ])
                 tri.set_color(face_col)
                 ax.add_collection3d(tri)
                 ax.plot(ccs[:, 0], ccs[:, 1], ccs[:, 2], color=col)
@@ -637,11 +648,11 @@ class meshTetra(_base_mesh):
             else:
                 raise RuntimeError('???')
 
-        #ax.plot([edge_midpoint[0]],
-        #        [edge_midpoint[1]],
-        #        [edge_midpoint[2]],
-        #        'ro'
-        #        )
+        # ax.plot([edge_midpoint[0]],
+        #         [edge_midpoint[1]],
+        #         [edge_midpoint[2]],
+        #         'ro'
+        #         )
 
         # highlight cells
         highlight_cells = []  # [3]

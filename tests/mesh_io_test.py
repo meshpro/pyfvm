@@ -6,7 +6,7 @@ import unittest
 import pyfvm
 
 
-class TestLulz(unittest.TestCase):
+class TestIo(unittest.TestCase):
 
     def setUp(self):
         return
@@ -42,7 +42,7 @@ class TestLulz(unittest.TestCase):
         assert mesh.check_delaunay()
 
         mesh.show_control_volume(0)
-        mesh.show_edge(0)
+        # mesh.show_edge(0)
 
         mesh.write('test.vtu')
 
