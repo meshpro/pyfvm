@@ -20,6 +20,8 @@ class TestLulz(unittest.TestCase):
         mesh = pyfvm.meshTri.meshTri(vertices, cells)
         assert mesh.check_delaunay()
 
+        mesh.show(save_as='test.tex')
+
         mesh.write('test.vtu')
 
         mesh2, _, _ = pyfvm.reader.read('test.vtu')

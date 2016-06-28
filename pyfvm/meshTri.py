@@ -585,9 +585,6 @@ class meshTri(_base_mesh):
         :param show_covolumes: If true, show all covolumes of the mesh, too.
         :type show_covolumes: bool, optional
         '''
-        if self.edges is None:
-            self.create_adjacent_entities()
-
         import matplotlib.pyplot as plt
 
         fig = plt.figure()
