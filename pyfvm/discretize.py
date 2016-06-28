@@ -31,6 +31,7 @@ class EdgeKernel(object):
                 [val[0][0][0], val[0][1][0]],
                 [val[1][0][0], val[1][1][0]]
                 ]
+            print(val)
         return (
             val,
             self.affine(x0, x1, edge_covolume, edge_length)
