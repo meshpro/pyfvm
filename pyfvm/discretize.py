@@ -31,7 +31,6 @@ class EdgeKernel(object):
                 [val[0][0][0], val[0][1][0]],
                 [val[1][0][0], val[1][1][0]]
                 ]
-            print(val)
         return (
             val,
             self.affine(x0, x1, edge_covolume, edge_length)
@@ -109,6 +108,13 @@ def _collect_variables(expr, matrix_var):
 
     return edge_coeff, edge_affine, arguments, used_vars
 
+def _swap(expr, a, b):
+    X = sympy.Symbol('funny variable name that hopefully is not in expr')
+    expr = expr.subs(a, X)
+    expr = expr.subs(b, a)
+    expr = expr.subs(X, b)
+    return expr
+
 
 def _extract_linear_components(expr, dvars):
     # TODO replace by helpers.extract_linear_components?
@@ -123,18 +129,12 @@ def _extract_linear_components(expr, dvars):
     x0 = sympy.Symbol('x0')
     x1 = sympy.Symbol('x1')
     # Now construct the coefficients for the other way around.
-    coeff10 = coeff01.subs([
-        (dvars[0], dvars[1]),
-        (dvars[1], dvars[0]),
-        (n, neg_n),
-        (x0, x1)
-        ])
-    coeff11 = coeff00.subs([
-        (dvars[0], dvars[1]),
-        (dvars[1], dvars[0]),
-        (n, neg_n),
-        (x0, x1)
-        ])
+    coeff10 = coeff01
+    coeff10 = _swap(coeff10, dvars[0], dvars[1])
+    coeff10 = _swap(coeff10, x0, x1)
+    coeff11 = coeff00
+    coeff11 = _swap(coeff11, dvars[0], dvars[1])
+    coeff11 = _swap(coeff11, x0, x1)
 
     affine = expr.subs([(dvars[0], 0), (dvars[1], 0)])
 

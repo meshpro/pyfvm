@@ -184,7 +184,7 @@ class TestPDEs(unittest.TestCase):
         class Poisson(LinearFvmProblem):
             @staticmethod
             def apply(u):
-                a = sympy.Matrix([1, 1, 0])
+                a = sympy.Matrix([2, 1, 0])
                 return integrate(lambda x: - n_dot_grad(u(x)) + dot(n, a) * u(x), dS) - \
                        integrate(lambda x: 1.0, dV)
             dirichlet = [(lambda x: 0.0, ['Boundary'])]
@@ -208,7 +208,7 @@ class TestPDEs(unittest.TestCase):
                 break
 
         self.assertNotEqual(k0, -1)
-        self.assertAlmostEqual(x[k0], 0.021412461923688571, delta=1.0e-7)
+        self.assertAlmostEqual(x[k0], 0.07041709172659899, delta=1.0e-7)
 
         return
 
