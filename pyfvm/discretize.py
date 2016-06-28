@@ -27,10 +27,10 @@ class EdgeKernel(object):
         val = self.coeff(x0, x1, edge_covolume, edge_length)
         if hasattr(val[0][0], '__len__'):
             assert len(val[0][0]) == 1
-            val[0][0] = val[0][0][0]
-            val[1][0] = val[1][0][0]
-            val[0][1] = val[0][1][0]
-            val[1][1] = val[1][1][0]
+            val = [
+                [val[0][0][0], val[0][1][0]],
+                [val[1][0][0], val[1][1][0]]
+                ]
         return (
             val,
             self.affine(x0, x1, edge_covolume, edge_length)
