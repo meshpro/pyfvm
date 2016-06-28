@@ -389,39 +389,6 @@ class meshTri(_base_mesh):
             self.control_volumes[cell['nodes']] += self.cell_volumes[k] / 3.0
         return
 
-    def compute_edge_normals(self):
-        '''Compute the edge normals, pointing either in the direction of the
-        cell with larger GID (for interior edges), or towards the outside of
-        the domain (for boundary edges).
-
-        :returns edge_normals: List of all edge normals.
-        :type edge_normals: numpy.ndarray(num_edges, numpy.dtype((float, 2)))
-        '''
-        num_edges = len(self.edges['nodes'])
-        edge_normals = numpy.empty(num_edges, dtype=numpy.dtype((float, 2)))
-        for cell_id, cell in enumerate(self.cells):
-            # Loop over the local faces.
-            for k in range(3):
-                edge_id = cell['edges'][k]
-                # Compute the normal in the direction of the higher cell ID,
-                # or if this is a boundary face, to the outside of the domain.
-                neighbor_cell_ids = self.edges['cells'][edge_id]
-                if cell_id == neighbor_cell_ids[0]:
-                    edge_nodes = self.node_coords[self.edges['nodes'][edge_id]]
-                    edge = (edge_nodes[1] - edge_nodes[0])
-                    edge_normals[edge_id] = numpy.array([-edge[1], edge[0]])
-                    edge_normals[edge_id] /= \
-                        numpy.linalg.norm(edge_normals[edge_id])
-
-                    # Make sure the normal points in the outward direction.
-                    other_node_id = self.cells['nodes'][cell_id][k]
-                    other_node_coords = self.node_coords[other_node_id]
-                    if numpy.dot(edge_nodes[0]-other_node_coords,
-                                 edge_normals[edge_id]
-                                 ) < 0.0:
-                        edge_normals[edge_id] *= -1
-        return edge_normals
-
     def compute_gradient(self, u):
         '''Computes an approximation to the gradient :math:`\\nabla u` of a
         given scalar valued function :math:`u`, defined in the node points.
