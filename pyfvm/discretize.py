@@ -108,11 +108,9 @@ def _collect_variables(expr, matrix_var):
 
     return edge_coeff, edge_affine, arguments, used_vars
 
+
 def _swap(expr, a, b):
-    X = sympy.Symbol('funny variable name that hopefully is not in expr')
-    expr = expr.subs(a, X)
-    expr = expr.subs(b, a)
-    expr = expr.subs(X, b)
+    expr = expr.subs({a: b, b: a}, simultaneous=True)
     return expr
 
 
