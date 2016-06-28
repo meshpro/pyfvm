@@ -18,6 +18,8 @@ class TestLulz(unittest.TestCase):
                 zigzag=True
                 )
         mesh = pyfvm.meshTri.meshTri(vertices, cells)
+        assert mesh.check_delaunay()
+
         mesh.write('test.vtu')
 
         mesh2, _, _ = pyfvm.reader.read('test.vtu')
@@ -35,6 +37,8 @@ class TestLulz(unittest.TestCase):
                 2, 2, 2
                 )
         mesh = pyfvm.meshTetra.meshTetra(vertices, cells)
+        assert mesh.check_delaunay()
+
         mesh.write('test.vtu')
 
         mesh2, _, _ = pyfvm.reader.read('test.vtu')
