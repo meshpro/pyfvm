@@ -3,6 +3,12 @@
 import numpy
 import warnings
 from pyfvm.base import _base_mesh
+import matplotlib as mpl
+import os
+if 'DISPLAY' not in os.environ:
+    # headless mode, for remote executions (and travis)
+    mpl.use('Agg')
+from matplotlib import pyplot as plt
 
 __all__ = ['meshTri']
 
@@ -308,9 +314,6 @@ class meshTri(_base_mesh):
         if self.cell_circumcenters is None:
             self.compute_cell_circumcenters()
 
-        if self.edges is None:
-            self.create_adjacent_entities()
-
         # Compute covolumes and control volumes.
         num_edges = len(self.edges['nodes'])
         for edge_id in range(num_edges):
@@ -383,54 +386,29 @@ class meshTri(_base_mesh):
             self.control_volumes[cell['nodes']] += self.cell_volumes[k] / 3.0
         return
 
-    def compute_edge_normals(self):
-        '''Compute the edge normals, pointing either in the direction of the
-        cell with larger GID (for interior edges), or towards the outside of
-        the domain (for boundary edges).
-
-        :returns edge_normals: List of all edge normals.
-        :type edge_normals: numpy.ndarray(num_edges, numpy.dtype((float, 2)))
-        '''
-        num_edges = len(self.edges['nodes'])
-        edge_normals = numpy.empty(num_edges, dtype=numpy.dtype((float, 2)))
-        for cell_id, cell in enumerate(self.cells):
-            # Loop over the local faces.
-            for k in range(3):
-                edge_id = cell['edges'][k]
-                # Compute the normal in the direction of the higher cell ID,
-                # or if this is a boundary face, to the outside of the domain.
-                neighbor_cell_ids = self.edges['cells'][edge_id]
-                if cell_id == neighbor_cell_ids[0]:
-                    edge_nodes = self.node_coords[self.edges['nodes'][edge_id]]
-                    edge = (edge_nodes[1] - edge_nodes[0])
-                    edge_normals[edge_id] = numpy.array([-edge[1], edge[0]])
-                    edge_normals[edge_id] /= \
-                        numpy.linalg.norm(edge_normals[edge_id])
-
-                    # Make sure the normal points in the outward direction.
-                    other_node_id = self.cells['nodes'][cell_id][k]
-                    other_node_coords = self.node_coords[other_node_id]
-                    if numpy.dot(edge_nodes[0]-other_node_coords,
-                                 edge_normals[edge_id]
-                                 ) < 0.0:
-                        edge_normals[edge_id] *= -1
-        return edge_normals
-
     def compute_gradient(self, u):
         '''Computes an approximation to the gradient :math:`\\nabla u` of a
         given scalar valued function :math:`u`, defined in the node points.
-        This is taken from :cite:`NME2187`.
+        This is taken from :cite:`NME2187`,
+
+           Discrete gradient method in solid mechanics,
+           Lu, Jia and Qian, Jing and Han, Weimin,
+           International Journal for Numerical Methods in Engineering,
+           http://dx.doi.org/10.1002/nme.2187.
         '''
-        num_nodes = len(self.node_coords)
-        assert len(u) == num_nodes
-        gradient = numpy.zeros((num_nodes, 2), dtype=u.dtype)
-        # Compute everything we need.
-        if self.edges is None:
-            self.create_adjacent_entities()
-        if self.control_volumes is None:
-            self.compute_control_volumes()
+        assert (abs(self.node_coords[:, 2]) < 1.0e-10).all()
+        node_coords2d = self.node_coords[:, :2]
+
         if self.cell_circumcenters is None:
             self.compute_cell_circumcenters()
+        assert (abs(self.cell_circumcenters[:, 2]) < 1.0e-10).all()
+        cell_circumcenters2d = self.cell_circumcenters[:, :2]
+
+        num_nodes = len(node_coords2d)
+        assert len(u) == num_nodes
+        # This only works for flat meshes.
+
+        gradient = numpy.zeros((num_nodes, 2), dtype=u.dtype)
 
         # Create an empty 2x2 matrix for the boundary nodes to hold the
         # edge correction ((17) in [1]).
@@ -444,33 +422,34 @@ class meshTri(_base_mesh):
 
         for edge_id, edge in enumerate(self.edges):
             # Compute edge length.
-            edge_coords = self.node_coords[edge['nodes'][1]] \
-                - self.node_coords[edge['nodes'][0]]
+            edge_coords = node_coords2d[edge['nodes'][1]] -\
+                          node_coords2d[edge['nodes'][0]]
 
             # Compute coedge length.
             if len(edge['cells']) == 1:
                 # Boundary edge.
-                edge_midpoint = 0.5 * (self.node_coords[edge['nodes'][0]] +
-                                       self.node_coords[edge['nodes'][1]]
-                                       )
-                coedge = self.cell_circumcenters[edge['cells'][0]] \
-                    - edge_midpoint
-                coedge_midpoint = \
-                    0.5 * (self.cell_circumcenters[edge['cells'][0]] +
-                           edge_midpoint
-                           )
+                edge_midpoint = 0.5 * (
+                        node_coords2d[edge['nodes'][0]] +
+                        node_coords2d[edge['nodes'][1]]
+                        )
+                coedge = \
+                    cell_circumcenters2d[edge['cells'][0]] - edge_midpoint
+                coedge_midpoint = 0.5 * (
+                        cell_circumcenters2d[edge['cells'][0]] +
+                        edge_midpoint
+                        )
             elif len(edge['cells']) == 2:
                 # Interior edge.
-                coedge = self.cell_circumcenters[edge['cells'][0]] \
-                    - self.cell_circumcenters[edge['cells'][1]]
-                coedge_midpoint = \
-                    0.5 * (self.cell_circumcenters[edge['cells'][0]] +
-                           self.cell_circumcenters[edge['cells'][1]]
-                           )
+                coedge = cell_circumcenters2d[edge['cells'][0]] - \
+                         cell_circumcenters2d[edge['cells'][1]]
+                coedge_midpoint = 0.5 * (
+                        cell_circumcenters2d[edge['cells'][0]] +
+                        cell_circumcenters2d[edge['cells'][1]]
+                        )
             else:
-                raise RuntimeError('Edge needs to have either one '
-                                   'or two neighbors.'
-                                   )
+                raise RuntimeError(
+                        'Edge needs to have either one or two neighbors.'
+                        )
 
             # Compute the coefficient r for both contributions
             coeffs = numpy.sqrt(numpy.dot(coedge, coedge) /
@@ -478,9 +457,9 @@ class meshTri(_base_mesh):
                                 ) / self.control_volumes[edge['nodes']]
 
             # Compute R*_{IJ} ((11) in [1]).
-            r0 = (coedge_midpoint - self.node_coords[edge['nodes'][0]]) \
+            r0 = (coedge_midpoint - node_coords2d[edge['nodes'][0]]) \
                 * coeffs[0]
-            r1 = (coedge_midpoint - self.node_coords[edge['nodes'][1]]) \
+            r1 = (coedge_midpoint - node_coords2d[edge['nodes'][1]]) \
                 * coeffs[1]
 
             diff = u[edge['nodes'][1]] - u[edge['nodes'][0]]
@@ -495,9 +474,11 @@ class meshTri(_base_mesh):
             if edge['nodes'][1] in boundary_matrices:
                 boundary_matrices[edge['nodes'][1]] += \
                     numpy.outer(r1, -edge_coords)
+
         # Apply corrections to the gradients on the boundary.
         for k, value in boundary_matrices.items():
             gradient[k] = numpy.linalg.solve(value, gradient[k])
+
         return gradient
 
     def compute_curl(self, vector_field):
@@ -505,28 +486,34 @@ class meshTri(_base_mesh):
         point-based, the curl will be cell-based. The approximation is based on
 
         .. math::
-            \lim_{A\\to 0} n\cdot curl(F) = |A|^{-1} \int_{dA} F dr;
+            n\cdot curl(F) = \lim_{A\\to 0} |A|^{-1} \int_{dGamma} F dr;
 
-        see http://en.wikipedia.org/wiki/Curl_(mathematics). Actually, to
+        see <https://en.wikipedia.org/wiki/Curl_(mathematics)>. Actually, to
         approximate the integral, one would only need the projection of the
         vector field onto the edges at the midpoint of the edges.
         '''
-        if self.edges is None:
-            self.create_adjacent_entities()
-        curl = numpy.zeros((len(self.cells), 3), dtype=vector_field.dtype)
+        curl = numpy.zeros(
+            (len(self.cells), 3),
+            dtype=vector_field.dtype
+            )
         for edge in self.edges:
-            edge_coords = self.node_coords[edge['nodes'][1]] \
-                - self.node_coords[edge['nodes'][0]]
-            # Calculate A at the edge midpoint.
+            x0 = self.node_coords[edge['nodes'][0]]
+            x1 = self.node_coords[edge['nodes'][1]]
+            edge_coords = x1 - x0
+            # Compute A at the edge midpoint.
             A = 0.5 * (vector_field[edge['nodes'][0]] +
                        vector_field[edge['nodes'][1]]
                        )
-            curl[edge['cells'], :] += edge_coords * numpy.dot(edge_coords, A)
+            for k in edge['cells']:
+                center = 1./3. * sum(self.node_coords[self.cells['nodes'][k]])
+                direction = numpy.cross(x0 - center, x1 - center)
+                direction /= numpy.linalg.norm(direction)
+                curl[k, :] += direction * numpy.dot(edge_coords, A)
+        for k in range(len(curl)):
+            curl[k, :] /= self.cell_volumes[k]
         return curl
 
     def check_delaunay(self):
-        if self.edges is None:
-            self.create_adjacent_entities()
         if self.cell_circumcenters is None:
             self.compute_cell_circumcenters()
 
@@ -579,17 +566,13 @@ class meshTri(_base_mesh):
                 num_delaunay_violations += 1
         return num_delaunay_violations, num_interior_edges
 
-    def show(self, show_covolumes=True, save_as=None):
+    def show(self, show_covolumes=True):
         '''Show the mesh using matplotlib.
 
         :param show_covolumes: If true, show all covolumes of the mesh, too.
         :type show_covolumes: bool, optional
         '''
-        if self.edges is None:
-            self.create_adjacent_entities()
-
-        import matplotlib.pyplot as plt
-
+        # from mpl_toolkits.mplot3d import Axes3D
         fig = plt.figure()
         # ax = fig.gca(projection='3d')
         ax = fig.gca()
@@ -622,11 +605,6 @@ class meshTri(_base_mesh):
                                        'or 2 adjacent cells.'
                                        )
                 ax.plot(p[0], p[1], color=covolume_col)
-        if save_as:
-            import matplotlib2tikz
-            matplotlib2tikz.save(save_as)
-        else:
-            plt.show()
         return
 
     def show_node(self, node_id, show_covolume=True):
@@ -638,13 +616,7 @@ class meshTri(_base_mesh):
         :param show_covolume: If true, shows the covolume of the node, too.
         :type show_covolume: bool, optional
         '''
-        if self.edges['nodes'] is None:
-            self.create_adjacent_entities()
-
-        import matplotlib.pyplot as plt
-
         fig = plt.figure()
-        # ax = fig.gca(projection='3d')
         ax = fig.gca()
         plt.axis('equal')
 
@@ -687,7 +659,6 @@ class meshTri(_base_mesh):
                                            )
                     ax.fill(q[0], q[1], color=covolume_area_col)
                     ax.plot(p[0], p[1], color=covolume_boundary_col)
-        plt.show()
         return
 
     def compute_covolumes(self):

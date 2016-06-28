@@ -32,7 +32,7 @@ class _base_mesh(object):
         if self.cells['nodes'].shape[1] == 3:
             cell_type = 'triangle'
         elif self.cells['nodes'].shape[1] == 4:
-            cell_type = 'tetrahedron'
+            cell_type = 'tetra'
         else:
             raise RuntimeError('Only triangles/tetrahedra supported')
 
