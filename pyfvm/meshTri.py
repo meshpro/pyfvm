@@ -392,18 +392,26 @@ class meshTri(_base_mesh):
     def compute_gradient(self, u):
         '''Computes an approximation to the gradient :math:`\\nabla u` of a
         given scalar valued function :math:`u`, defined in the node points.
-        This is taken from :cite:`NME2187`.
+        This is taken from :cite:`NME2187`,
+
+           Discrete gradient method in solid mechanics,
+           Lu, Jia and Qian, Jing and Han, Weimin,
+           International Journal for Numerical Methods in Engineering,
+           http://dx.doi.org/10.1002/nme.2187.
         '''
-        num_nodes = len(self.node_coords)
-        assert len(u) == num_nodes
-        gradient = numpy.zeros((num_nodes, 2), dtype=u.dtype)
-        # Compute everything we need.
-        if self.edges is None:
-            self.create_adjacent_entities()
-        if self.control_volumes is None:
-            self.compute_control_volumes()
+        assert (abs(self.node_coords[:, 2]) < 1.0e-10).all()
+        node_coords2d = self.node_coords[:, :2]
+
         if self.cell_circumcenters is None:
             self.compute_cell_circumcenters()
+        assert (abs(self.cell_circumcenters[:, 2]) < 1.0e-10).all()
+        cell_circumcenters2d = self.cell_circumcenters[:, :2]
+
+        num_nodes = len(node_coords2d)
+        assert len(u) == num_nodes
+        # This only works for flat meshes.
+
+        gradient = numpy.zeros((num_nodes, 2), dtype=u.dtype)
 
         # Create an empty 2x2 matrix for the boundary nodes to hold the
         # edge correction ((17) in [1]).
@@ -417,33 +425,34 @@ class meshTri(_base_mesh):
 
         for edge_id, edge in enumerate(self.edges):
             # Compute edge length.
-            edge_coords = self.node_coords[edge['nodes'][1]] \
-                - self.node_coords[edge['nodes'][0]]
+            edge_coords = node_coords2d[edge['nodes'][1]] -\
+                          node_coords2d[edge['nodes'][0]]
 
             # Compute coedge length.
             if len(edge['cells']) == 1:
                 # Boundary edge.
-                edge_midpoint = 0.5 * (self.node_coords[edge['nodes'][0]] +
-                                       self.node_coords[edge['nodes'][1]]
-                                       )
-                coedge = self.cell_circumcenters[edge['cells'][0]] \
-                    - edge_midpoint
-                coedge_midpoint = \
-                    0.5 * (self.cell_circumcenters[edge['cells'][0]] +
-                           edge_midpoint
-                           )
+                edge_midpoint = 0.5 * (
+                        node_coords2d[edge['nodes'][0]] +
+                        node_coords2d[edge['nodes'][1]]
+                        )
+                coedge = \
+                    cell_circumcenters2d[edge['cells'][0]] - edge_midpoint
+                coedge_midpoint = 0.5 * (
+                        cell_circumcenters2d[edge['cells'][0]] +
+                        edge_midpoint
+                        )
             elif len(edge['cells']) == 2:
                 # Interior edge.
-                coedge = self.cell_circumcenters[edge['cells'][0]] \
-                    - self.cell_circumcenters[edge['cells'][1]]
-                coedge_midpoint = \
-                    0.5 * (self.cell_circumcenters[edge['cells'][0]] +
-                           self.cell_circumcenters[edge['cells'][1]]
-                           )
+                coedge = cell_circumcenters2d[edge['cells'][0]] - \
+                         cell_circumcenters2d[edge['cells'][1]]
+                coedge_midpoint = 0.5 * (
+                        cell_circumcenters2d[edge['cells'][0]] +
+                        cell_circumcenters2d[edge['cells'][1]]
+                        )
             else:
-                raise RuntimeError('Edge needs to have either one '
-                                   'or two neighbors.'
-                                   )
+                raise RuntimeError(
+                        'Edge needs to have either one or two neighbors.'
+                        )
 
             # Compute the coefficient r for both contributions
             coeffs = numpy.sqrt(numpy.dot(coedge, coedge) /
@@ -451,9 +460,9 @@ class meshTri(_base_mesh):
                                 ) / self.control_volumes[edge['nodes']]
 
             # Compute R*_{IJ} ((11) in [1]).
-            r0 = (coedge_midpoint - self.node_coords[edge['nodes'][0]]) \
+            r0 = (coedge_midpoint - node_coords2d[edge['nodes'][0]]) \
                 * coeffs[0]
-            r1 = (coedge_midpoint - self.node_coords[edge['nodes'][1]]) \
+            r1 = (coedge_midpoint - node_coords2d[edge['nodes'][1]]) \
                 * coeffs[1]
 
             diff = u[edge['nodes'][1]] - u[edge['nodes'][0]]
@@ -468,9 +477,11 @@ class meshTri(_base_mesh):
             if edge['nodes'][1] in boundary_matrices:
                 boundary_matrices[edge['nodes'][1]] += \
                     numpy.outer(r1, -edge_coords)
+
         # Apply corrections to the gradients on the boundary.
         for k, value in boundary_matrices.items():
             gradient[k] = numpy.linalg.solve(value, gradient[k])
+
         return gradient
 
     def compute_curl(self, vector_field):
@@ -498,8 +509,6 @@ class meshTri(_base_mesh):
         return curl
 
     def check_delaunay(self):
-        if self.edges is None:
-            self.create_adjacent_entities()
         if self.cell_circumcenters is None:
             self.compute_cell_circumcenters()
 
