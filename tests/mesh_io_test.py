@@ -41,6 +41,9 @@ class TestLulz(unittest.TestCase):
         mesh = pyfvm.meshTetra.meshTetra(vertices, cells)
         assert mesh.check_delaunay()
 
+        mesh.show_control_volume(0)
+        mesh.show_edge(0)
+
         mesh.write('test.vtu')
 
         mesh2, _, _ = pyfvm.reader.read('test.vtu')

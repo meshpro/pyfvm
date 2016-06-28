@@ -499,9 +499,6 @@ class meshTetra(_base_mesh):
         # (2012-02-21).
         #plt.axis('equal')
 
-        if self.edges is None:
-            self.create_adjacent_entities()
-
         # get cell circumcenters
         if self.cell_circumcenters is None:
             self.compute_cell_circumcenters()
