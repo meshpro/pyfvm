@@ -5,13 +5,12 @@ from scipy import sparse
 
 
 def _wipe_row_csr(matrix, i):
-    # Wipes a row of a matrix in CSR format and puts 1.0 on the diagonal.
-    if not isinstance(matrix, sparse.csr_matrix):
-        raise ValueError('works only for CSR format -- use .tocsr() first')
+    '''Wipes a row of a matrix in CSR format and puts 1.0 on the diagonal.
+    '''
+    assert isinstance(matrix, sparse.csr_matrix)
 
     n = matrix.indptr[i+1] - matrix.indptr[i]
-    if n == 0:
-        raise ValueError('row %d not present in matrix' % i)
+    assert n > 0
 
     matrix.data[matrix.indptr[i]+1:-n+1] = matrix.data[matrix.indptr[i+1]:]
     matrix.data[matrix.indptr[i]] = 1.0
