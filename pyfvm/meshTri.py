@@ -28,9 +28,9 @@ class meshTri(_base_mesh):
                 )
         self.cells['nodes'] = cells
         self.create_cell_volumes()
-        self.cell_circumcenters = None
 
         self.create_adjacent_entities()
+        self.compute_cell_circumcenters()
         self.compute_control_volumes()
         self.compute_edge_lengths()
         self.compute_covolumes()
@@ -137,28 +137,18 @@ class meshTri(_base_mesh):
     def compute_cell_circumcenters(self):
         '''Computes the center of the circumcenter of each cell.
         '''
-        from vtk import vtkTriangle
-        num_cells = len(self.cells['nodes'])
-        self.cell_circumcenters = numpy.empty(num_cells,
-                                              dtype=numpy.dtype((float, 3))
-                                              )
-        for cell_id, cell in enumerate(self.cells):
-            x = self.node_coords[cell['nodes']]
-            # Project to 2D, compute circumcenter, get its barycentric
-            # coordinates, and project those back to 3D.
-            x2d = numpy.empty(3, dtype=numpy.dtype((float, 2)))
-            vtkTriangle.ProjectTo2D(
-                    x[0], x[1], x[2],
-                    x2d[0], x2d[1], x2d[2]
-                    )
-            cc2d = numpy.empty(2, dtype=float)
-            vtkTriangle.Circumcircle(x2d[0], x2d[1], x2d[2], cc2d)
-            bary = numpy.empty(3, dtype=float)
-            vtkTriangle.BarycentricCoords(cc2d, x2d[0], x2d[1], x2d[2], bary)
-            self.cell_circumcenters[cell_id] = \
-                bary[0] * x[0] + \
-                bary[1] * x[1] + \
-                bary[2] * x[2]
+        # https://en.wikipedia.org/wiki/Circumscribed_circle#Higher_dimensions
+        X = self.node_coords[self.cells['nodes']]
+        a = X[:, 0, :] - X[:, 2, :]
+        b = X[:, 1, :] - X[:, 2, :]
+        a_dot_a = numpy.sum(a*a, axis=1)
+        a2_b = (b.T * a_dot_a).T
+        b_dot_b = numpy.sum(b*b, axis=1)
+        b2_a = (a.T * b_dot_b).T
+        a_cross_b = numpy.cross(a, b)
+        N = numpy.cross(a2_b - b2_a, a_cross_b)
+        a_cross_b2 = numpy.sum(a_cross_b * a_cross_b, axis=1)
+        self.cell_circumcenters = 0.5 * (N.T / a_cross_b2).T + X[:, 2, :]
         return
 
     def create_adjacent_entities(self):
@@ -311,10 +301,6 @@ class meshTri(_base_mesh):
         num_nodes = len(self.node_coords)
         self.control_volumes = numpy.zeros(num_nodes, dtype=float)
 
-        # compute cell circumcenters
-        if self.cell_circumcenters is None:
-            self.compute_cell_circumcenters()
-
         num_edges = len(self.edges['nodes'])
         for edge_id in range(num_edges):
             # Move the system such that one of the two end points is in the
@@ -399,8 +385,6 @@ class meshTri(_base_mesh):
         assert (abs(self.node_coords[:, 2]) < 1.0e-10).all()
         node_coords2d = self.node_coords[:, :2]
 
-        if self.cell_circumcenters is None:
-            self.compute_cell_circumcenters()
         assert (abs(self.cell_circumcenters[:, 2]) < 1.0e-10).all()
         cell_circumcenters2d = self.cell_circumcenters[:, :2]
 
@@ -514,9 +498,6 @@ class meshTri(_base_mesh):
         return curl
 
     def check_delaunay(self):
-        if self.cell_circumcenters is None:
-            self.compute_cell_circumcenters()
-
         num_interior_edges = 0
         num_delaunay_violations = 0
 
@@ -586,8 +567,6 @@ class meshTri(_base_mesh):
 
         # Highlight covolumes.
         if show_covolumes:
-            if self.cell_circumcenters is None:
-                self.compute_cell_circumcenters()
             covolume_col = '0.6'
             for edge_id in range(len(self.edges['cells'])):
                 ccs = self.cell_circumcenters[self.edges['cells'][edge_id]]
@@ -631,8 +610,6 @@ class meshTri(_base_mesh):
 
         # Highlight covolumes.
         if show_covolume:
-            if self.cell_circumcenters is None:
-                self.compute_cell_circumcenters()
             covolume_boundary_col = '0.5'
             covolume_area_col = '0.7'
             for edge_id in range(len(self.edges['cells'])):
