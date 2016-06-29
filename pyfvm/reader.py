@@ -6,21 +6,17 @@ formats.
 
 .. moduleauthor:: Nico Schlömer <nico.schloemer@gmail.com>
 '''
-import os
 import meshio
-import numpy
 import pyfvm
 
 __all__ = ['read']
 
 
-def read(filename, timestep=None):
+def read(filename):
     '''Reads an unstructured mesh with added data.
 
     :param filenames: The files to read from.
     :type filenames: str
-    :param timestep: Time step to read from, in case of an Exodus input mesh.
-    :type timestep: int, optional
     :returns mesh{2,3}d: The mesh data.
     :returns point_data: Point data read from file.
     :type point_data: dict

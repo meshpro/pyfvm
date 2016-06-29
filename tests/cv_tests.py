@@ -16,7 +16,7 @@ class TestControlVolumes(unittest.TestCase):
         # Compute the control volumes.
         if mesh.control_volumes is None:
             mesh.compute_control_volumes()
-        tol = 1.0e-6
+        tol = 1.0e-5
         # Check the volume by summing over the cell volume.
         if mesh.cell_volumes is None:
             mesh.create_cell_volumes()

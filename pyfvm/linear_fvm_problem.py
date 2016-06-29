@@ -5,13 +5,12 @@ from scipy import sparse
 
 
 def _wipe_row_csr(matrix, i):
-    # Wipes a row of a matrix in CSR format and puts 1.0 on the diagonal.
-    if not isinstance(matrix, sparse.csr_matrix):
-        raise ValueError('works only for CSR format -- use .tocsr() first')
+    '''Wipes a row of a matrix in CSR format and puts 1.0 on the diagonal.
+    '''
+    assert isinstance(matrix, sparse.csr_matrix)
 
     n = matrix.indptr[i+1] - matrix.indptr[i]
-    if n == 0:
-        raise ValueError('row %d not present in matrix' % i)
+    assert n > 0
 
     matrix.data[matrix.indptr[i]+1:-n+1] = matrix.data[matrix.indptr[i+1]:]
     matrix.data[matrix.indptr[i]] = 1.0
@@ -31,19 +30,19 @@ class LinearFvmProblem(object):
     def __init__(
             self,
             mesh,
-            edge_cores, vertex_cores, boundary_cores, dirichlets
+            edge_kernels, vertex_kernels, boundary_kernels, dirichlets
             ):
         self.mesh = mesh
-        self.edge_cores = edge_cores
-        self.vertex_cores = vertex_cores
-        self.boundary_cores = boundary_cores
+        self.edge_kernels = edge_kernels
+        self.vertex_kernels = vertex_kernels
+        self.boundary_kernels = boundary_kernels
         self.dirichlets = dirichlets
 
         V, I, J, self.rhs = _get_VIJ(
                 mesh,
-                edge_cores,
-                vertex_cores,
-                boundary_cores,
+                edge_kernels,
+                vertex_kernels,
+                boundary_kernels,
                 compute_rhs=True
                 )
 
@@ -69,7 +68,7 @@ class LinearFvmProblem(object):
 
 def _get_VIJ(
         mesh,
-        edge_cores, vertex_cores, boundary_cores,
+        edge_kernels, vertex_kernels, boundary_kernels,
         compute_rhs=False
         ):
     V = []
@@ -79,11 +78,11 @@ def _get_VIJ(
         rhs = numpy.zeros(len(mesh.node_coords))
     else:
         rhs = None
-    for edge_core in edge_cores:
-        for subdomain in edge_core.subdomains:
+    for edge_kernel in edge_kernels:
+        for subdomain in edge_kernel.subdomains:
             for k, edge_id in enumerate(mesh.get_edges(subdomain)):
                 v0, v1 = mesh.edges['nodes'][edge_id]
-                vals_matrix, vals_rhs = edge_core.eval(k)
+                vals_matrix, vals_rhs = edge_kernel.eval(k)
                 V += [
                     vals_matrix[0][0], vals_matrix[0][1],
                     vals_matrix[1][0], vals_matrix[1][1]
@@ -98,15 +97,15 @@ def _get_VIJ(
             # # TODO fix those
             # for k in mesh.get_half_edges(subdomain):
             #     k0, k1 = mesh.get_vertices(k)
-            #     val = edge_core.eval(k)
+            #     val = edge_kernel.eval(k)
             #     V += [vals]
             #     I += [k0, k1]
             #     J += [k0, k1]
 
-    for vertex_core in vertex_cores:
-        for subdomain in vertex_core.subdomains:
+    for vertex_kernel in vertex_kernels:
+        for subdomain in vertex_kernel.subdomains:
             for k in mesh.get_vertices(subdomain):
-                val_matrix, val_rhs = vertex_core.eval(k)
+                val_matrix, val_rhs = vertex_kernel.eval(k)
                 V += [val_matrix]
                 I += [k]
                 J += [k]
@@ -114,10 +113,10 @@ def _get_VIJ(
                 if compute_rhs:
                     rhs[k] -= val_rhs
 
-    for boundary_core in boundary_cores:
-        for subdomain in boundary_core.subdomains:
+    for boundary_kernel in boundary_kernels:
+        for subdomain in boundary_kernel.subdomains:
             for k in mesh.get_vertices(subdomain):
-                val_matrix, val_rhs = boundary_core.eval(k)
+                val_matrix, val_rhs = boundary_kernel.eval(k)
                 V += [val_matrix]
                 I += [k]
                 J += [k]
