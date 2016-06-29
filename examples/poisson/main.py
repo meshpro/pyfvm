@@ -35,7 +35,7 @@ class Poisson(LinearFvmProblem):
 vertices, cells = meshzoo.rectangle.create_mesh(
         0.0, 2.0,
         0.0, 1.0,
-        401, 201,
+        201, 101,
         zigzag=True
         )
 mesh = pyfvm.meshTri.meshTri(vertices, cells)

@@ -230,9 +230,10 @@ class meshTri(_base_mesh):
         '''Compute the control volumes of all nodes in the mesh.
         '''
         if variant == 'voronoi':
-            self._compute_voronoi_volumes()
-        elif variant == 'voronoi flat':
-            self._compute_flat_voronoi_volumes()
+            if (abs(self.node_coords[:, 2]) < 1.0e-10).all():
+                self._compute_flat_voronoi_volumes()
+            else:
+                self._compute_voronoi_volumes()
         elif variant == 'barycentric':
             self._compute_barycentric_volumes()
         else:
@@ -314,7 +315,6 @@ class meshTri(_base_mesh):
         if self.cell_circumcenters is None:
             self.compute_cell_circumcenters()
 
-        # Compute covolumes and control volumes.
         num_edges = len(self.edges['nodes'])
         for edge_id in range(num_edges):
             # Move the system such that one of the two end points is in the
@@ -329,43 +329,43 @@ class meshTri(_base_mesh):
             # considered.  other{0,1} refers to the the node opposing the edge
             # in the adjacent cell {0,1}.
             # Get the opposing node of the first adjacent cell.
-            cell0 = self.edges['cells'][edge_id][0]
+            cells = self.edges['cells'][edge_id]
             # This nonzero construct is an ugly replacement for the nonexisting
             # index() method. (Compare with Python lists.)
-            edge_lid = \
-                numpy.nonzero(self.cells['edges'][cell0] == edge_id)[0][0]
+            edge_lid = self.cells['edges'][cells[0]].tolist().index(edge_id)
             # This makes use of the fact that cellsEdges and cellsNodes
             # are coordinated such that in cell #i, the edge cellsEdges[i][k]
             # opposes cellsNodes[i][k].
-            other0 = self.node_coords[self.cells['nodes'][cell0][edge_lid]] \
+            other0 = self.node_coords[self.cells['nodes'][cells[0]][edge_lid]] \
                 - node
             node_ids = self.edges['nodes'][edge_id]
             node_coords = self.node_coords[node_ids]
-            edge_midpoint = 0.5 * (node_coords[0] + node_coords[1]) \
-                - node
+            edge_midpoint = 0.5 * (node_coords[0] + node_coords[1]) - node
             # Computing the triangle volume like this is called the shoelace
             # formula and can be interpreted as the z-component of the
             # cross-product of other0 and edge_midpoint.
-            gauge = other0[0] * edge_midpoint[1] \
-                - other0[1] * edge_midpoint[0]
+            positive_gauge = (
+                    other0[0] * edge_midpoint[1] > other0[1] * edge_midpoint[0]
+                    )
 
             # Get the circumcenters of the adjacent cells.
             cc = self.cell_circumcenters[self.edges['cells'][edge_id]] \
                 - node
             if len(cc) == 2:  # interior edge
-                self.control_volumes[node_ids] += \
-                    numpy.sign(gauge) * 0.5 * (cc[0][0] * cc[1][1] -
-                                               cc[0][1] * cc[1][0]
-                                               )
+                val = 0.5 * (cc[0][0] * cc[1][1] - cc[0][1] * cc[1][0])
             elif len(cc) == 1:  # boundary edge
-                self.control_volumes[node_ids] += \
-                    numpy.sign(gauge) * 0.5 * (cc[0][0] * edge_midpoint[1] -
-                                               cc[0][1] * edge_midpoint[0]
-                                               )
+                val = 0.5 * (
+                        cc[0][0] * edge_midpoint[1] -
+                        cc[0][1] * edge_midpoint[0]
+                        )
             else:
                 raise RuntimeError('An edge should have either 1'
                                    ' or two adjacent cells.'
                                    )
+            if positive_gauge:
+                self.control_volumes[node_ids] += val
+            else:
+                self.control_volumes[node_ids] -= val
 
         # Don't check equality with sum of triangle areas since
         # it will generally not be equal.
