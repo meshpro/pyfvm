@@ -124,9 +124,7 @@ class meshTri(_base_mesh):
         a = X[:, 0, :] - X[:, 2, :]
         b = X[:, 1, :] - X[:, 2, :]
         a_cross_b = numpy.cross(a, b)
-        self.cell_volumes = 0.5 * numpy.sqrt(
-                numpy.sum(a_cross_b * a_cross_b, axis=1)
-                )
+        self.cell_volumes = 0.5 * numpy.sqrt(numpy.sum(a_cross_b**2, axis=1))
         return
 
     def compute_cell_circumcenters(self):
@@ -136,13 +134,13 @@ class meshTri(_base_mesh):
         X = self.node_coords[self.cells['nodes']]
         a = X[:, 0, :] - X[:, 2, :]
         b = X[:, 1, :] - X[:, 2, :]
-        a_dot_a = numpy.sum(a*a, axis=1)
+        a_dot_a = numpy.sum(a**2, axis=1)
         a2_b = (b.T * a_dot_a).T
-        b_dot_b = numpy.sum(b*b, axis=1)
+        b_dot_b = numpy.sum(b**2, axis=1)
         b2_a = (a.T * b_dot_b).T
         a_cross_b = numpy.cross(a, b)
         N = numpy.cross(a2_b - b2_a, a_cross_b)
-        a_cross_b2 = numpy.sum(a_cross_b * a_cross_b, axis=1)
+        a_cross_b2 = numpy.sum(a_cross_b**2, axis=1)
         self.cell_circumcenters = 0.5 * (N.T / a_cross_b2).T + X[:, 2, :]
         return
 
@@ -639,12 +637,9 @@ class meshTri(_base_mesh):
             self.node_coords[self.edges['nodes'][:, 0]]
 
         A = numpy.empty((len(self.cells), 3, 3))
-        rhs = numpy.empty((len(self.cells), 3))
 
         # Assemble linear systems cell by cell.
-        for k in range(len(self.cells)):
-            vol = self.cell_volumes[k]
-            cell = self.cells[k]
+        for k, cell in enumerate(self.cells):
             cell_edge_gids = cell['edges']
             # Build the equation system:
             # The equation
@@ -655,9 +650,13 @@ class meshTri(_base_mesh):
             # particularly by the edges themselves.
             A[k, :, :] = \
                 numpy.dot(edges[cell_edge_gids], edges[cell_edge_gids].T)
-            # Manual construction of the rhs is faster than
-            # numpy.diag(A).copy().
-            rhs[k, :] = vol * numpy.array([A[k, 0, 0], A[k, 1, 1], A[k, 2, 2]])
+
+        # TODO Perhaps simply perform the dot product here again?
+        rhs = numpy.array([
+            self.cell_volumes[k] *
+            numpy.array([A[k, 0, 0], A[k, 1, 1], A[k, 2, 2]])
+            for k in range(len(self.cells))
+            ])
         A = A**2
 
         # Solve all 3x3 systems at once ("broadcasted").
