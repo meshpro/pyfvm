@@ -628,28 +628,22 @@ class meshTri(_base_mesh):
         return
 
     def compute_covolumes(self):
-        num_edges = len(self.edges)
-        self.covolumes = numpy.zeros(num_edges, dtype=float)
-
         # Precompute edges.
         edges = \
             self.node_coords[self.edges['nodes'][:, 1]] - \
             self.node_coords[self.edges['nodes'][:, 0]]
 
-        A = numpy.empty((len(self.cells), 3, 3))
-
-        # Assemble linear systems cell by cell.
-        for k, cell in enumerate(self.cells):
-            cell_edge_gids = cell['edges']
-            # Build the equation system:
-            # The equation
-            #
-            # |simplex| ||u||^2 = \sum_i \alpha_i <u,e_i> <e_i,u>
-            #
-            # has to hold for all vectors u in the plane spanned by the edges,
-            # particularly by the edges themselves.
-            A[k, :, :] = \
-                numpy.dot(edges[cell_edge_gids], edges[cell_edge_gids].T)
+        # Build the equation system:
+        # The equation
+        #
+        # |simplex| ||u||^2 = \sum_i \alpha_i <u,e_i> <e_i,u>
+        #
+        # has to hold for all vectors u in the plane spanned by the edges,
+        # particularly by the edges themselves.
+        A = numpy.array([
+            numpy.dot(edges[cell['edges']], edges[cell['edges']].T)
+            for cell in self.cells
+            ])
 
         # TODO Perhaps simply perform the dot product here again?
         rhs = numpy.array([
@@ -665,8 +659,9 @@ class meshTri(_base_mesh):
         # edge coefficients are 0, too. Hence, do nothing.
         sol = numpy.linalg.solve(A, rhs)
 
-        for k in range(len(self.cells)):
-            cell = self.cells[k]
+        num_edges = len(self.edges)
+        self.covolumes = numpy.zeros(num_edges, dtype=float)
+        for k, cell in enumerate(self.cells):
             cell_edge_gids = cell['edges']
             self.covolumes[cell_edge_gids] += sol[k]
 
