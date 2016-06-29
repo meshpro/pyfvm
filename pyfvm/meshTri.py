@@ -649,8 +649,9 @@ class meshTri(_base_mesh):
             # has to hold for all vectors u in the plane spanned by the edges,
             # particularly by the edges themselves.
             A = numpy.dot(edges[cell_edge_gids], edges[cell_edge_gids].T)
-            # Careful here! As of NumPy 1.7, numpy.diag() returns a view.
-            rhs = vol * numpy.diag(A).copy()
+            # Manual construction of the rhs is faster than
+            # numpy.diag(A).copy().
+            rhs = vol * numpy.array([A[0, 0], A[1, 1], A[2, 2]])
             A = A**2
 
             # Append the the resulting coefficients to the coefficient cache.
