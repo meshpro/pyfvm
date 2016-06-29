@@ -34,12 +34,12 @@ class FunctionParameter(sympy.Function):
     pass
 
 
-class CoreList(object):
-    '''A core is an entity that can occur in a the definition of `apply()` for
+class KernelList(object):
+    '''A kernel is an entity that can occur in a the definition of `apply()` for
     an operator. That's either an Integral or an FvmMatrix.
-    The purpose of organizing them into a CoreList is to make it possible to
-    "add" cores, which eventually comes down to just collecting the cores into
-    a list.
+    The purpose of organizing them into a KernelList is to make it possible to
+    "add" kernels, which eventually comes down to just collecting the kernels
+    into a list.
     '''
     def __init__(self, integrals, fvm_matrices=None):
         self.integrals = integrals
@@ -55,7 +55,7 @@ class CoreList(object):
     def __sub__(self, other):
         if other.fvm_matrices:
             raise NotImplementedError('Cannot negate FvmMatrices yet.')
-        # flip the sign on the integrand of all 'other' cores
+        # flip the sign on the integrand of all 'other' kernels
         new_integrals = [Integral(
                 lambda x: -integral.integrand(x),
                 integral.measure,
@@ -70,7 +70,7 @@ class CoreList(object):
     def __neg__(self):
         if self.fvm_matrices:
             raise NotImplementedError('Cannot negate FvmMatrices yet.')
-        # flip the sign on the integrand of all 'self' cores
+        # flip the sign on the integrand of all 'self' kernels
         new_integrals = [Integral(
                 lambda x: -integral.integrand(x),
                 integral.measure,
@@ -83,7 +83,7 @@ class CoreList(object):
         if self.fvm_matrices:
             raise NotImplementedError('Cannot multiply FvmMatrices yet.')
         assert(isinstance(other, float) or isinstance(other, int))
-        # flip the sign on the integrand of all 'self' cores
+        # flip the sign on the integrand of all 'self' kernels
         new_integrals = [Integral(
                 lambda x: other * integral.integrand(x),
                 integral.measure,
@@ -95,12 +95,12 @@ class CoreList(object):
     __rmul__ = __mul__
 
 
-class FvmMatrix(Callable, CoreList):
+class FvmMatrix(Callable, KernelList):
     # By default: No Dirichlet conditions.
     dirichlet = []
 
     def __init__(self, arg):
-        CoreList.__init__(self, [], [self])
+        KernelList.__init__(self, [], [self])
         return
 
 
@@ -147,10 +147,10 @@ def integrate(integrand, measure, subdomains=None):
         isinstance(measure, BoundarySurface)
         )
 
-    return CoreList([Integral(integrand, measure, subdomains)])
+    return KernelList([Integral(integrand, measure, subdomains)])
 
 
-class Integral(CoreList):
+class Integral(KernelList):
     def __init__(self, integrand, measure, subdomains):
         self.integrand = integrand
         self.measure = measure
@@ -158,7 +158,7 @@ class Integral(CoreList):
         return
 
 
-class EdgeCore(object):
+class EdgeKernel(object):
     pass
 
 
