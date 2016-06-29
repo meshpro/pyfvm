@@ -358,7 +358,7 @@ def discretize(cls, mesh):
             uk0 = sympy.Symbol('uk0')
             expr = expr.subs([(u[k0], uk0)])
             coeff, affine = extract_linear_components(expr, uk0)
-            vertex_kernels.add(
+            boundary_kernels.add(
                 BoundaryKernel(
                     mesh,
                     sympy.lambdify((surface_area, x), coeff),
