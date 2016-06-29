@@ -644,15 +644,14 @@ class meshTri(_base_mesh):
             numpy.dot(edges[cell['edges']], edges[cell['edges']].T)
             for cell in self.cells
             ])
-
-        # TODO Perhaps simply perform the dot product here again?
-        rhs = numpy.array([
-            self.cell_volumes[k] *
-            numpy.array([A[k, 0, 0], A[k, 1, 1], A[k, 2, 2]])
-            for k in range(len(self.cells))
-            ])
-
         A = A**2
+
+        # Compute the RHS  cell_volume * <edge, edge>.
+        # The dot product <edge, edge> is also on the diagonals of A (before
+        # squaring), but simply computing it again is cheaper than extracting
+        # it from A.
+        edge_dot_edge = numpy.sum(edges**2, axis=1)
+        rhs = (edge_dot_edge[self.cells['edges']].T * self.cell_volumes).T
 
         # Solve all 3x3 systems at once ("broadcasted").
         # If the matrix A is (close to) singular if and only if the cell is
