@@ -651,6 +651,7 @@ class meshTri(_base_mesh):
             numpy.array([A[k, 0, 0], A[k, 1, 1], A[k, 2, 2]])
             for k in range(len(self.cells))
             ])
+
         A = A**2
 
         # Solve all 3x3 systems at once ("broadcasted").
@@ -661,9 +662,11 @@ class meshTri(_base_mesh):
 
         num_edges = len(self.edges)
         self.covolumes = numpy.zeros(num_edges, dtype=float)
-        for k, cell in enumerate(self.cells):
-            cell_edge_gids = cell['edges']
-            self.covolumes[cell_edge_gids] += sol[k]
+        numpy.add.at(
+                self.covolumes,
+                self.cells['edges'].flatten(),
+                sol.flatten()
+                )
 
         # Here, self.covolumes contains the covolume-edgelength ratios. Make
         # sure we end up with the covolumes.
