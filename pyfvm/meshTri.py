@@ -120,18 +120,13 @@ class meshTri(_base_mesh):
     def create_cell_volumes(self):
         '''Computes the area of all triangles in the mesh.
         '''
-        num_cells = len(self.cells['nodes'])
-        self.cell_volumes = numpy.empty(num_cells, dtype=float)
-        for cell_id, cell in enumerate(self.cells):
-            x0, x1, x2 = self.node_coords[cell['nodes']]
-            # edge0 = node0 - node1
-            # edge1 = node1 - node2
-            # self.cell_volumes[cell_id] = \
-            #     0.5 * numpy.linalg.norm(numpy.cross(edge0, edge1))
-            # Append a third component.
-            from vtk import vtkTriangle
-            self.cell_volumes[cell_id] = \
-                abs(vtkTriangle.TriangleArea(x0, x1, x2))
+        X = self.node_coords[self.cells['nodes']]
+        a = X[:, 0, :] - X[:, 2, :]
+        b = X[:, 1, :] - X[:, 2, :]
+        a_cross_b = numpy.cross(a, b)
+        self.cell_volumes = 0.5 * numpy.sqrt(
+                numpy.sum(a_cross_b * a_cross_b, axis=1)
+                )
         return
 
     def compute_cell_circumcenters(self):
@@ -285,12 +280,8 @@ class meshTri(_base_mesh):
         # Sanity checks.
         sum_cv = sum(self.control_volumes)
         sum_cells = sum(self.cell_volumes)
-        alpha = sum_cv - sum_cells
-        if abs(alpha) > 1.0e-9:
-            msg = ('Sum of control volumes sum does not coincide with the sum '
-                   'of the cell volumes (|cv|-|cells| = %g - %g = %g.'
-                   ) % (sum_cv, sum_cells, alpha)
-            raise RuntimeError(msg)
+        assert abs(sum_cv - sum_cells) < 1.0e-6
+
         if any(self.control_volumes < 0.0):
             msg = 'Not all control volumes are positive. This is due do ' \
                 + 'the triangulation not being Delaunay.'
