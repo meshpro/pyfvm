@@ -640,10 +640,9 @@ class meshTri(_base_mesh):
         #
         # has to hold for all vectors u in the plane spanned by the edges,
         # particularly by the edges themselves.
-        A = numpy.array([
-            numpy.dot(edges[cell['edges']], edges[cell['edges']].T)
-            for cell in self.cells
-            ])
+        cells_edges = edges[self.cells['edges']]
+        # <http://stackoverflow.com/a/38110345/353337>
+        A = numpy.einsum('ijk,ilk->ijl', cells_edges, cells_edges)
         A = A**2
 
         # Compute the RHS  cell_volume * <edge, edge>.
@@ -653,7 +652,7 @@ class meshTri(_base_mesh):
         edge_dot_edge = numpy.sum(edges**2, axis=1)
         rhs = (edge_dot_edge[self.cells['edges']].T * self.cell_volumes).T
 
-        # Solve all 3x3 systems at once ("broadcasted").
+        # Solve all 3x3 systems at once ("broadcast").
         # If the matrix A is (close to) singular if and only if the cell is
         # (close to being) degenerate. Hence, it has volume 0, and so all the
         # edge coefficients are 0, too. Hence, do nothing.
