@@ -638,8 +638,13 @@ class meshTri(_base_mesh):
             self.node_coords[self.edges['nodes'][:, 1]] - \
             self.node_coords[self.edges['nodes'][:, 0]]
 
-        # Calculate the edge contributions cell by cell.
-        for vol, cell in zip(self.cell_volumes, self.cells):
+        A = numpy.empty((len(self.cells), 3, 3))
+        rhs = numpy.empty((len(self.cells), 3))
+
+        # Assemble linear systems cell by cell.
+        for k in range(len(self.cells)):
+            vol = self.cell_volumes[k]
+            cell = self.cells[k]
             cell_edge_gids = cell['edges']
             # Build the equation system:
             # The equation
@@ -648,22 +653,23 @@ class meshTri(_base_mesh):
             #
             # has to hold for all vectors u in the plane spanned by the edges,
             # particularly by the edges themselves.
-            A = numpy.dot(edges[cell_edge_gids], edges[cell_edge_gids].T)
+            A[k, :, :] = \
+                numpy.dot(edges[cell_edge_gids], edges[cell_edge_gids].T)
             # Manual construction of the rhs is faster than
             # numpy.diag(A).copy().
-            rhs = vol * numpy.array([A[0, 0], A[1, 1], A[2, 2]])
-            A = A**2
+            rhs[k, :] = vol * numpy.array([A[k, 0, 0], A[k, 1, 1], A[k, 2, 2]])
+        A = A**2
 
-            # Append the the resulting coefficients to the coefficient cache.
-            # The system is posdef iff the simplex isn't degenerate.
-            try:
-                self.covolumes[cell_edge_gids] += numpy.linalg.solve(A, rhs)
-            except numpy.linalg.linalg.LinAlgError:
-                # The matrix A appears to be singular, and the only
-                # circumstance that makes this happening is the cell being
-                # degenerate.  Hence, it has volume 0, and so all the edge
-                # coefficients are 0, too.  Hence, do nothing.
-                assert(vol == 0.0)
+        # Solve all 3x3 systems at once ("broadcasted").
+        # If the matrix A is (close to) singular if and only if the cell is
+        # (close to being) degenerate. Hence, it has volume 0, and so all the
+        # edge coefficients are 0, too. Hence, do nothing.
+        sol = numpy.linalg.solve(A, rhs)
+
+        for k in range(len(self.cells)):
+            cell = self.cells[k]
+            cell_edge_gids = cell['edges']
+            self.covolumes[cell_edge_gids] += sol[k]
 
         # Here, self.covolumes contains the covolume-edgelength ratios. Make
         # sure we end up with the covolumes.
