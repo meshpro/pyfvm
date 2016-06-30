@@ -231,50 +231,41 @@ class meshTri(_base_mesh):
         # compute the control volume contributions for each side in a cell
         # separately.
         self.control_volumes = numpy.zeros(len(self.node_coords), dtype=float)
-        for k, node_ids in enumerate(self.cells['nodes']):
-            # Project to 2D, compute circumcenter.
-            from vtk import vtkTriangle
-            x = self.node_coords[node_ids]
-            x2d = numpy.empty(3, dtype=numpy.dtype((float, 2)))
-            vtkTriangle.ProjectTo2D(
-                    x[0], x[1], x[2],
-                    x2d[0], x2d[1], x2d[2]
-                    )
-            # Compute circumcenter.
-            cc = numpy.empty(2)
-            vtkTriangle.Circumcircle(x2d[0], x2d[1], x2d[2], cc)
-            for other_lid in range(3):
-                node_lids = range(3)[:other_lid] + range(3)[other_lid+1:]
-                my_node_ids = node_ids[node_lids]
+        for other_lid in range(3):
+            node_lids = range(3)[:other_lid] + range(3)[other_lid+1:]
+            X = self.node_coords[self.cells['nodes']]
 
-                coords = x2d[node_lids]
-                other_coord = x2d[other_lid]
+            Edge_coords = numpy.empty((len(self.cells), 2, 3))
+            for k, node_ids in enumerate(self.cells['nodes']):
+                Edge_coords[k] = X[k][node_lids]
 
-                # Move the system such that one of the two end points is in the
-                # origin. Deliberately take coords[0].
-                other0 = other_coord - coords[0]
+            Other_coord = numpy.empty((len(self.cells), 3))
+            for k, node_ids in enumerate(self.cells['nodes']):
+                Other_coord[k] = X[k][other_lid]
 
-                # Compute edge midpoint.
-                # edge_midpoint = 0.5 * (coords[0] + coords[1]) - coords[0]
-                edge_midpoint = 0.5 * (coords[1] - coords[0])
+            # Move the system such that one of the two end points is in the
+            # origin. Deliberately take coords[0].
+            Other0 = Other_coord - Edge_coords[:, 0, :]
+            cc = self.cell_circumcenters - Edge_coords[:, 0, :]
+            # edge_midpoint = 0.5 * (coords[0] + coords[1]) - coords[0]
+            Edge_midpoints = 0.5 * (
+                Edge_coords[:, 1, :] - Edge_coords[:, 0, :]
+                )
 
-                cc_tmp = cc - coords[0]
+            # Compute the area of the triangle {node[0], cc, edge_midpoint}.
+            # Gauge with the sign of the area {node[0], other0, edge_midpoint}.
+            V = 0.5 * numpy.cross(cc, Edge_midpoints)
+            # Get normalized gauge vector
+            gauge = numpy.cross(Other0, Edge_midpoints)
+            gauge_norm = numpy.sqrt(numpy.sum(gauge**2, axis=1))
+            gauge = (gauge.T / gauge_norm).T
 
-                # Compute the area of the triangle {node[0], cc,
-                # edge_midpoint}. Gauge with the sign of the area {node[0],
-                # other0, edge_midpoint}.
+            # dot(v, gauge)
+            val = numpy.sum(V * gauge, axis=1)
 
-                # Computing the triangle volume like this is called the
-                # shoelace formula and can be interpreted as the z-component of
-                # the cross-product of other0 and edge_midpoint.
-                val = 0.5 * (
-                        cc_tmp[0] * edge_midpoint[1] -
-                        cc_tmp[1] * edge_midpoint[0]
-                        )
-                if other0[0] * edge_midpoint[1] > other0[1] * edge_midpoint[0]:
-                    self.control_volumes[my_node_ids] += val
-                else:
-                    self.control_volumes[my_node_ids] -= val
+            my_node_ids = self.cells['nodes'][:, node_lids]
+            numpy.add.at(self.control_volumes, my_node_ids[:, 0], val)
+            numpy.add.at(self.control_volumes, my_node_ids[:, 1], val)
 
         # Sanity checks.
         sum_cv = sum(self.control_volumes)
