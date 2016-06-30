@@ -209,22 +209,9 @@ class meshTri(_base_mesh):
     def get_vertices(self, subdomain):
         return self.subdomains[subdomain]['vertices']
 
-    def compute_control_volumes(self, variant='voronoi'):
+    def compute_control_volumes(self):
         '''Compute the control volumes of all nodes in the mesh.
         '''
-        if variant == 'voronoi':
-            self._compute_voronoi_volumes()
-            # if (abs(self.node_coords[:, 2]) < 1.0e-10).all():
-            #     self._compute_flat_voronoi_volumes()
-            # else:
-            #     self._compute_voronoi_volumes()
-        elif variant == 'barycentric':
-            self._compute_barycentric_volumes()
-        else:
-            raise ValueError('Unknown volume variant ''%s''.' % variant)
-        return
-
-    def _compute_voronoi_volumes(self):
         # For flat meshes, the control volume contributions on a per-edge basis
         # by computing the distance between the circumcenters of two adjacent
         # cells. If the mesh is not flat, however, this does not work. Hence,
@@ -272,86 +259,6 @@ class meshTri(_base_mesh):
             msg = 'Not all control volumes are positive. This is due do ' \
                 + 'the triangulation not being Delaunay.'
             warnings.warn(msg)
-        return
-
-    def _compute_flat_voronoi_volumes(self):
-        num_nodes = len(self.node_coords)
-        self.control_volumes = numpy.zeros(num_nodes, dtype=float)
-
-        num_edges = len(self.edges['nodes'])
-
-        edge_endpoints = self.node_coords[self.edges['nodes']]
-        edge_midpoints = 0.5 * (
-            edge_endpoints[:, 0, :] + edge_endpoints[:, 1, :]
-            )
-        others0 = numpy.empty((len(self.edges), 3))
-        for edge_id in range(num_edges):
-            # The orientation of the coedge needs gauging.  Do it in such as a
-            # way that the control volume contribution is positive if and only
-            # if the area of the triangle (node, other0, edge_midpoint) (in
-            # this order) is positive.  Equivalently, the triangles (node,
-            # edge_midpoint, other1) or (node, other0, other1) could  be
-            # considered.  other{0,1} refers to the the node opposing the edge
-            # in the adjacent cell {0,1}.
-            # Get the opposing node of the first adjacent cell.
-            cells = self.edges['cells'][edge_id]
-            edge_lid = self.cells['edges'][cells[0]].tolist().index(edge_id)
-            # This makes use of the fact that cellsEdges and cellsNodes
-            # are coordinated such that in cell #i, the edge cellsEdges[i][k]
-            # opposes cellsNodes[i][k].
-            others0[edge_id] = \
-                self.node_coords[self.cells['nodes'][cells[0]][edge_lid]]
-
-        # Move the system such that one of the two end points is in the
-        # origin. Deliberately take self.edges['nodes'][edge_id][0].
-        others0 -= edge_endpoints[:, 0, :]
-        edge_midpoints -= edge_endpoints[:, 0, :]
-
-        # Computing the triangle volume like this is called the shoelace
-        # formula and can be interpreted as the z-component of the
-        # cross-product of other0 and edge_midpoint.
-        gauge = numpy.sign(
-            others0[:, 0] * edge_midpoints[:, 1] -
-            others0[:, 1] * edge_midpoints[:, 0]
-            )
-
-        for edge_id in range(num_edges):
-            node = self.node_coords[self.edges['nodes'][edge_id][0]]
-            # Get the circumcenters of the adjacent cells.
-            cc = self.cell_circumcenters[self.edges['cells'][edge_id]] \
-                - node
-            if len(cc) == 2:  # interior edge
-                val = 0.5 * (cc[0][0] * cc[1][1] - cc[0][1] * cc[1][0])
-            elif len(cc) == 1:  # boundary edge
-                val = 0.5 * (
-                        cc[0][0] * edge_midpoints[edge_id][1] -
-                        cc[0][1] * edge_midpoints[edge_id][0]
-                        )
-            else:
-                raise RuntimeError(
-                        'An edge should have either one or two adjacent cells.'
-                        )
-
-            node_ids = self.edges['nodes'][edge_id]
-            self.control_volumes[node_ids] += gauge[edge_id] * val
-
-        # Don't check equality with sum of triangle areas since
-        # it will generally not be equal.
-        if any(self.control_volumes < 0.0):
-            msg = 'Not all control volumes are positive. This is due do ' \
-                + 'the triangulation not being Delaunay.'
-            warnings.warn(msg)
-        return
-
-    def _compute_barycentric_volumes(self):
-        '''Control volumes based on barycentric splitting.'''
-        # The barycentric midpoint "divides the triangle" into three areas of
-        # equal volume. Hence, just assign one third of the volumes to the
-        # corner points of each cell.
-        num_nodes = len(self.node_coords)
-        self.control_volumes = numpy.zeros(num_nodes, dtype=float)
-        for k, cell in enumerate(self.cells):
-            self.control_volumes[cell['nodes']] += self.cell_volumes[k] / 3.0
         return
 
     def compute_gradient(self, u):
