@@ -291,11 +291,13 @@ class meshTri(_base_mesh):
         self.control_volumes = numpy.zeros(num_nodes, dtype=float)
 
         num_edges = len(self.edges['nodes'])
-        for edge_id in range(num_edges):
-            # Move the system such that one of the two end points is in the
-            # origin. Deliberately take self.edges['nodes'][edge_id][0].
-            node = self.node_coords[self.edges['nodes'][edge_id][0]]
 
+        edge_endpoints = self.node_coords[self.edges['nodes']]
+        edge_midpoints = 0.5 * (
+            edge_endpoints[:, 0, :] + edge_endpoints[:, 1, :]
+            )
+        others0 = numpy.empty((len(self.edges), 3))
+        for edge_id in range(num_edges):
             # The orientation of the coedge needs gauging.  Do it in such as a
             # way that the control volume contribution is positive if and only
             # if the area of the triangle (node, other0, edge_midpoint) (in
@@ -305,24 +307,28 @@ class meshTri(_base_mesh):
             # in the adjacent cell {0,1}.
             # Get the opposing node of the first adjacent cell.
             cells = self.edges['cells'][edge_id]
-            # This nonzero construct is an ugly replacement for the nonexisting
-            # index() method. (Compare with Python lists.)
             edge_lid = self.cells['edges'][cells[0]].tolist().index(edge_id)
             # This makes use of the fact that cellsEdges and cellsNodes
             # are coordinated such that in cell #i, the edge cellsEdges[i][k]
             # opposes cellsNodes[i][k].
-            other0 = self.node_coords[self.cells['nodes'][cells[0]][edge_lid]] \
-                - node
-            node_ids = self.edges['nodes'][edge_id]
-            node_coords = self.node_coords[node_ids]
-            edge_midpoint = 0.5 * (node_coords[0] + node_coords[1]) - node
-            # Computing the triangle volume like this is called the shoelace
-            # formula and can be interpreted as the z-component of the
-            # cross-product of other0 and edge_midpoint.
-            positive_gauge = (
-                    other0[0] * edge_midpoint[1] > other0[1] * edge_midpoint[0]
-                    )
+            others0[edge_id] = \
+                self.node_coords[self.cells['nodes'][cells[0]][edge_lid]]
 
+        # Move the system such that one of the two end points is in the
+        # origin. Deliberately take self.edges['nodes'][edge_id][0].
+        others0 -= edge_endpoints[:, 0, :]
+        edge_midpoints -= edge_endpoints[:, 0, :]
+
+        # Computing the triangle volume like this is called the shoelace
+        # formula and can be interpreted as the z-component of the
+        # cross-product of other0 and edge_midpoint.
+        gauge = numpy.sign(
+            others0[:, 0] * edge_midpoints[:, 1] -
+            others0[:, 1] * edge_midpoints[:, 0]
+            )
+
+        for edge_id in range(num_edges):
+            node = self.node_coords[self.edges['nodes'][edge_id][0]]
             # Get the circumcenters of the adjacent cells.
             cc = self.cell_circumcenters[self.edges['cells'][edge_id]] \
                 - node
@@ -330,17 +336,16 @@ class meshTri(_base_mesh):
                 val = 0.5 * (cc[0][0] * cc[1][1] - cc[0][1] * cc[1][0])
             elif len(cc) == 1:  # boundary edge
                 val = 0.5 * (
-                        cc[0][0] * edge_midpoint[1] -
-                        cc[0][1] * edge_midpoint[0]
+                        cc[0][0] * edge_midpoints[edge_id][1] -
+                        cc[0][1] * edge_midpoints[edge_id][0]
                         )
             else:
-                raise RuntimeError('An edge should have either 1'
-                                   ' or two adjacent cells.'
-                                   )
-            if positive_gauge:
-                self.control_volumes[node_ids] += val
-            else:
-                self.control_volumes[node_ids] -= val
+                raise RuntimeError(
+                        'An edge should have either one or two adjacent cells.'
+                        )
+
+            node_ids = self.edges['nodes'][edge_id]
+            self.control_volumes[node_ids] += gauge[edge_id] * val
 
         # Don't check equality with sum of triangle areas since
         # it will generally not be equal.
