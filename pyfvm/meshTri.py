@@ -233,36 +233,32 @@ class meshTri(_base_mesh):
         self.control_volumes = numpy.zeros(len(self.node_coords), dtype=float)
         for other_lid in range(3):
             node_lids = range(3)[:other_lid] + range(3)[other_lid+1:]
+
             X = self.node_coords[self.cells['nodes']]
-
-            Edge_coords = numpy.empty((len(self.cells), 2, 3))
-            for k, node_ids in enumerate(self.cells['nodes']):
-                Edge_coords[k] = X[k][node_lids]
-
-            Other_coord = numpy.empty((len(self.cells), 3))
-            for k, node_ids in enumerate(self.cells['nodes']):
-                Other_coord[k] = X[k][other_lid]
+            edge_coords = X[:, node_lids, :]
+            other_coord = X[:, other_lid, :]
 
             # Move the system such that one of the two end points is in the
             # origin. Deliberately take coords[0].
-            Other0 = Other_coord - Edge_coords[:, 0, :]
-            cc = self.cell_circumcenters - Edge_coords[:, 0, :]
+            other0 = other_coord - edge_coords[:, 0, :]
+            cc = self.cell_circumcenters - edge_coords[:, 0, :]
             # edge_midpoint = 0.5 * (coords[0] + coords[1]) - coords[0]
-            Edge_midpoints = 0.5 * (
-                Edge_coords[:, 1, :] - Edge_coords[:, 0, :]
+            edge_midpoints = 0.5 * (
+                edge_coords[:, 1, :] - edge_coords[:, 0, :]
                 )
 
             # Compute the area of the triangle {node[0], cc, edge_midpoint}.
             # Gauge with the sign of the area {node[0], other0, edge_midpoint}.
-            V = 0.5 * numpy.cross(cc, Edge_midpoints)
+            V = 0.5 * numpy.cross(cc, edge_midpoints)
             # Get normalized gauge vector
-            gauge = numpy.cross(Other0, Edge_midpoints)
+            gauge = numpy.cross(other0, edge_midpoints)
             gauge_norm = numpy.sqrt(numpy.sum(gauge**2, axis=1))
             gauge = (gauge.T / gauge_norm).T
 
             # dot(v, gauge)
             val = numpy.sum(V * gauge, axis=1)
 
+            # Add edge contributions into the vertex values of control volumes.
             my_node_ids = self.cells['nodes'][:, node_lids]
             numpy.add.at(self.control_volumes, my_node_ids[:, 0], val)
             numpy.add.at(self.control_volumes, my_node_ids[:, 1], val)
