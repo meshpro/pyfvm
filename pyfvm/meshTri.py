@@ -213,42 +213,16 @@ class meshTri(_base_mesh):
         '''Compute the control volumes of all nodes in the mesh.
         '''
         if variant == 'voronoi':
-            if (abs(self.node_coords[:, 2]) < 1.0e-10).all():
-                self._compute_flat_voronoi_volumes()
-            else:
-                self._compute_voronoi_volumes()
+            self._compute_voronoi_volumes()
+            # if (abs(self.node_coords[:, 2]) < 1.0e-10).all():
+            #     self._compute_flat_voronoi_volumes()
+            # else:
+            #     self._compute_voronoi_volumes()
         elif variant == 'barycentric':
             self._compute_barycentric_volumes()
         else:
             raise ValueError('Unknown volume variant ''%s''.' % variant)
         return
-
-    def _edge_comp(self, coords, other_coord, cc):
-        # Move the system such that one of the two end points is in the
-        # origin. Deliberately take x2d[0].
-
-        other0 = other_coord - coords[0]
-
-        # Compute edge midpoint.
-        # edge_midpoint = 0.5 * (coords[0] + coords[1]) - coords[0]
-        edge_midpoint = 0.5 * (coords[1] - coords[0])
-
-        cc_tmp = cc - coords[0]
-
-        # Compute the area of the triangle {node[0], cc, edge_midpoint}. Gauge
-        # with the sign of the area {node[0], other0, edge_midpoint}.
-
-        # Computing the triangle volume like this is called the shoelace
-        # formula and can be interpreted as the z-component of the
-        # cross-product of other0 and edge_midpoint.
-        val = 0.5 * (
-                cc_tmp[0] * edge_midpoint[1] -
-                cc_tmp[1] * edge_midpoint[0]
-                )
-        if other0[0] * edge_midpoint[1] > other0[1] * edge_midpoint[0]:
-            return val
-        else:
-            return -val
 
     def _compute_voronoi_volumes(self):
         # For flat meshes, the control volume contributions on a per-edge basis
@@ -257,7 +231,7 @@ class meshTri(_base_mesh):
         # compute the control volume contributions for each side in a cell
         # separately.
         self.control_volumes = numpy.zeros(len(self.node_coords), dtype=float)
-        for node_ids in self.cells['nodes']:
+        for k, node_ids in enumerate(self.cells['nodes']):
             # Project to 2D, compute circumcenter.
             from vtk import vtkTriangle
             x = self.node_coords[node_ids]
@@ -272,8 +246,35 @@ class meshTri(_base_mesh):
             for other_lid in range(3):
                 node_lids = range(3)[:other_lid] + range(3)[other_lid+1:]
                 my_node_ids = node_ids[node_lids]
-                self.control_volumes[my_node_ids] += \
-                    self._edge_comp(x2d[node_lids], x2d[other_lid], cc)
+
+                coords = x2d[node_lids]
+                other_coord = x2d[other_lid]
+
+                # Move the system such that one of the two end points is in the
+                # origin. Deliberately take coords[0].
+                other0 = other_coord - coords[0]
+
+                # Compute edge midpoint.
+                # edge_midpoint = 0.5 * (coords[0] + coords[1]) - coords[0]
+                edge_midpoint = 0.5 * (coords[1] - coords[0])
+
+                cc_tmp = cc - coords[0]
+
+                # Compute the area of the triangle {node[0], cc,
+                # edge_midpoint}. Gauge with the sign of the area {node[0],
+                # other0, edge_midpoint}.
+
+                # Computing the triangle volume like this is called the
+                # shoelace formula and can be interpreted as the z-component of
+                # the cross-product of other0 and edge_midpoint.
+                val = 0.5 * (
+                        cc_tmp[0] * edge_midpoint[1] -
+                        cc_tmp[1] * edge_midpoint[0]
+                        )
+                if other0[0] * edge_midpoint[1] > other0[1] * edge_midpoint[0]:
+                    self.control_volumes[my_node_ids] += val
+                else:
+                    self.control_volumes[my_node_ids] -= val
 
         # Sanity checks.
         sum_cv = sum(self.control_volumes)
