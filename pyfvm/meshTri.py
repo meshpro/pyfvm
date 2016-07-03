@@ -51,7 +51,7 @@ class meshTri(_base_mesh):
         self.subdomains = {}
         self.subdomains['everywhere'] = {
                 'vertices': range(len(self.node_coords)),
-                'edges': range(len(self.edges)),
+                'edges': range(len(self.edges['nodes'])),
                 'half_edges': []
                 }
 
@@ -147,60 +147,50 @@ class meshTri(_base_mesh):
     def create_adjacent_entities(self):
         '''Setup edge-node and edge-cell relations.
         '''
-        # Get upper bound for number of edges; trim later.
-        max_num_edges = 3 * len(self.cells['nodes'])
+        # Build the list of possible edges.
+        num_cells = len(self.cells['nodes'])
+        edges = numpy.empty((3 * num_cells, 2), dtype=int)
+        edges[0:num_cells] = self.cells['nodes'][:, [0, 1]]
+        edges[num_cells:2*num_cells] = self.cells['nodes'][:, [1, 2]]
+        edges[2*num_cells:3*num_cells] = self.cells['nodes'][:, [2, 0]]
 
-        dt = numpy.dtype([('nodes', (int, 2)), ('cells', numpy.object)])
-        self.edges = numpy.empty(max_num_edges, dtype=dt)
-        # To create an array of empty lists, do what's described at
-        # http://mail.scipy.org/pipermail/numpy-discussion/2009-November/046566.html
-        filler = numpy.frompyfunc(lambda x: list(), 1, 1)
-        self.edges['cells'] = filler(self.edges['cells'])
+        # <http://stackoverflow.com/a/38134679/353337>
+        from collections import defaultdict
+        d = defaultdict(list)
+        for k, f in enumerate(map(frozenset, edges)):
+            # k % num_cells is the cell index
+            d[f].append(k % num_cells)
 
-        # Extend the self.cells array by the 'edges' 'keyword'.
-        dt = numpy.dtype([('nodes', (int, 3)), ('edges', (int, 3))])
+        self.edges = {
+            'nodes': numpy.array(map(list, d)),
+            'cells': list(d.values())
+            }
+
+        # Create cells_edges from edges_cells, cf.
+        # <http://stackoverflow.com/a/38162985/353337>
+        b = []
+        for i, nums in enumerate(self.edges['cells']):
+            # For each number found at this index
+            for num in nums:
+                # If needed, extend b to cover the new needed range
+                for _ in range(num + 1 - len(b)):
+                    b.append([])
+                # Store the index
+                b[num].append(i)
+
+        # # <http://stackoverflow.com/a/38162896/353337>.
+        # inverted = {}
+        # for index, numbers in enumerate(self.edges['cells']):
+        #     for number in numbers:
+        #         inverted.setdefault(number, []).append(index)
+        # b = [inverted.get(i, []) for i in range(max(inverted) + 1)]
+
         cells = self.cells['nodes']
-        self.cells = numpy.empty(len(cells), dtype=dt)
-        self.cells['nodes'] = cells
+        self.cells = {
+            'nodes': cells,
+            'edges': numpy.array(b)
+            }
 
-        # The (sorted) dictionary edges keeps track of how nodes and edges
-        # are connected.
-        # If  node_edges[(3,4)] == 17  is true, then the nodes (3,4) are
-        # connected  by edge 17.
-        registered_edges = {}
-
-        new_edge_gid = 0
-        # Loop over all elements.
-        for cell_id, cell in enumerate(self.cells):
-            # We're treating simplices so loop over all combinations of
-            # local nodes.
-            # Make sure cellNodes are sorted.
-            self.cells['nodes'][cell_id] = \
-                numpy.sort(self.cells['nodes'][cell_id])
-            for k in range(len(cell['nodes'])):
-                # Remove the k-th element. This makes sure that the k-th
-                # edge is opposite of the k-th node. Useful later in
-                # in construction of edge (face) normals.
-                indices = tuple(cell['nodes'][:k]) \
-                    + tuple(cell['nodes'][k+1:])
-                if indices in registered_edges:
-                    edge_gid = registered_edges[indices]
-                    self.edges[edge_gid]['cells'].append(cell_id)
-                    self.cells[cell_id]['edges'][k] = edge_gid
-                else:
-                    # add edge
-                    # The alternative
-                    #   self.edges[new_edge_gid]['nodes'] = indices
-                    # doesn't work here. Check out
-                    # http://projects.scipy.org/numpy/ticket/2068
-                    self.edges['nodes'][new_edge_gid] = indices
-                    # edge['cells'] is also always ordered.
-                    self.edges['cells'][new_edge_gid].append(cell_id)
-                    self.cells['edges'][cell_id][k] = new_edge_gid
-                    registered_edges[indices] = new_edge_gid
-                    new_edge_gid += 1
-        # trim edges
-        self.edges = self.edges[:new_edge_gid]
         return
 
     def get_edges(self, subdomain):
@@ -274,50 +264,55 @@ class meshTri(_base_mesh):
         assert (abs(self.node_coords[:, 2]) < 1.0e-10).all()
         node_coords2d = self.node_coords[:, :2]
 
+        # This only works for flat meshes.
         assert (abs(self.cell_circumcenters[:, 2]) < 1.0e-10).all()
         cell_circumcenters2d = self.cell_circumcenters[:, :2]
 
         num_nodes = len(node_coords2d)
         assert len(u) == num_nodes
-        # This only works for flat meshes.
 
         gradient = numpy.zeros((num_nodes, 2), dtype=u.dtype)
 
         # Create an empty 2x2 matrix for the boundary nodes to hold the
         # edge correction ((17) in [1]).
         boundary_matrices = {}
-        for edge_id, edge in enumerate(self.edges):
-            if len(edge['cells']) == 1:
-                if edge['nodes'][0] not in boundary_matrices:
-                    boundary_matrices[edge['nodes'][0]] = numpy.zeros((2, 2))
-                if edge['nodes'][1] not in boundary_matrices:
-                    boundary_matrices[edge['nodes'][1]] = numpy.zeros((2, 2))
+        for edge_id, edge in enumerate(self.edges['cells']):
+            if len(self.edges['cells'][edge_id]) == 1:
+                node0 = self.edges['nodes'][edge_id][0]
+                if node0 not in boundary_matrices:
+                    boundary_matrices[node0] = numpy.zeros((2, 2))
+                node1 = self.edges['nodes'][edge_id][1]
+                if node1 not in boundary_matrices:
+                    boundary_matrices[node1] = numpy.zeros((2, 2))
 
-        for edge_id, edge in enumerate(self.edges):
+        for edge_id, edge in enumerate(self.edges['cells']):
             # Compute edge length.
-            edge_coords = node_coords2d[edge['nodes'][1]] -\
-                          node_coords2d[edge['nodes'][0]]
+            node0 = self.edges['nodes'][edge_id][0]
+            node1 = self.edges['nodes'][edge_id][1]
+            edge_coords = node_coords2d[node1] - node_coords2d[node0]
 
             # Compute coedge length.
-            if len(edge['cells']) == 1:
+            if len(self.edges['cells'][edge_id]) == 1:
                 # Boundary edge.
                 edge_midpoint = 0.5 * (
-                        node_coords2d[edge['nodes'][0]] +
-                        node_coords2d[edge['nodes'][1]]
+                        node_coords2d[node0] +
+                        node_coords2d[node1]
                         )
-                coedge = \
-                    cell_circumcenters2d[edge['cells'][0]] - edge_midpoint
+                cell0 = self.edges['cells'][edge_id][0]
+                coedge = cell_circumcenters2d[cell0] - edge_midpoint
                 coedge_midpoint = 0.5 * (
-                        cell_circumcenters2d[edge['cells'][0]] +
+                        cell_circumcenters2d[cell0] +
                         edge_midpoint
                         )
-            elif len(edge['cells']) == 2:
+            elif len(self.edges['cells'][edge_id]) == 2:
+                cell0 = self.edges['cells'][edge_id][0]
+                cell1 = self.edges['cells'][edge_id][1]
                 # Interior edge.
-                coedge = cell_circumcenters2d[edge['cells'][0]] - \
-                         cell_circumcenters2d[edge['cells'][1]]
+                coedge = cell_circumcenters2d[cell0] - \
+                    cell_circumcenters2d[cell1]
                 coedge_midpoint = 0.5 * (
-                        cell_circumcenters2d[edge['cells'][0]] +
-                        cell_circumcenters2d[edge['cells'][1]]
+                        cell_circumcenters2d[cell0] +
+                        cell_circumcenters2d[cell1]
                         )
             else:
                 raise RuntimeError(
@@ -327,26 +322,22 @@ class meshTri(_base_mesh):
             # Compute the coefficient r for both contributions
             coeffs = numpy.sqrt(numpy.dot(coedge, coedge) /
                                 numpy.dot(edge_coords, edge_coords)
-                                ) / self.control_volumes[edge['nodes']]
+                                ) / self.control_volumes[self.edges['nodes'][edge_id]]
 
             # Compute R*_{IJ} ((11) in [1]).
-            r0 = (coedge_midpoint - node_coords2d[edge['nodes'][0]]) \
-                * coeffs[0]
-            r1 = (coedge_midpoint - node_coords2d[edge['nodes'][1]]) \
-                * coeffs[1]
+            r0 = (coedge_midpoint - node_coords2d[node0]) * coeffs[0]
+            r1 = (coedge_midpoint - node_coords2d[node1]) * coeffs[1]
 
-            diff = u[edge['nodes'][1]] - u[edge['nodes'][0]]
+            diff = u[node1] - u[node0]
 
-            gradient[edge['nodes'][0]] += r0 * diff
-            gradient[edge['nodes'][1]] -= r1 * diff
+            gradient[node0] += r0 * diff
+            gradient[node1] -= r1 * diff
 
             # Store the boundary correction matrices.
-            if edge['nodes'][0] in boundary_matrices:
-                boundary_matrices[edge['nodes'][0]] += \
-                    numpy.outer(r0, edge_coords)
-            if edge['nodes'][1] in boundary_matrices:
-                boundary_matrices[edge['nodes'][1]] += \
-                    numpy.outer(r1, -edge_coords)
+            if node0 in boundary_matrices:
+                boundary_matrices[node0] += numpy.outer(r0, edge_coords)
+            if node1 in boundary_matrices:
+                boundary_matrices[node1] += numpy.outer(r1, -edge_coords)
 
         # Apply corrections to the gradients on the boundary.
         for k, value in boundary_matrices.items():
@@ -366,18 +357,18 @@ class meshTri(_base_mesh):
         vector field onto the edges at the midpoint of the edges.
         '''
         curl = numpy.zeros(
-            (len(self.cells), 3),
+            (len(self.cells['nodes']), 3),
             dtype=vector_field.dtype
             )
-        for edge in self.edges:
-            x0 = self.node_coords[edge['nodes'][0]]
-            x1 = self.node_coords[edge['nodes'][1]]
+        for nodes, cells in zip(self.edges['nodes'], self.edges['cells']):
+            x0 = self.node_coords[nodes[0]]
+            x1 = self.node_coords[nodes[1]]
             edge_coords = x1 - x0
             # Compute A at the edge midpoint.
-            A = 0.5 * (vector_field[edge['nodes'][0]] +
-                       vector_field[edge['nodes'][1]]
+            A = 0.5 * (vector_field[nodes[0]] +
+                       vector_field[nodes[1]]
                        )
-            for k in edge['cells']:
+            for k in cells:
                 center = 1./3. * sum(self.node_coords[self.cells['nodes'][k]])
                 direction = numpy.cross(x0 - center, x1 - center)
                 direction /= numpy.linalg.norm(direction)
@@ -558,7 +549,7 @@ class meshTri(_base_mesh):
         # edge coefficients are 0, too. Hence, do nothing.
         sol = numpy.linalg.solve(A, rhs)
 
-        num_edges = len(self.edges)
+        num_edges = len(self.edges['cells'])
         self.covolumes = numpy.zeros(num_edges, dtype=float)
         numpy.add.at(
                 self.covolumes,

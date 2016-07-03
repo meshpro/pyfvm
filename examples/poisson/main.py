@@ -29,13 +29,14 @@ class Poisson(LinearFvmProblem):
             ]
 
 # # Read the mesh using meshio
-#mesh, _, _ = pyfvm.reader.read('pacman.e')
+# mesh, _, _ = pyfvm.reader.read('pacman.e')
 
 # Create mesh using meshzoo
 vertices, cells = meshzoo.rectangle.create_mesh(
         0.0, 2.0,
         0.0, 1.0,
         401, 201,
+        # 41, 21,
         zigzag=True
         )
 mesh = pyfvm.meshTri.meshTri(vertices, cells)
