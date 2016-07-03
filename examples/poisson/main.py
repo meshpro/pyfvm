@@ -36,11 +36,9 @@ vertices, cells = meshzoo.rectangle.create_mesh(
         0.0, 2.0,
         0.0, 1.0,
         401, 201,
-        # 41, 21,
         zigzag=True
         )
 mesh = pyfvm.meshTri.meshTri(vertices, cells)
-exit(1)
 
 mesh.mark_subdomains([Gamma0(), Gamma1()])
 

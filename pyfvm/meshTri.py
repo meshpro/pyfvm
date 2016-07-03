@@ -147,19 +147,12 @@ class meshTri(_base_mesh):
     def create_adjacent_entities(self):
         '''Setup edge-node and edge-cell relations.
         '''
-        # Build the list of possible edges.
-        num_cells = len(self.cells['nodes'])
-        edges = numpy.empty((3 * num_cells, 2), dtype=int)
-        edges[0:num_cells] = self.cells['nodes'][:, [0, 1]]
-        edges[num_cells:2*num_cells] = self.cells['nodes'][:, [1, 2]]
-        edges[2*num_cells:3*num_cells] = self.cells['nodes'][:, [2, 0]]
-
         # <http://stackoverflow.com/a/38134679/353337>
         from collections import defaultdict
         d = defaultdict(list)
-        for k, f in enumerate(map(frozenset, edges)):
-            # k % num_cells is the cell index
-            d[f].append(k % num_cells)
+        for local_edges in [[0, 1], [1, 2], [2, 0]]:
+            for k, f in enumerate(map(frozenset, self.cells['nodes'][:, local_edges])):
+                d[f].append(k)
 
         self.edges = {
             'nodes': numpy.array(map(list, d)),
