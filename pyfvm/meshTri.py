@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 #
-from collections import defaultdict, Counter
 import numpy
 import warnings
 from pyfvm.base import _base_mesh
@@ -149,27 +148,29 @@ class meshTri(_base_mesh):
     def create_edges(self):
         '''Setup edge-node and edge-cell relations.
         '''
-        # <http://stackoverflow.com/a/38134679/353337>
-        d = defaultdict(list)
-        cells_edges = []
         self.cells['nodes'].sort(axis=1)
-        for local_edges in [[0, 1], [1, 2], [0, 2]]:
-            cells_edges.append(
-                map(tuple, self.cells['nodes'][:, local_edges])
+        a = numpy.vstack([
+            self.cells['nodes'][:, [0, 1]],
+            self.cells['nodes'][:, [1, 2]],
+            self.cells['nodes'][:, [0, 2]]
+            ])
+
+        b = numpy.ascontiguousarray(a).view(
+                numpy.dtype((numpy.void, a.dtype.itemsize * a.shape[1]))
                 )
-            for k, f in enumerate(cells_edges[-1]):
-                d[f].append(k)
+        _, idx, inv = numpy.unique(b, return_index=True, return_inverse=True)
+        edge_nodes = a[idx]
+        num_cells = len(self.cells['nodes'])
+        edge_cells = [[] for k in range(len(idx))]
+        for k, edge_id in enumerate(inv):
+            edge_cells[edge_id].append(k % num_cells)
 
         self.edges = {
-            'nodes': numpy.array(map(list, d)),
-            'cells': list(d.values())
+            'nodes': edge_nodes,
+            'cells': edge_cells
             }
 
-        edge_indices = dict(zip(d.keys(), range(len(d))))
-        cells_edges = numpy.vstack(
-            [[edge_indices[edge] for edge in c] for c in cells_edges]
-            ).T
-
+        cells_edges = inv.reshape([3, num_cells]).T
         cells = self.cells['nodes']
         self.cells = {
             'nodes': cells,
@@ -451,7 +452,7 @@ class meshTri(_base_mesh):
 
         # Highlight covolumes.
         if show_covolumes:
-            covolume_col = '0.6'
+            covolume_col = '0.8'
             for edge_id in range(len(self.edges['cells'])):
                 ccs = self.cell_circumcenters[self.edges['cells'][edge_id]]
                 if len(ccs) == 2:
