@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 #
+from collections import defaultdict, Counter
 import numpy
 import warnings
 from pyfvm.base import _base_mesh
@@ -29,7 +30,8 @@ class meshTri(_base_mesh):
         self.cells['nodes'] = cells
         self.create_cell_volumes()
 
-        self.create_adjacent_entities()
+        self.create_edges()
+        # self.create_halfedges()
         self.compute_cell_circumcenters()
         self.compute_control_volumes()
         self.compute_edge_lengths()
@@ -144,14 +146,17 @@ class meshTri(_base_mesh):
         self.cell_circumcenters = 0.5 * (N.T / a_cross_b2).T + X[:, 2, :]
         return
 
-    def create_adjacent_entities(self):
+    def create_edges(self):
         '''Setup edge-node and edge-cell relations.
         '''
         # <http://stackoverflow.com/a/38134679/353337>
-        from collections import defaultdict
         d = defaultdict(list)
+        cells_edges = []
         for local_edges in [[0, 1], [1, 2], [2, 0]]:
-            for k, f in enumerate(map(frozenset, self.cells['nodes'][:, local_edges])):
+            cells_edges.append(
+                map(frozenset, self.cells['nodes'][:, local_edges])
+                )
+            for k, f in enumerate(cells_edges[-1]):
                 d[f].append(k)
 
         self.edges = {
@@ -159,30 +164,36 @@ class meshTri(_base_mesh):
             'cells': list(d.values())
             }
 
-        # Create cells_edges from edges_cells, cf.
-        # <http://stackoverflow.com/a/38162985/353337>
-        b = []
-        for i, nums in enumerate(self.edges['cells']):
-            # For each number found at this index
-            for num in nums:
-                # If needed, extend b to cover the new needed range
-                for _ in range(num + 1 - len(b)):
-                    b.append([])
-                # Store the index
-                b[num].append(i)
-
-        # # <http://stackoverflow.com/a/38162896/353337>.
-        # inverted = {}
-        # for index, numbers in enumerate(self.edges['cells']):
-        #     for number in numbers:
-        #         inverted.setdefault(number, []).append(index)
-        # b = [inverted.get(i, []) for i in range(max(inverted) + 1)]
+        edge_indices = dict(zip(d.keys(), range(len(d))))
+        cells_edges = numpy.vstack(
+            [[edge_indices[edge] for edge in c] for c in cells_edges]
+            ).T
 
         cells = self.cells['nodes']
         self.cells = {
             'nodes': cells,
-            'edges': numpy.array(b)
+            'edges': cells_edges
             }
+
+        return
+
+    def create_halfedges(self):
+        '''Setup edge-node and edge-cell relations.
+        '''
+        self.cells['nodes'].sort(axis=1)
+        self.halfedges = numpy.vstack([
+            self.cells['nodes'][:, [0, 1]],
+            self.cells['nodes'][:, [1, 2]],
+            self.cells['nodes'][:, [0, 2]]
+            ])
+
+        # Find the boundary edges.
+        a = self.halfedges
+        b = numpy.ascontiguousarray(a).view(
+                numpy.dtype((numpy.void, a.dtype.itemsize * a.shape[1]))
+                )
+        _, idx, ct = numpy.unique(b, return_inverse=True, return_index=True)
+        boundary_edges = ct[idx]
 
         return
 
@@ -313,9 +324,10 @@ class meshTri(_base_mesh):
                         )
 
             # Compute the coefficient r for both contributions
-            coeffs = numpy.sqrt(numpy.dot(coedge, coedge) /
-                                numpy.dot(edge_coords, edge_coords)
-                                ) / self.control_volumes[self.edges['nodes'][edge_id]]
+            coeffs = numpy.sqrt(
+                    numpy.dot(coedge, coedge) /
+                    numpy.dot(edge_coords, edge_coords)
+                    ) / self.control_volumes[self.edges['nodes'][edge_id]]
 
             # Compute R*_{IJ} ((11) in [1]).
             r0 = (coedge_midpoint - node_coords2d[node0]) * coeffs[0]
@@ -358,9 +370,7 @@ class meshTri(_base_mesh):
             x1 = self.node_coords[nodes[1]]
             edge_coords = x1 - x0
             # Compute A at the edge midpoint.
-            A = 0.5 * (vector_field[nodes[0]] +
-                       vector_field[nodes[1]]
-                       )
+            A = 0.5 * (vector_field[nodes[0]] + vector_field[nodes[1]])
             for k in cells:
                 center = 1./3. * sum(self.node_coords[self.cells['nodes'][k]])
                 direction = numpy.cross(x0 - center, x1 - center)
