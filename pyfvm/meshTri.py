@@ -155,11 +155,14 @@ class meshTri(_base_mesh):
             self.cells['nodes'][:, [0, 2]]
             ])
 
+        # Find the unique edges
         b = numpy.ascontiguousarray(a).view(
                 numpy.dtype((numpy.void, a.dtype.itemsize * a.shape[1]))
                 )
         _, idx, inv = numpy.unique(b, return_index=True, return_inverse=True)
         edge_nodes = a[idx]
+
+        # Create edge->cells relationships
         num_cells = len(self.cells['nodes'])
         edge_cells = [[] for k in range(len(idx))]
         for k, edge_id in enumerate(inv):
@@ -170,32 +173,13 @@ class meshTri(_base_mesh):
             'cells': edge_cells
             }
 
+        # cell->edges relationship
         cells_edges = inv.reshape([3, num_cells]).T
         cells = self.cells['nodes']
         self.cells = {
             'nodes': cells,
             'edges': cells_edges
             }
-
-        return
-
-    def create_halfedges(self):
-        '''Setup edge-node and edge-cell relations.
-        '''
-        self.cells['nodes'].sort(axis=1)
-        self.halfedges = numpy.vstack([
-            self.cells['nodes'][:, [0, 1]],
-            self.cells['nodes'][:, [1, 2]],
-            self.cells['nodes'][:, [0, 2]]
-            ])
-
-        # Find the boundary edges.
-        a = self.halfedges
-        b = numpy.ascontiguousarray(a).view(
-                numpy.dtype((numpy.void, a.dtype.itemsize * a.shape[1]))
-                )
-        _, idx, ct = numpy.unique(b, return_inverse=True, return_index=True)
-        boundary_edges = ct[idx]
 
         return
 
