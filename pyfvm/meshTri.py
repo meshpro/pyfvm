@@ -152,9 +152,10 @@ class meshTri(_base_mesh):
         # <http://stackoverflow.com/a/38134679/353337>
         d = defaultdict(list)
         cells_edges = []
-        for local_edges in [[0, 1], [1, 2], [2, 0]]:
+        self.cells['nodes'].sort(axis=1)
+        for local_edges in [[0, 1], [1, 2], [0, 2]]:
             cells_edges.append(
-                map(frozenset, self.cells['nodes'][:, local_edges])
+                map(tuple, self.cells['nodes'][:, local_edges])
                 )
             for k, f in enumerate(cells_edges[-1]):
                 d[f].append(k)
