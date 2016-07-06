@@ -255,11 +255,9 @@ class meshTri(_base_mesh):
            International Journal for Numerical Methods in Engineering,
            http://dx.doi.org/10.1002/nme.2187.
         '''
+        # This only works for flat meshes.
         assert (abs(self.node_coords[:, 2]) < 1.0e-10).all()
         node_coords2d = self.node_coords[:, :2]
-
-        # This only works for flat meshes.
-        assert (abs(self.cell_circumcenters[:, 2]) < 1.0e-10).all()
         cell_circumcenters2d = self.cell_circumcenters[:, :2]
 
         num_nodes = len(node_coords2d)
@@ -270,20 +268,13 @@ class meshTri(_base_mesh):
         # Create an empty 2x2 matrix for the boundary nodes to hold the
         # edge correction ((17) in [1]).
         boundary_matrices = {}
-        for edge_id, edge in enumerate(self.edges['cells']):
-            if len(self.edges['cells'][edge_id]) == 1:
-                node0 = self.edges['nodes'][edge_id][0]
-                if node0 not in boundary_matrices:
-                    boundary_matrices[node0] = numpy.zeros((2, 2))
-                node1 = self.edges['nodes'][edge_id][1]
-                if node1 not in boundary_matrices:
-                    boundary_matrices[node1] = numpy.zeros((2, 2))
+        for node in self.get_vertices('Boundary'):
+            boundary_matrices[node] = numpy.zeros((2, 2))
 
         for edge_id, edge in enumerate(self.edges['cells']):
             # Compute edge length.
             node0 = self.edges['nodes'][edge_id][0]
             node1 = self.edges['nodes'][edge_id][1]
-            edge_coords = node_coords2d[node1] - node_coords2d[node0]
 
             # Compute coedge length.
             if len(self.edges['cells'][edge_id]) == 1:
@@ -314,10 +305,14 @@ class meshTri(_base_mesh):
                         )
 
             # Compute the coefficient r for both contributions
-            coeffs = numpy.sqrt(
-                    numpy.dot(coedge, coedge) /
-                    numpy.dot(edge_coords, edge_coords)
-                    ) / self.control_volumes[self.edges['nodes'][edge_id]]
+            # The term
+            #    numpy.sqrt(numpy.dot(coedge, coedge))
+            # could be replaced by (self.covolumes[edge_id]). However, the two
+            # values are always slightly off (1.0e-6 or so). That shouldn't be
+            # the case, actually.
+            coeffs = numpy.sqrt(numpy.dot(coedge, coedge)) / \
+                self.edge_lengths[edge_id] / \
+                self.control_volumes[self.edges['nodes'][edge_id]]
 
             # Compute R*_{IJ} ((11) in [1]).
             r0 = (coedge_midpoint - node_coords2d[node0]) * coeffs[0]
@@ -329,6 +324,7 @@ class meshTri(_base_mesh):
             gradient[node1] -= r1 * diff
 
             # Store the boundary correction matrices.
+            edge_coords = node_coords2d[node1] - node_coords2d[node0]
             if node0 in boundary_matrices:
                 boundary_matrices[node0] += numpy.outer(r0, edge_coords)
             if node1 in boundary_matrices:
@@ -554,7 +550,7 @@ class meshTri(_base_mesh):
         # edge coefficients are 0, too. Hence, do nothing.
         sol = numpy.linalg.solve(A, rhs)
 
-        num_edges = len(self.edges['cells'])
+        num_edges = len(self.edges['nodes'])
         self.covolumes = numpy.zeros(num_edges, dtype=float)
         numpy.add.at(
                 self.covolumes,
