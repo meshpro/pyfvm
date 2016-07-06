@@ -136,13 +136,13 @@ class meshTri(_base_mesh):
         a = X[:, 0, :] - X[:, 2, :]
         b = X[:, 1, :] - X[:, 2, :]
         a_dot_a = numpy.sum(a**2, axis=1)
-        a2_b = (b.T * a_dot_a).T
+        a2_b = b * a_dot_a[..., None]
         b_dot_b = numpy.sum(b**2, axis=1)
-        b2_a = (a.T * b_dot_b).T
+        b2_a = a * b_dot_b[..., None]
         a_cross_b = numpy.cross(a, b)
         N = numpy.cross(a2_b - b2_a, a_cross_b)
         a_cross_b2 = numpy.sum(a_cross_b**2, axis=1)
-        self.cell_circumcenters = 0.5 * (N.T / a_cross_b2).T + X[:, 2, :]
+        self.cell_circumcenters = 0.5 * N / a_cross_b2[..., None] + X[:, 2, :]
         return
 
     def create_edges(self):
@@ -220,7 +220,7 @@ class meshTri(_base_mesh):
             # Get normalized gauge vector
             gauge = numpy.cross(other0, edge_midpoints)
             gauge_norm = numpy.sqrt(numpy.sum(gauge**2, axis=1))
-            gauge = (gauge.T / gauge_norm).T
+            gauge /= gauge_norm[..., None]
 
             # dot(v, gauge)
             val = numpy.sum(V * gauge, axis=1)
@@ -542,7 +542,7 @@ class meshTri(_base_mesh):
         # squaring), but simply computing it again is cheaper than extracting
         # it from A.
         edge_dot_edge = numpy.sum(edges**2, axis=1)
-        rhs = (edge_dot_edge[self.cells['edges']].T * self.cell_volumes).T
+        rhs = edge_dot_edge[self.cells['edges']] * self.cell_volumes[..., None]
 
         # Solve all 3x3 systems at once ("broadcast").
         # If the matrix A is (close to) singular if and only if the cell is

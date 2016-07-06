@@ -4,6 +4,7 @@ from pyfvm.form_language import *
 import meshzoo
 from scipy.sparse import linalg
 from sympy import sin
+import numpy
 from numpy import pi
 
 
@@ -35,10 +36,18 @@ class Poisson(LinearFvmProblem):
 vertices, cells = meshzoo.rectangle.create_mesh(
         0.0, 2.0,
         0.0, 1.0,
-        401, 201,
+        801, 401,
         zigzag=True
         )
 mesh = pyfvm.meshTri.meshTri(vertices, cells)
+
+A = numpy.array([
+    [-0.5 * coord[1], 0.5 * coord[0], 0.0]
+    for coord in mesh.node_coords
+    ])
+# Compute the gradient numerically.
+B = mesh.compute_curl(A)
+print(B)
 exit(1)
 
 mesh.mark_subdomains([Gamma0(), Gamma1()])
