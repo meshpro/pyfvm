@@ -347,23 +347,35 @@ class meshTri(_base_mesh):
         approximate the integral, one would only need the projection of the
         vector field onto the edges at the midpoint of the edges.
         '''
-        curl = numpy.zeros(
-            (len(self.cells['nodes']), 3),
-            dtype=vector_field.dtype
-            )
-        for nodes, cells in zip(self.edges['nodes'], self.edges['cells']):
-            x0 = self.node_coords[nodes[0]]
-            x1 = self.node_coords[nodes[1]]
-            edge_coords = x1 - x0
-            # Compute A at the edge midpoint.
-            A = 0.5 * (vector_field[nodes[0]] + vector_field[nodes[1]])
-            for k in cells:
-                center = 1./3. * sum(self.node_coords[self.cells['nodes'][k]])
-                direction = numpy.cross(x0 - center, x1 - center)
-                direction /= numpy.linalg.norm(direction)
-                curl[k, :] += direction * numpy.dot(edge_coords, A)
-        for k in range(len(curl)):
-            curl[k, :] /= self.cell_volumes[k]
+        edge_coords = \
+            self.node_coords[self.edges['nodes'][:, 1]] - \
+            self.node_coords[self.edges['nodes'][:, 0]]
+
+        barycenters = 1./3. * numpy.sum(
+                self.node_coords[self.cells['nodes']],
+                axis=1
+                )
+
+        # Compute the projection of A on the edge at each edge midpoint.
+        nodes = self.edges['nodes']
+        x = self.node_coords[nodes]
+        A = 0.5 * numpy.sum(vector_field[nodes], axis=1)
+        edge_dot_A = numpy.sum(edge_coords * A, axis=1)
+
+        directions = numpy.cross(
+                x[self.cells['edges'], 0] - barycenters[:, None, :],
+                x[self.cells['edges'], 1] - barycenters[:, None, :]
+                )
+        dir_nrms = numpy.sqrt(numpy.sum(directions**2, axis=2))
+        directions /= dir_nrms[..., None]
+
+        # a: directions scaled with edge_dot_a
+        a = directions * edge_dot_A[self.cells['edges']][..., None]
+
+        # sum over all local edges
+        curl = numpy.sum(a, axis=1)
+        # Divide by cell volumes
+        curl /= self.cell_volumes[..., None]
         return curl
 
     def check_delaunay(self):
