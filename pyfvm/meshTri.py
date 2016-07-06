@@ -13,6 +13,11 @@ from matplotlib import pyplot as plt
 __all__ = ['meshTri']
 
 
+def _row_dot(a, b):
+    # http://stackoverflow.com/a/26168677/353337
+    return numpy.einsum('ij, ij->i', a, b)
+
+
 class meshTri(_base_mesh):
     '''Class for handling triangular meshes.
 
@@ -45,7 +50,7 @@ class meshTri(_base_mesh):
     def compute_edge_lengths(self):
         edges = self.node_coords[self.edges['nodes'][:, 1]] \
             - self.node_coords[self.edges['nodes'][:, 0]]
-        self.edge_lengths = numpy.sqrt(numpy.sum(edges**2, axis=1))
+        self.edge_lengths = numpy.sqrt(_row_dot(edges, edges))
         return
 
     def mark_default_subdomains(self):
@@ -125,7 +130,7 @@ class meshTri(_base_mesh):
         a = X[:, 0, :] - X[:, 2, :]
         b = X[:, 1, :] - X[:, 2, :]
         a_cross_b = numpy.cross(a, b)
-        self.cell_volumes = 0.5 * numpy.sqrt(numpy.sum(a_cross_b**2, axis=1))
+        self.cell_volumes = 0.5 * numpy.sqrt(_row_dot(a_cross_b, a_cross_b))
         return
 
     def compute_cell_circumcenters(self):
@@ -135,13 +140,13 @@ class meshTri(_base_mesh):
         X = self.node_coords[self.cells['nodes']]
         a = X[:, 0, :] - X[:, 2, :]
         b = X[:, 1, :] - X[:, 2, :]
-        a_dot_a = numpy.sum(a**2, axis=1)
+        a_dot_a = _row_dot(a, a)
         a2_b = b * a_dot_a[..., None]
-        b_dot_b = numpy.sum(b**2, axis=1)
+        b_dot_b = _row_dot(b, b)
         b2_a = a * b_dot_b[..., None]
         a_cross_b = numpy.cross(a, b)
         N = numpy.cross(a2_b - b2_a, a_cross_b)
-        a_cross_b2 = numpy.sum(a_cross_b**2, axis=1)
+        a_cross_b2 = _row_dot(a_cross_b, a_cross_b)
         self.cell_circumcenters = 0.5 * N / a_cross_b2[..., None] + X[:, 2, :]
         return
 
@@ -219,11 +224,10 @@ class meshTri(_base_mesh):
             V = 0.5 * numpy.cross(cc, edge_midpoints)
             # Get normalized gauge vector
             gauge = numpy.cross(other0, edge_midpoints)
-            gauge_norm = numpy.sqrt(numpy.sum(gauge**2, axis=1))
+            gauge_norm = numpy.sqrt(_row_dot(gauge, gauge))
             gauge /= gauge_norm[..., None]
 
-            # dot(v, gauge)
-            val = numpy.sum(V * gauge, axis=1)
+            val = _row_dot(V, gauge)
 
             # Add edge contributions into the vertex values of control volumes.
             my_node_ids = self.cells['nodes'][:, node_lids]
@@ -360,7 +364,7 @@ class meshTri(_base_mesh):
         nodes = self.edges['nodes']
         x = self.node_coords[nodes]
         A = 0.5 * numpy.sum(vector_field[nodes], axis=1)
-        edge_dot_A = numpy.sum(edge_coords * A, axis=1)
+        edge_dot_A = _row_dot(edge_coords, A)
 
         directions = numpy.cross(
                 x[self.cells['edges'], 0] - barycenters[:, None, :],
@@ -541,7 +545,7 @@ class meshTri(_base_mesh):
         # The dot product <edge, edge> is also on the diagonals of A (before
         # squaring), but simply computing it again is cheaper than extracting
         # it from A.
-        edge_dot_edge = numpy.sum(edges**2, axis=1)
+        edge_dot_edge = _row_dot(edges, edges)
         rhs = edge_dot_edge[self.cells['edges']] * self.cell_volumes[..., None]
 
         # Solve all 3x3 systems at once ("broadcast").
