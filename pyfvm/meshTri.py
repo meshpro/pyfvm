@@ -198,10 +198,10 @@ class meshTri(_base_mesh):
         # compute the control volume contributions for each side in a cell
         # separately.
         self.control_volumes = numpy.zeros(len(self.node_coords), dtype=float)
+        X = self.node_coords[self.cells['nodes']]
         for other_lid in range(3):
             node_lids = range(3)[:other_lid] + range(3)[other_lid+1:]
 
-            X = self.node_coords[self.cells['nodes']]
             edge_coords = X[:, node_lids, :]
             other_coord = X[:, other_lid, :]
 
@@ -553,11 +553,16 @@ class meshTri(_base_mesh):
         return
 
     def compute_surface_areas(self):
-        # loop over all boundary edges
         self.surface_areas = numpy.zeros(len(self.get_vertices('everywhere')))
-        for edge in self.get_edges('Boundary'):
-            vertex0 = self.edges['nodes'][edge][0]
-            self.surface_areas[vertex0] += 0.5 * self.edge_lengths[edge]
-            vertex1 = self.edges['nodes'][edge][1]
-            self.surface_areas[vertex1] += 0.5 * self.edge_lengths[edge]
+        b_edge = self.get_edges('Boundary')
+        numpy.add.at(
+            self.surface_areas,
+            self.edges['nodes'][b_edge, 0],
+            0.5 * self.edge_lengths[b_edge]
+            )
+        numpy.add.at(
+            self.surface_areas,
+            self.edges['nodes'][b_edge, 1],
+            0.5 * self.edge_lengths[b_edge]
+            )
         return
