@@ -80,19 +80,39 @@ def _get_VIJ(
         rhs = None
     for edge_kernel in edge_kernels:
         for subdomain in edge_kernel.subdomains:
-            for k, edge_id in enumerate(mesh.get_edges(subdomain)):
-                v0, v1 = mesh.edges['nodes'][edge_id]
-                vals_matrix, vals_rhs = edge_kernel.eval(k)
-                V += [
-                    vals_matrix[0][0], vals_matrix[0][1],
-                    vals_matrix[1][0], vals_matrix[1][1]
-                    ]
-                I += [v0, v0, v1, v1]
-                J += [v0, v1, v0, v1]
+            edges = mesh.get_edges(subdomain)
+            edge_nodes = mesh.edges['nodes'][edges]
+            v_matrix, v_rhs = edge_kernel.eval(edges)
 
-                if compute_rhs:
-                    rhs[v0] -= vals_rhs[0]
-                    rhs[v1] -= vals_rhs[1]
+            v = numpy.vstack([
+                v_matrix[0, 0, :], v_matrix[0, 1, :],
+                v_matrix[1, 0, :], v_matrix[1, 1, :]
+                ]).T.flatten()
+            V += list(v)
+
+            if compute_rhs:
+                numpy.subtract.at(
+                        rhs,
+                        edge_nodes[edges, 0],
+                        v_rhs[0]
+                        )
+                numpy.subtract.at(
+                        rhs,
+                        edge_nodes[edges, 1],
+                        v_rhs[1]
+                        )
+
+            i = numpy.vstack([
+                edge_nodes[:, 0], edge_nodes[:, 0],
+                edge_nodes[:, 1], edge_nodes[:, 1]
+                ]).T.flatten()
+            I += list(i)
+
+            j = numpy.vstack([
+                edge_nodes[:, 0], edge_nodes[:, 1],
+                edge_nodes[:, 0], edge_nodes[:, 1]
+                ]).T.flatten()
+            J += list(j)
 
             # # TODO fix those
             # for k in mesh.get_half_edges(subdomain):

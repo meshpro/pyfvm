@@ -22,22 +22,23 @@ class EdgeKernel(object):
         self.subdomains = ['everywhere']
         return
 
-    def eval(self, k):
-        x0 = self.mesh.node_coords[self.mesh.edges['nodes'][k, 0]]
-        x1 = self.mesh.node_coords[self.mesh.edges['nodes'][k, 1]]
-        edge_covolume = self.mesh.covolumes[k]
-        edge_length = self.mesh.edge_lengths[k]
-        val = self.coeff(x0, x1, edge_covolume, edge_length)
-        if hasattr(val[0][0], '__len__'):
-            assert len(val[0][0]) == 1
-            val = [
-                [val[0][0][0], val[0][1][0]],
-                [val[1][0][0], val[1][1][0]]
-                ]
-            print(val)
+    def eval(self, edge_ids):
+        X = self.mesh.node_coords[self.mesh.edges['nodes'][edge_ids]]
+        x0 = X[:, 0, :]
+        x1 = X[:, 1, :]
+        zero = numpy.zeros(len(X))
+        edge_covolume = self.mesh.covolumes[edge_ids]
+        edge_length = self.mesh.edge_lengths[edge_ids]
+        val = numpy.array(self.coeff(x0, x1, edge_covolume, edge_length, zero))
+        # if hasattr(val[0][0], '__len__'):
+        #     assert len(val[0][0]) == 1
+        #     val = [
+        #         [val[0][0][0], val[0][1][0]],
+        #         [val[1][0][0], val[1][1][0]]
+        #         ]
         return (
             val,
-            self.affine(x0, x1, edge_covolume, edge_length)
+            numpy.array(self.affine(x0, x1, edge_covolume, edge_length, zero))
             )
 
 
@@ -301,6 +302,7 @@ def discretize(cls, mesh):
             x1 = sympy.Symbol('x1')
             edge_length = sympy.Symbol('edge_length')
             edge_covolume = sympy.Symbol('edge_covolume')
+            zero = sympy.Symbol('zero')
             expr, vector_vars = _discretize_edge_integral(
                     integral.integrand,
                     x0, x1,
@@ -308,16 +310,26 @@ def discretize(cls, mesh):
                     edge_covolume
                     )
             coeff, affine, arguments, used_vars = _collect_variables(expr, u)
+
+            # Add "zero" to all entities. This later gets translated into
+            # np.zeros with the appropriate length, making sure that scalar
+            # terms in the lambda expression correctly return np.arrays.
+            coeff[0][0] += zero
+            coeff[0][1] += zero
+            coeff[1][0] += zero
+            coeff[1][1] += zero
+            affine[0] += zero
+            affine[1] += zero
             edge_kernels.add(
                 EdgeKernel(
                     mesh,
                     sympy.lambdify(
-                        (x0, x1, edge_covolume, edge_length),
+                        (x0, x1, edge_covolume, edge_length, zero),
                         coeff,
                         modules=array2array
                         ),
                     sympy.lambdify(
-                        (x0, x1, edge_covolume, edge_length),
+                        (x0, x1, edge_covolume, edge_length, zero),
                         affine,
                         modules=array2array
                         )
