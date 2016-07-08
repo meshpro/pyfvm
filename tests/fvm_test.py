@@ -13,8 +13,7 @@ class TestPDEs(unittest.TestCase):
     def setUp(self):
         return
 
-    def test_poisson(self):
-        import meshzoo
+    def poisson(self, mesh, alpha, beta):
         from scipy.sparse import linalg
 
         # Define the problem
@@ -24,14 +23,6 @@ class TestPDEs(unittest.TestCase):
                 return integrate(lambda x: - n_dot_grad(u(x)), dS) \
                        - integrate(lambda x: 1.0, dV)
             dirichlet = [(lambda x: 0.0, ['Boundary'])]
-
-        # Create mesh using meshzoo
-        vertices, cells = meshzoo.rectangle.create_mesh(
-                0.0, 1.0, 0.0, 1.0,
-                21, 21,
-                zigzag=True
-                )
-        mesh = pyfvm.meshTri.meshTri(vertices, cells)
 
         linear_system = pyfvm.discretize(Poisson, mesh)
 
@@ -45,11 +36,40 @@ class TestPDEs(unittest.TestCase):
                 break
 
         self.assertNotEqual(k0, -1)
-        self.assertAlmostEqual(x[k0], 0.0735267092334, delta=1.0e-7)
+        self.assertAlmostEqual(x[k0], alpha, delta=1.0e-7)
 
         x_dot_x = numpy.dot(x, mesh.control_volumes * x)
-        self.assertAlmostEqual(x_dot_x, 0.001695424171463697, delta=1.0e-7)
+        self.assertAlmostEqual(x_dot_x, beta, delta=1.0e-7)
 
+        return
+
+    def test_poisson_2d(self):
+        import meshzoo
+        vertices, cells = meshzoo.rectangle.create_mesh(
+                0.0, 1.0, 0.0, 1.0,
+                21, 21,
+                zigzag=True
+                )
+        mesh = pyfvm.meshTri.meshTri(vertices, cells)
+        self.poisson(
+                mesh,
+                0.0735267092334,
+                0.001695424171463697
+                )
+        return
+
+    def test_poisson_3d(self):
+        import meshzoo
+        vertices, cells = meshzoo.cube.create_mesh(
+                0.0, 1.0, 0.0, 1.0, 0.0, 1.0,
+                11, 11, 11
+                )
+        mesh = pyfvm.meshTetra.meshTetra(vertices, cells)
+        self.poisson(
+                mesh,
+                0.0735267092334,
+                0.001695424171463697
+                )
         return
 
     def test_boundaries(self):
