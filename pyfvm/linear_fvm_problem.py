@@ -4,28 +4,6 @@ import numpy
 from scipy import sparse
 
 
-def _wipe_row_csr(matrix, i):
-    '''Wipes a row of a matrix in CSR format and puts 1.0 on the diagonal.
-    '''
-    assert isinstance(matrix, sparse.csr_matrix)
-
-    n = matrix.indptr[i+1] - matrix.indptr[i]
-    assert n > 0
-
-    matrix.data[matrix.indptr[i]+1:-n+1] = matrix.data[matrix.indptr[i+1]:]
-    matrix.data[matrix.indptr[i]] = 1.0
-    matrix.data = matrix.data[:-n+1]
-
-    matrix.indices[matrix.indptr[i]+1:-n+1] = \
-        matrix.indices[matrix.indptr[i+1]:]
-    matrix.indices[matrix.indptr[i]] = i
-    matrix.indices = matrix.indices[:-n+1]
-
-    matrix.indptr[i+1:] -= n-1
-
-    return
-
-
 class LinearFvmProblem(object):
     def __init__(
             self,
@@ -46,21 +24,28 @@ class LinearFvmProblem(object):
                 compute_rhs=True
                 )
 
+        V = numpy.array(V)
+
+        # Apply Dirichlet conditions.
+        for dirichlet in dirichlets:
+            for subdomain in dirichlet.subdomains:
+                # First set all Dirichlet rows to 0.
+                verts = mesh.get_vertices(subdomain)
+                mask = numpy.in1d(I, verts)
+                V[mask] = 0.0
+                # Now add 1.0 to the diagonal for each Dirichlet.
+                I.extend(verts)
+                J.extend(verts)
+                V = numpy.append(V, numpy.ones(len(verts)))
+
+                # Set the RHS.
+                self.rhs[verts] = dirichlet.eval(verts)
+
         # One unknown per vertex
         n = len(mesh.node_coords)
         self.matrix = sparse.coo_matrix((V, (I, J)), shape=(n, n))
         # Transform to CSR format for efficiency
         self.matrix = self.matrix.tocsr()
-
-        for dirichlet in dirichlets:
-            for subdomain in dirichlet.subdomains:
-                boundary_verts = mesh.get_vertices(subdomain)
-
-                for k in boundary_verts:
-                    _wipe_row_csr(self.matrix, k)
-
-                # overwrite rhs
-                self.rhs[boundary_verts] = dirichlet.eval(boundary_verts)
 
         return
 
