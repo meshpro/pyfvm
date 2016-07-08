@@ -24,6 +24,12 @@ class LinearFvmProblem(object):
                 compute_rhs=True
                 )
 
+        # One unknown per vertex
+        n = len(mesh.node_coords)
+        self.matrix = sparse.coo_matrix((V, (I, J)), shape=(n, n))
+        # Transform to CSR format for efficiency
+        self.matrix = self.matrix.tocsr()
+
         # Apply Dirichlet conditions.
         dirichlet_verts = []
         for dirichlet in dirichlets:
@@ -32,20 +38,16 @@ class LinearFvmProblem(object):
                 dirichlet_verts.append(verts)
                 # Set the RHS.
                 self.rhs[verts] = dirichlet.eval(verts)
-        # Now set all Dirichlet rows to 0.
-        verts = numpy.concatenate(dirichlet_verts)
-        mask = numpy.in1d(I, verts)
-        V[mask] = 0.0
-        # Now add 1.0 to the diagonal for each Dirichlet.
-        I = numpy.append(I, verts)
-        J = numpy.append(J, verts)
-        V = numpy.append(V, numpy.ones(len(verts)))
 
-        # One unknown per vertex
-        n = len(mesh.node_coords)
-        self.matrix = sparse.coo_matrix((V, (I, J)), shape=(n, n))
-        # Transform to CSR format for efficiency
-        self.matrix = self.matrix.tocsr()
+        # Now set all Dirichlet rows to 0.
+        rows = numpy.concatenate(dirichlet_verts)
+        # delete rows
+        for i in rows:
+            self.matrix.data[self.matrix.indptr[i]:self.matrix.indptr[i+1]] = 0.0
+        # Set the diagonal
+        d = self.matrix.diagonal()
+        d[rows] = 1.0
+        self.matrix.setdiag(d)
 
         return
 
