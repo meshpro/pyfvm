@@ -34,6 +34,8 @@ class meshTetra(_base_mesh):
         self.create_cell_volumes()
         self.create_cell_circumcenters()
         self.create_control_volumes()
+        self.compute_edge_lengths()
+        self.compute_covolumes()
 
         self.mark_default_subdomains()
         return

@@ -67,8 +67,8 @@ class TestPDEs(unittest.TestCase):
         mesh = pyfvm.meshTetra.meshTetra(vertices, cells)
         self.poisson(
                 mesh,
-                0.0735267092334,
-                0.001695424171463697
+                0.0,
+                0.00061882494399534383
                 )
         return
 
