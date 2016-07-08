@@ -138,13 +138,16 @@ def _get_VIJ(
 
     for boundary_kernel in boundary_kernels:
         for subdomain in boundary_kernel.subdomains:
-            for k in mesh.get_vertices(subdomain):
-                val_matrix, val_rhs = boundary_kernel.eval(k)
-                V += [val_matrix]
-                I += [k]
-                J += [k]
-
-                if compute_rhs:
-                    rhs[k] -= val_rhs
+            verts = mesh.get_vertices(subdomain)
+            vals_matrix, vals_rhs = boundary_kernel.eval(verts)
+            V += list(vals_matrix)
+            I += list(verts)
+            J += list(verts)
+            if compute_rhs:
+                numpy.subtract.at(
+                        rhs,
+                        verts,
+                        vals_rhs
+                        )
 
     return V, I, J, rhs

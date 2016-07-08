@@ -68,12 +68,13 @@ class BoundaryKernel(object):
         self.subdomains = ['everywhere']
         return
 
-    def eval(self, k):
-        surface_area = self.mesh.surface_areas[k]
-        x = self.mesh.node_coords[k]
+    def eval(self, vertex_ids):
+        surface_areas = self.mesh.surface_areas[vertex_ids]
+        X = self.mesh.node_coords[vertex_ids]
+        zero = numpy.zeros(len(vertex_ids))
         return (
-            self.coeff(surface_area, x),
-            self.affine(surface_area, x)
+            self.coeff(surface_areas, X, zero),
+            self.affine(surface_areas, X, zero)
             )
 
 
@@ -388,11 +389,27 @@ def discretize(cls, mesh):
             uk0 = sympy.Symbol('uk0')
             expr = expr.subs([(u[k0], uk0)])
             coeff, affine = extract_linear_components(expr, uk0)
+
+            # Add "zero" to all entities. This later gets translated into
+            # np.zeros with the appropriate length, making sure that scalar
+            # terms in the lambda expression correctly return np.arrays.
+            zero = sympy.Symbol('zero')
+            coeff += zero
+            affine += zero
+
             boundary_kernels.add(
                 BoundaryKernel(
                     mesh,
-                    sympy.lambdify((surface_area, x), coeff),
-                    sympy.lambdify((surface_area, x), affine)
+                    sympy.lambdify(
+                        (surface_area, x),
+                        coeff,
+                        modules=array2array
+                        ),
+                    sympy.lambdify(
+                        (surface_area, x),
+                        affine,
+                        modules=array2array
+                        )
                     )
                 )
         else:
