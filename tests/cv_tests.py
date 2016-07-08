@@ -12,7 +12,7 @@ class TestControlVolumes(unittest.TestCase):
     def setUp(self):
         return
 
-    def _run_test(self, mesh, volume, cv_norms):
+    def _run_test(self, mesh, volume, cv_norms, covol_norms):
         # Compute the control volumes.
         if mesh.control_volumes is None:
             mesh.compute_control_volumes()
@@ -35,6 +35,22 @@ class TestControlVolumes(unittest.TestCase):
         self.assertAlmostEqual(cv_norms[0], norm, delta=tol)
         norm = numpy.linalg.norm(mesh.control_volumes, ord=numpy.Inf)
         self.assertAlmostEqual(cv_norms[1], norm, delta=tol)
+
+        # TODO reinstate
+        # # Check the volume by summing over the
+        # #   1/n * edge_lengths * covolumes
+        # # covolumes.
+        # vol = numpy.linalg.norm(
+        #     0.5 * mesh.edge_lengths * mesh.covolumes,
+        #     ord=1
+        #     )
+        # self.assertAlmostEqual(volume, vol, delta=tol)
+
+        # Check covolume norms.
+        norm = numpy.linalg.norm(mesh.covolumes, ord=2)
+        self.assertAlmostEqual(covol_norms[0], norm, delta=tol)
+        norm = numpy.linalg.norm(mesh.covolumes, ord=numpy.Inf)
+        self.assertAlmostEqual(covol_norms[1], norm, delta=tol)
 
         return
 
@@ -62,7 +78,12 @@ class TestControlVolumes(unittest.TestCase):
         filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                 'rectanglesmall.e')
         mesh, _, _ = pyfvm.reader.read(filename)
-        self._run_test(mesh, 10, [5.0, 2.5])
+        self._run_test(
+                mesh,
+                10,
+                [5.0, 2.5],
+                [7.1063352028243898, 5.0]
+                )
         return
 
     def test_arrow3d(self):
@@ -85,7 +106,8 @@ class TestControlVolumes(unittest.TestCase):
         self._run_test(
                 mesh,
                 1.2,
-                [0.58276428453480855, 0.459]
+                [0.58276428453480855, 0.459],
+                [4.6093865583659497, 2.4709512338368973]
                 )
         return
 
@@ -97,7 +119,8 @@ class TestControlVolumes(unittest.TestCase):
         self._run_test(
                 mesh,
                 64.150028545707983,
-                [15.243602636687179, 7.7180603065060023]
+                [15.243602636687179, 7.7180603065060023],
+                [22.456543028439334, 12.09471520942393]
                 )
         return
 
@@ -108,7 +131,8 @@ class TestControlVolumes(unittest.TestCase):
         self._run_test(
                 mesh,
                 302.52270072101,
-                [15.3857579093391, 1.12779746704366]
+                [15.3857579093391, 1.12779746704366],
+                [21.636574419194687, 1.3500278827154624]
                 )
         return
 
@@ -119,7 +143,8 @@ class TestControlVolumes(unittest.TestCase):
         self._run_test(
                 mesh,
                 3.46410161513775,
-                [1.63299316185545, 1.15470053837925]
+                [1.63299316185545, 1.15470053837925],
+                [1.8257417943354759, 0.81649655229931284]
                 )
         return
 
@@ -130,7 +155,8 @@ class TestControlVolumes(unittest.TestCase):
         self._run_test(
                 mesh,
                 11.9741927059035,
-                [1.39047542328083, 0.198927169088121]
+                [1.39047542328083, 0.198927169088121],
+                [5.1108705055302739, 0.60864468986577691]
                 )
         return
 
@@ -138,14 +164,11 @@ class TestControlVolumes(unittest.TestCase):
         filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                 'cubesmall.e')
         mesh, _, _ = pyfvm.reader.read(filename)
-        actual_values = [10.0,
-                         3.53553390593274,
-                         1.25
-                         ]
         self._run_test(
                 mesh,
                 10.0,
-                [3.53553390593274, 1.25]
+                [3.53553390593274, 1.25],
+                [5.7759558765734713, 2.3452374507983533]
                 )
         return
 
@@ -156,7 +179,8 @@ class TestControlVolumes(unittest.TestCase):
         self._run_test(
                 mesh,
                 388.68629169464117,
-                [16.661401941985677, 1.4684734547497671]
+                [16.661401941985677, 1.4684734547497671],
+                [28.247403902696792, 1.9147280888306519]
                 )
         return
 
