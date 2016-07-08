@@ -401,12 +401,12 @@ def discretize(cls, mesh):
                 BoundaryKernel(
                     mesh,
                     sympy.lambdify(
-                        (surface_area, x),
+                        (surface_area, x, zero),
                         coeff,
                         modules=array2array
                         ),
                     sympy.lambdify(
-                        (surface_area, x),
+                        (surface_area, x, zero),
                         affine,
                         modules=array2array
                         )
