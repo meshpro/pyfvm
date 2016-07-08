@@ -85,9 +85,9 @@ class DirichletKernel(object):
         self.subdomains = subdomains
         return
 
-    def eval(self, k):
-        x = self.mesh.node_coords[k]
-        return self.val(x)
+    def eval(self, vertex_ids):
+        X = self.mesh.node_coords[vertex_ids].T
+        return self.val(X)
 
 
 def _discretize_edge_integral(integrand, x0, x1, edge_length, edge_covolume):

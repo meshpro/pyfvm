@@ -60,8 +60,7 @@ class LinearFvmProblem(object):
                     _wipe_row_csr(self.matrix, k)
 
                 # overwrite rhs
-                for k in mesh.get_vertices(subdomain):
-                    self.rhs[k] = dirichlet.eval(k)
+                self.rhs[boundary_verts] = dirichlet.eval(boundary_verts)
 
         return
 
