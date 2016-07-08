@@ -50,12 +50,13 @@ class VertexKernel(object):
         self.subdomains = ['everywhere']
         return
 
-    def eval(self, k):
-        control_volume = self.mesh.control_volumes[k]
-        x = self.mesh.node_coords[k]
+    def eval(self, vertex_ids):
+        control_volumes = self.mesh.control_volumes[vertex_ids]
+        X = self.mesh.node_coords[vertex_ids].T
+        zero = numpy.zeros(len(vertex_ids))
         return (
-            self.coeff(control_volume, x),
-            self.affine(control_volume, x)
+            self.coeff(control_volumes, X, zero),
+            self.affine(control_volumes, X, zero)
             )
 
 
@@ -302,7 +303,6 @@ def discretize(cls, mesh):
             x1 = sympy.Symbol('x1')
             edge_length = sympy.Symbol('edge_length')
             edge_covolume = sympy.Symbol('edge_covolume')
-            zero = sympy.Symbol('zero')
             expr, vector_vars = _discretize_edge_integral(
                     integral.integrand,
                     x0, x1,
@@ -314,12 +314,14 @@ def discretize(cls, mesh):
             # Add "zero" to all entities. This later gets translated into
             # np.zeros with the appropriate length, making sure that scalar
             # terms in the lambda expression correctly return np.arrays.
+            zero = sympy.Symbol('zero')
             coeff[0][0] += zero
             coeff[0][1] += zero
             coeff[1][0] += zero
             coeff[1][1] += zero
             affine[0] += zero
             affine[1] += zero
+
             edge_kernels.add(
                 EdgeKernel(
                     mesh,
@@ -349,11 +351,27 @@ def discretize(cls, mesh):
             uk0 = sympy.Symbol('uk0')
             expr = expr.subs([(u[k0], uk0)])
             coeff, affine = extract_linear_components(expr, uk0)
+
+            # Add "zero" to all entities. This later gets translated into
+            # np.zeros with the appropriate length, making sure that scalar
+            # terms in the lambda expression correctly return np.arrays.
+            zero = sympy.Symbol('zero')
+            coeff += zero
+            affine += zero
+
             vertex_kernels.add(
                 VertexKernel(
                     mesh,
-                    sympy.lambdify((control_volume, x), coeff),
-                    sympy.lambdify((control_volume, x), affine)
+                    sympy.lambdify(
+                        (control_volume, x, zero),
+                        coeff,
+                        modules=array2array
+                        ),
+                    sympy.lambdify(
+                        (control_volume, x, zero),
+                        affine,
+                        modules=array2array
+                        )
                     )
                 )
         elif isinstance(integral.measure, form_language.BoundarySurface):
