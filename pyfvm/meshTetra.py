@@ -34,7 +34,62 @@ class meshTetra(_base_mesh):
         self.create_cell_volumes()
         self.create_cell_circumcenters()
         self.create_control_volumes()
+
+        self.mark_default_subdomains()
         return
+
+    def mark_default_subdomains(self):
+        self.subdomains = {}
+        self.subdomains['everywhere'] = {
+                'vertices': range(len(self.node_coords)),
+                'edges': range(len(self.edges['nodes'])),
+                'faces': range(len(self.faces['nodes']))
+                }
+
+        # Find the boundary edges, i.e., all edges that belong to just one
+        # cell.
+        boundary_faces = []
+        for k, faces_cells in enumerate(self.faces['cells']):
+            if len(faces_cells) == 1:
+                boundary_faces.append(k)
+
+        # Get vertices on the boundary edges
+        boundary_vertices = numpy.unique(
+                self.faces['nodes'][boundary_faces].flatten()
+                )
+
+        self.subdomains['Boundary'] = {
+                'vertices': boundary_vertices
+                }
+
+        return
+
+    def mark_subdomains(self, subdomains):
+        for subdomain in subdomains:
+            # find vertices in subdomain
+            if subdomain.is_boundary_only:
+                nodes = self.get_vertices('Boundary')
+            else:
+                nodes = self.get_vertices('everywhere')
+
+            subdomain_vertices = []
+            for vertex_id in nodes:
+                if subdomain.is_inside(self.node_coords[vertex_id]):
+                    subdomain_vertices.append(vertex_id)
+            subdomain_vertices = numpy.unique(subdomain_vertices)
+
+            name = subdomain.__class__.__name__
+            self.subdomains[name] = {
+                    'vertices': subdomain_vertices
+                    }
+
+        return
+
+    def get_edges(self, subdomain):
+        return self.subdomains[subdomain]['edges']
+
+    def get_vertices(self, subdomain):
+        return self.subdomains[subdomain]['vertices']
 
     def create_cell_volumes(self):
         '''Computes the volumes of the tetrahedra in the mesh.
