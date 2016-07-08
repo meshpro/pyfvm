@@ -65,6 +65,7 @@ def _get_VIJ(
         for subdomain in edge_kernel.subdomains:
             edges = mesh.get_edges(subdomain)
             edge_nodes = mesh.edges['nodes'][edges]
+
             v_matrix, v_rhs = edge_kernel.eval(edges)
 
             V.append(v_matrix[0, 0, :])
@@ -85,8 +86,8 @@ def _get_VIJ(
             if compute_rhs:
                 rhs_V.append(v_rhs[0])
                 rhs_V.append(v_rhs[1])
-                rhs_I.append(edge_nodes[edges, 0])
-                rhs_I.append(edge_nodes[edges, 1])
+                rhs_I.append(edge_nodes[:, 0])
+                rhs_I.append(edge_nodes[:, 1])
 
             # # TODO fix those
             # for k in mesh.get_half_edges(subdomain):
