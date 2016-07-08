@@ -24,22 +24,22 @@ class LinearFvmProblem(object):
                 compute_rhs=True
                 )
 
-        V = numpy.array(V)
-
         # Apply Dirichlet conditions.
+        dirichlet_verts = []
         for dirichlet in dirichlets:
             for subdomain in dirichlet.subdomains:
-                # First set all Dirichlet rows to 0.
                 verts = mesh.get_vertices(subdomain)
-                mask = numpy.in1d(I, verts)
-                V[mask] = 0.0
-                # Now add 1.0 to the diagonal for each Dirichlet.
-                I = numpy.append(I, verts)
-                J = numpy.append(J, verts)
-                V = numpy.append(V, numpy.ones(len(verts)))
-
+                dirichlet_verts.append(verts)
                 # Set the RHS.
                 self.rhs[verts] = dirichlet.eval(verts)
+        # Now set all Dirichlet rows to 0.
+        verts = numpy.concatenate(dirichlet_verts)
+        mask = numpy.in1d(I, verts)
+        V[mask] = 0.0
+        # Now add 1.0 to the diagonal for each Dirichlet.
+        I = numpy.append(I, verts)
+        J = numpy.append(J, verts)
+        V = numpy.append(V, numpy.ones(len(verts)))
 
         # One unknown per vertex
         n = len(mesh.node_coords)
