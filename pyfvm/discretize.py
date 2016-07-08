@@ -24,9 +24,9 @@ class EdgeKernel(object):
 
     def eval(self, edge_ids):
         X = self.mesh.node_coords[self.mesh.edges['nodes'][edge_ids]]
-        x0 = X[:, 0, :]
-        x1 = X[:, 1, :]
-        zero = numpy.zeros(len(X))
+        x0 = X[:, 0, :].T
+        x1 = X[:, 1, :].T
+        zero = numpy.zeros(len(edge_ids))
         edge_covolume = self.mesh.covolumes[edge_ids]
         edge_length = self.mesh.edge_lengths[edge_ids]
         val = numpy.array(self.coeff(x0, x1, edge_covolume, edge_length, zero))
