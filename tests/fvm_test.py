@@ -47,6 +47,9 @@ class TestPDEs(unittest.TestCase):
         self.assertNotEqual(k0, -1)
         self.assertAlmostEqual(x[k0], 0.0735267092334, delta=1.0e-7)
 
+        x_dot_x = numpy.dot(x, mesh.control_volumes * x)
+        self.assertAlmostEqual(x_dot_x, 0.001695424171463697, delta=1.0e-7)
+
         return
 
     def test_boundaries(self):
@@ -95,6 +98,9 @@ class TestPDEs(unittest.TestCase):
         self.assertNotEqual(k0, -1)
         self.assertAlmostEqual(x[k0], 0.59455184740329481, delta=1.0e-7)
 
+        x_dot_x = numpy.dot(x, mesh.control_volumes * x)
+        self.assertAlmostEqual(x_dot_x, 0.42881926935620163, delta=1.0e-7)
+
         return
 
     def test_singular_perturbation(self):
@@ -131,6 +137,9 @@ class TestPDEs(unittest.TestCase):
 
         self.assertNotEqual(k0, -1)
         self.assertAlmostEqual(x[k0], 0.97335485230869123, delta=1.0e-7)
+
+        x_dot_x = numpy.dot(x, mesh.control_volumes * x)
+        self.assertAlmostEqual(x_dot_x, 0.49724636865618776, delta=1.0e-7)
 
         return
 
@@ -174,6 +183,9 @@ class TestPDEs(unittest.TestCase):
         self.assertNotEqual(k0, -1)
         self.assertAlmostEqual(x[k0], -1.3249459366260112, delta=1.0e-7)
 
+        x_dot_x = numpy.dot(x, mesh.control_volumes * x)
+        self.assertAlmostEqual(x_dot_x, 3.1844205150779601, delta=1.0e-7)
+
         return
 
     def test_convection(self):
@@ -209,6 +221,9 @@ class TestPDEs(unittest.TestCase):
 
         self.assertNotEqual(k0, -1)
         self.assertAlmostEqual(x[k0], 0.07041709172659899, delta=1.0e-7)
+
+        x_dot_x = numpy.dot(x, mesh.control_volumes * x)
+        self.assertAlmostEqual(x_dot_x, 0.0, delta=1.0e-7)
 
         return
 
