@@ -34,8 +34,8 @@ class LinearFvmProblem(object):
                 mask = numpy.in1d(I, verts)
                 V[mask] = 0.0
                 # Now add 1.0 to the diagonal for each Dirichlet.
-                I.extend(verts)
-                J.extend(verts)
+                I = numpy.append(I, verts)
+                J = numpy.append(J, verts)
                 V = numpy.append(V, numpy.ones(len(verts)))
 
                 # Set the RHS.
@@ -72,7 +72,7 @@ def _get_VIJ(
                 v_matrix[0, 0, :], v_matrix[0, 1, :],
                 v_matrix[1, 0, :], v_matrix[1, 1, :]
                 ]).T.flatten()
-            V += list(v)
+            V.append(v)
 
             if compute_rhs:
                 numpy.subtract.at(
@@ -90,13 +90,13 @@ def _get_VIJ(
                 edge_nodes[:, 0], edge_nodes[:, 0],
                 edge_nodes[:, 1], edge_nodes[:, 1]
                 ]).T.flatten()
-            I += list(i)
+            I.append(i)
 
             j = numpy.vstack([
                 edge_nodes[:, 0], edge_nodes[:, 1],
                 edge_nodes[:, 0], edge_nodes[:, 1]
                 ]).T.flatten()
-            J += list(j)
+            J.append(j)
 
             # # TODO fix those
             # for k in mesh.get_half_edges(subdomain):
@@ -110,9 +110,9 @@ def _get_VIJ(
         for subdomain in vertex_kernel.subdomains:
             verts = mesh.get_vertices(subdomain)
             vals_matrix, vals_rhs = vertex_kernel.eval(verts)
-            V += list(vals_matrix)
-            I += list(verts)
-            J += list(verts)
+            V.append(vals_matrix)
+            I.append(verts)
+            J.append(verts)
             if compute_rhs:
                 numpy.subtract.at(
                         rhs,
@@ -124,14 +124,19 @@ def _get_VIJ(
         for subdomain in boundary_kernel.subdomains:
             verts = mesh.get_vertices(subdomain)
             vals_matrix, vals_rhs = boundary_kernel.eval(verts)
-            V += list(vals_matrix)
-            I += list(verts)
-            J += list(verts)
+            V.append(vals_matrix)
+            I.append(verts)
+            J.append(verts)
             if compute_rhs:
                 numpy.subtract.at(
                         rhs,
                         verts,
                         vals_rhs
                         )
+
+    # Finally, make V, I, J into 1D-arrays.
+    V = numpy.concatenate(V)
+    I = numpy.concatenate(I)
+    J = numpy.concatenate(J)
 
     return V, I, J, rhs
