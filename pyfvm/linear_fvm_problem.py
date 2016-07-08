@@ -58,45 +58,35 @@ def _get_VIJ(
     V = []
     I = []
     J = []
-    if compute_rhs:
-        rhs = numpy.zeros(len(mesh.node_coords))
-    else:
-        rhs = None
+    rhs_V = []
+    rhs_I = []
+
     for edge_kernel in edge_kernels:
         for subdomain in edge_kernel.subdomains:
             edges = mesh.get_edges(subdomain)
             edge_nodes = mesh.edges['nodes'][edges]
             v_matrix, v_rhs = edge_kernel.eval(edges)
 
-            v = numpy.vstack([
-                v_matrix[0, 0, :], v_matrix[0, 1, :],
-                v_matrix[1, 0, :], v_matrix[1, 1, :]
-                ]).T.flatten()
-            V.append(v)
+            V.append(v_matrix[0, 0, :])
+            V.append(v_matrix[0, 1, :])
+            V.append(v_matrix[1, 0, :])
+            V.append(v_matrix[1, 1, :])
+
+            I.append(edge_nodes[:, 0])
+            I.append(edge_nodes[:, 0])
+            I.append(edge_nodes[:, 1])
+            I.append(edge_nodes[:, 1])
+
+            J.append(edge_nodes[:, 0])
+            J.append(edge_nodes[:, 1])
+            J.append(edge_nodes[:, 0])
+            J.append(edge_nodes[:, 1])
 
             if compute_rhs:
-                numpy.subtract.at(
-                        rhs,
-                        edge_nodes[edges, 0],
-                        v_rhs[0]
-                        )
-                numpy.subtract.at(
-                        rhs,
-                        edge_nodes[edges, 1],
-                        v_rhs[1]
-                        )
-
-            i = numpy.vstack([
-                edge_nodes[:, 0], edge_nodes[:, 0],
-                edge_nodes[:, 1], edge_nodes[:, 1]
-                ]).T.flatten()
-            I.append(i)
-
-            j = numpy.vstack([
-                edge_nodes[:, 0], edge_nodes[:, 1],
-                edge_nodes[:, 0], edge_nodes[:, 1]
-                ]).T.flatten()
-            J.append(j)
+                rhs_V.append(v_rhs[0])
+                rhs_V.append(v_rhs[1])
+                rhs_I.append(edge_nodes[edges, 0])
+                rhs_I.append(edge_nodes[edges, 1])
 
             # # TODO fix those
             # for k in mesh.get_half_edges(subdomain):
@@ -110,33 +100,42 @@ def _get_VIJ(
         for subdomain in vertex_kernel.subdomains:
             verts = mesh.get_vertices(subdomain)
             vals_matrix, vals_rhs = vertex_kernel.eval(verts)
+
             V.append(vals_matrix)
             I.append(verts)
             J.append(verts)
+
             if compute_rhs:
-                numpy.subtract.at(
-                        rhs,
-                        verts,
-                        vals_rhs
-                        )
+                rhs_V.append(vals_rhs)
+                rhs_I.append(verts)
 
     for boundary_kernel in boundary_kernels:
         for subdomain in boundary_kernel.subdomains:
             verts = mesh.get_vertices(subdomain)
             vals_matrix, vals_rhs = boundary_kernel.eval(verts)
+
             V.append(vals_matrix)
             I.append(verts)
             J.append(verts)
+
             if compute_rhs:
-                numpy.subtract.at(
-                        rhs,
-                        verts,
-                        vals_rhs
-                        )
+                rhs_V.append(vals_rhs)
+                rhs_I.append(verts)
 
     # Finally, make V, I, J into 1D-arrays.
     V = numpy.concatenate(V)
     I = numpy.concatenate(I)
     J = numpy.concatenate(J)
+
+    # Assemble rhs
+    if compute_rhs:
+        rhs = numpy.zeros(len(mesh.node_coords))
+        numpy.subtract.at(
+                rhs,
+                numpy.concatenate(rhs_I),
+                numpy.concatenate(rhs_V)
+                )
+    else:
+        rhs = None
 
     return V, I, J, rhs
