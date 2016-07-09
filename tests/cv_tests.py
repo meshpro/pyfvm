@@ -13,21 +13,23 @@ class TestControlVolumes(unittest.TestCase):
         return
 
     def _run_test(self, mesh, volume, cv_norms, covol_norms):
-        # Compute the control volumes.
-        if mesh.control_volumes is None:
-            mesh.compute_control_volumes()
         tol = 1.0e-5
 
+        if mesh.cells['nodes'].shape[1] == 3:
+            dim = 2
+        elif mesh.cells['nodes'].shape[1] == 4:
+            dim = 3
+        else:
+            raise ValueError('Can only handle triangles and tets.')
+
         # Check the volume by summing over the cell volume.
-        if mesh.cell_volumes is None:
-            mesh.create_cell_volumes()
         vol2 = sum(mesh.cell_volumes)
 
         self.assertAlmostEqual(volume, vol2, delta=tol)
 
         # Check the volume by summing over the absolute value of the
         # control volumes.
-        vol = numpy.linalg.norm(mesh.control_volumes, ord=1)
+        vol = numpy.sum(mesh.control_volumes)
         self.assertAlmostEqual(volume, vol, delta=tol)
 
         # Check control volume norms.
@@ -36,15 +38,11 @@ class TestControlVolumes(unittest.TestCase):
         norm = numpy.linalg.norm(mesh.control_volumes, ord=numpy.Inf)
         self.assertAlmostEqual(cv_norms[1], norm, delta=tol)
 
-        # TODO reinstate
-        # # Check the volume by summing over the
-        # #   1/n * edge_lengths * covolumes
-        # # covolumes.
-        # vol = numpy.linalg.norm(
-        #     0.5 * mesh.edge_lengths * mesh.covolumes,
-        #     ord=1
-        #     )
-        # self.assertAlmostEqual(volume, vol, delta=tol)
+        # Check the volume by summing over the
+        #   1/n * edge_lengths * covolumes
+        # covolumes.
+        total_covolume = numpy.sum(mesh.edge_lengths * mesh.covolumes / dim)
+        self.assertAlmostEqual(volume, total_covolume, delta=tol)
 
         # Check covolume norms.
         norm = numpy.linalg.norm(mesh.covolumes, ord=2)
@@ -54,25 +52,40 @@ class TestControlVolumes(unittest.TestCase):
 
         return
 
-    # def test_degenerate_small(self):
-    #     points = numpy.array([
-    #         [0, 0, 0],
-    #         [1, 0, 0],
-    #         [0.5, 0.1, 0.0],
-    #         [0.5, -0.1, 0.0]
-    #         ])
-    #     # Manually compute the volumes.
-    #     total_vol = 2 * 0.5 * 0.1
-    #     cv0 = 0.25 * 0.1/0.5 * (0.5**2 + 0.1**2)
-    #     cv = [cv0, cv0, 0.5*(total_vol-2*cv0), 0.5 * (total_vol-2*cv0)]
-    #     cells = numpy.array([[0, 1, 2], [0, 1, 3]])
-    #     mesh = pyfvm.meshTri.meshTri(points, cells)
-    #     actual_values = [numpy.linalg.norm(cv, ord=1),
-    #                      numpy.linalg.norm(cv, ord=2),
-    #                      numpy.linalg.norm(cv, ord=numpy.Inf)
-    #                      ]
-    #     self._run_test(mesh, actual_values)
-    #     return
+    def test_degenerate_small0(self):
+        points = numpy.array([
+            [0, 0, 0],
+            [1, 0, 0],
+            [0.5, 0.01, 0.0],
+            ])
+        cells = numpy.array([[0, 1, 2]])
+        mesh = pyfvm.meshTri.meshTri(points, cells)
+        self._run_test(
+                mesh,
+                0.005,
+                [3.8268185015427627, 3.12625],
+                [21.650635675842587, 12.50249975229104]
+                )
+        return
+
+    def test_degenerate_small1(self):
+        points = numpy.array([
+            [0, 0, 0],
+            [1, 0, 0],
+            [0.5, 0.1, 0.0],
+            [0.5, -0.1, 0.0]
+            ])
+        cells = numpy.array([[0, 1, 2], [0, 1, 3]])
+        # Manually compute the volumes.
+        total_vol = 2 * 0.5 * 0.1
+        mesh = pyfvm.meshTri.meshTri(points, cells)
+        self._run_test(
+                mesh,
+                total_vol,
+                [0.60207972893961459, 0.325],
+                [3.5014282800022278, 2.4]
+                )
+        return
 
     def test_rectanglesmall(self):
         filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
@@ -87,21 +100,22 @@ class TestControlVolumes(unittest.TestCase):
         return
 
     def test_arrow3d(self):
-        nodes = numpy.array([[0.0,  0.0, 0.0],
-                             [2.0, -1.0, 0.0],
-                             [2.0,  0.0, 0.0],
-                             [2.0,  1.0, 0.0],
-                             [0.5,  0.0, -0.9],
-                             [0.5,  0.0, 0.9]])
-        cellsNodes = numpy.array([[1, 2, 4, 5],
-                                  [2, 3, 4, 5],
-                                  [0, 1, 4, 5],
-                                  [0, 3, 4, 5]
-                                  ])
+        nodes = numpy.array([
+            [0.0,  0.0, 0.0],
+            [2.0, -1.0, 0.0],
+            [2.0,  0.0, 0.0],
+            [2.0,  1.0, 0.0],
+            [0.5,  0.0, -0.9],
+            [0.5,  0.0, 0.9]
+            ])
+        cellsNodes = numpy.array([
+            [1, 2, 4, 5],
+            [2, 3, 4, 5],
+            [0, 1, 4, 5],
+            [0, 3, 4, 5]
+            ])
         mesh = pyfvm.meshTetra.meshTetra(nodes, cellsNodes)
         # pull this to see what a negative covolume looks like
-        # if mesh.edgesNodes is None:
-        #     mesh.create_adjacent_entities()
         # mesh.show_edge(5)
         self._run_test(
                 mesh,
@@ -112,8 +126,9 @@ class TestControlVolumes(unittest.TestCase):
         return
 
     def test_tetrahedron(self):
-        filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                'tetrahedron.e')
+        filename = os.path.join(
+            os.path.dirname(os.path.realpath(__file__)), 'tetrahedron.e'
+            )
         mesh, _, _ = pyfvm.reader.read(filename)
         # mesh.show_edge(54)
         self._run_test(
@@ -125,8 +140,9 @@ class TestControlVolumes(unittest.TestCase):
         return
 
     def test_pacman(self):
-        filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                'pacman.e')
+        filename = os.path.join(
+                os.path.dirname(os.path.realpath(__file__)), 'pacman.e'
+                )
         mesh, _, _ = pyfvm.reader.read(filename)
         self._run_test(
                 mesh,
