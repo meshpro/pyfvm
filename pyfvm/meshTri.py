@@ -32,9 +32,9 @@ class meshTri(_base_mesh):
         self.create_edges()
         # self.create_halfedges()
         self.compute_cell_circumcenters()
-        self.compute_control_volumes()
         self.compute_edge_lengths()
         self.compute_covolumes()
+        self.compute_control_volumes()
 
         self.mark_default_subdomains()
 
@@ -186,46 +186,18 @@ class meshTri(_base_mesh):
     def compute_control_volumes(self):
         '''Compute the control volumes of all nodes in the mesh.
         '''
-        # For flat meshes, the control volume contributions on a per-edge basis
-        # by computing the distance between the circumcenters of two adjacent
-        # cells. If the mesh is not flat, however, this does not work. Hence,
-        # compute the control volume contributions for each side in a cell
-        # separately.
         self.control_volumes = numpy.zeros(len(self.node_coords), dtype=float)
-        X = self.node_coords[self.cells['nodes']]
-        for other_lid in range(3):
-            node_lids = range(3)[:other_lid] + range(3)[other_lid+1:]
 
-            edge_coords = X[:, node_lids, :]
-            other_coord = X[:, other_lid, :]
+        # 0.5 * (0.5 * edge_length) * covolume
+        vals = 0.25 * self.edge_lengths * self.covolumes
 
-            # Move the system such that one of the two end points is in the
-            # origin. Deliberately take coords[0].
-            other0 = other_coord - edge_coords[:, 0, :]
-            cc = self.cell_circumcenters - edge_coords[:, 0, :]
-            # edge_midpoint = 0.5 * (coords[0] + coords[1]) - coords[0]
-            edge_midpoints = 0.5 * (
-                edge_coords[:, 1, :] - edge_coords[:, 0, :]
-                )
-
-            # Compute the area of the triangle {node[0], cc, edge_midpoint}.
-            # Gauge with the sign of the area {node[0], other0, edge_midpoint}.
-            V = 0.5 * numpy.cross(cc, edge_midpoints)
-            # Get normalized gauge vector
-            gauge = numpy.cross(other0, edge_midpoints)
-            gauge_norm = numpy.sqrt(_row_dot(gauge, gauge))
-            gauge /= gauge_norm[..., None]
-
-            val = _row_dot(V, gauge)
-
-            # Add edge contributions into the vertex values of control volumes.
-            my_node_ids = self.cells['nodes'][:, node_lids]
-            numpy.add.at(self.control_volumes, my_node_ids[:, 0], val)
-            numpy.add.at(self.control_volumes, my_node_ids[:, 1], val)
+        edge_nodes = self.edges['nodes']
+        numpy.add.at(self.control_volumes, edge_nodes[:, 0], vals)
+        numpy.add.at(self.control_volumes, edge_nodes[:, 1], vals)
 
         # Sanity checks.
-        sum_cv = sum(self.control_volumes)
-        sum_cells = sum(self.cell_volumes)
+        sum_cv = numpy.sum(self.control_volumes)
+        sum_cells = numpy.sum(self.cell_volumes)
         assert abs(sum_cv - sum_cells) < 1.0e-6
 
         if any(self.control_volumes < 0.0):
