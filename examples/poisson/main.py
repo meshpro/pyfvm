@@ -35,7 +35,7 @@ class Poisson(LinearFvmProblem):
 # Create mesh using meshzoo
 vertices, cells = meshzoo.cube.create_mesh(
         0.0, 1.0, 0.0, 1.0, 0.0, 1.0,
-        11, 11, 11
+        21, 21, 21
         )
 mesh = pyfvm.meshTetra.meshTetra(vertices, cells)
 # vertices, cells = meshzoo.rectangle.create_mesh(

@@ -7,12 +7,12 @@ import unittest
 import pyfvm
 
 
-class TestControlVolumes(unittest.TestCase):
+class TestVolumes(unittest.TestCase):
 
     def setUp(self):
         return
 
-    def _run_test(self, mesh, volume, cv_norms, covol_norms):
+    def _run_test(self, mesh, volume, cv_norms, covol_norms, cellvol_norms):
         tol = 1.0e-5
 
         if mesh.cells['nodes'].shape[1] == 3:
@@ -50,6 +50,14 @@ class TestControlVolumes(unittest.TestCase):
         norm = numpy.linalg.norm(mesh.covolumes, ord=numpy.Inf)
         self.assertAlmostEqual(covol_norms[1], norm, delta=tol)
 
+        # Check cell volumes.
+        total_cellvolume = numpy.sum(mesh.cell_volumes)
+        self.assertAlmostEqual(volume, total_cellvolume, delta=tol)
+        norm = numpy.linalg.norm(mesh.cell_volumes, ord=2)
+        self.assertAlmostEqual(cellvol_norms[0], norm, delta=tol)
+        norm = numpy.linalg.norm(mesh.cell_volumes, ord=numpy.Inf)
+        self.assertAlmostEqual(cellvol_norms[1], norm, delta=tol)
+
         return
 
     def test_degenerate_small0(self):
@@ -64,7 +72,8 @@ class TestControlVolumes(unittest.TestCase):
                 mesh,
                 0.005,
                 [3.8268185015427627, 3.12625],
-                [21.650635675842587, 12.50249975229104]
+                [21.650635675842587, 12.50249975229104],
+                [0.005, 0.005]
                 )
         return
 
@@ -83,7 +92,8 @@ class TestControlVolumes(unittest.TestCase):
                 mesh,
                 total_vol,
                 [0.60207972893961459, 0.325],
-                [3.5014282800022278, 2.4]
+                [3.5014282800022278, 2.4],
+                [0.070710678118654766, 0.05]
                 )
         return
 
@@ -95,7 +105,8 @@ class TestControlVolumes(unittest.TestCase):
                 mesh,
                 10,
                 [5.0, 2.5],
-                [7.1063352028243898, 5.0]
+                [7.1063352028243898, 5.0],
+                [7.0710678, 5.0]
                 )
         return
 
@@ -121,7 +132,8 @@ class TestControlVolumes(unittest.TestCase):
                 mesh,
                 1.2,
                 [0.54867112189361633, 0.354],
-                [4.6093865583659497, 2.4709512338368973]
+                [4.6093865583659497, 2.4709512338368973],
+                [0.67082039324993692, 0.45]
                 )
         return
 
@@ -135,7 +147,8 @@ class TestControlVolumes(unittest.TestCase):
                 mesh,
                 64.150028545707983,
                 [15.633459930030972, 9.0023269417919636],
-                [22.456543028439334, 12.09471520942393]
+                [22.456543028439334, 12.09471520942393],
+                [9.9014500007902146, 2.0061426114663363]
                 )
         return
 
@@ -148,7 +161,8 @@ class TestControlVolumes(unittest.TestCase):
                 mesh,
                 302.52270072101,
                 [15.3857579093391, 1.12779746704366],
-                [21.636574419194687, 1.3500278827154624]
+                [21.636574419194687, 1.3500278827154624],
+                [11.268149, 0.6166423]
                 )
         return
 
@@ -160,7 +174,8 @@ class TestControlVolumes(unittest.TestCase):
                 mesh,
                 3.46410161513775,
                 [1.63299316185545, 1.15470053837925],
-                [1.8257417943354759, 0.81649655229931284]
+                [1.8257417943354759, 0.81649655229931284],
+                [1.7320508, 0.86602539]
                 )
         return
 
@@ -172,7 +187,8 @@ class TestControlVolumes(unittest.TestCase):
                 mesh,
                 11.9741927059035,
                 [1.39047542328083, 0.198927169088121],
-                [5.1108705055302739, 0.60864468986577691]
+                [5.1108705055302739, 0.60864468986577691],
+                [1.0051631, 0.10569005]
                 )
         return
 
@@ -184,7 +200,8 @@ class TestControlVolumes(unittest.TestCase):
                 mesh,
                 10.0,
                 [3.7267798925256708, 5.0/3.0],
-                [5.7759558765734713, 2.3452374507983533]
+                [5.7759558765734713, 2.3452374507983533],
+                [4.714045207910317, 10.0/3.0]
                 )
         return
 
@@ -196,7 +213,8 @@ class TestControlVolumes(unittest.TestCase):
                 mesh,
                 388.68629169464117,
                 [16.885287218950758, 1.532783118899316],
-                [28.247403902696792, 1.9147280888306519]
+                [28.247403902696792, 1.9147280888306519],
+                [7.7222399978401217, 0.39368048446522058]
                 )
         return
 
