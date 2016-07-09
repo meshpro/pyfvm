@@ -35,7 +35,7 @@ class meshTetra(_base_mesh):
         self.create_cell_circumcenters()
         self.compute_edge_lengths()
         self.compute_covolumes()
-        self.create_control_volumes()
+        self.compute_control_volumes()
 
         self.mark_default_subdomains()
         return
@@ -329,123 +329,18 @@ class meshTetra(_base_mesh):
         #         ) / omega
         # return
 
-    def create_control_volumes(self):
+    def compute_control_volumes(self):
         '''Compute the control volumes of all nodes in the mesh.
         '''
-        # Compute covolumes and control volumes.
-        num_nodes = len(self.node_coords)
-        self.control_volumes = numpy.zeros(num_nodes, dtype=float)
-        for edge_id in range(len(self.edges['nodes'])):
-            edge_node_ids = self.edges['nodes'][edge_id]
-            # Explicitly cast indices to 'int' here as the array node_coords
-            # might only accept those. (This is the case with tetgen arrays,
-            # for example.)
-            edge = self.node_coords[edge_node_ids[1]] \
-                - self.node_coords[edge_node_ids[0]]
-            edge_midpoint = 0.5 * (
-                    self.node_coords[edge_node_ids[0]] +
-                    self.node_coords[edge_node_ids[1]]
-                    )
+        self.control_volumes = numpy.zeros(len(self.node_coords), dtype=float)
 
-            # 0.5 * alpha / edge_length = covolume.
-            # This is chosen to avoid unnecessary calculation (such as
-            # projecting onto the normalized edge and later multiplying the
-            # aggregate by the edge length).
-            alpha = 0.0
-            for face_id in self.edges['faces'][edge_id]:
-                # Make sure that the edge orientation is such that the covolume
-                # contribution is positive if and only if the vector p[0]->p[1]
-                # is oriented like the face normal cell[0]->cell[1].
-                # We need to make sure to gauge the edge orientation using
-                # the face normal and one point *in* the face, e.g., the one
-                # corner point that is not part of the edge. This makes sure
-                # that certain nasty cases are properly dealt with, e.g., when
-                # the edge midpoint does not sit in the covolume or that the
-                # covolume orientation is clockwise while the corresponding
-                # cells are oriented counter-clockwise.
-                #
-                # Find the edge in the list of edges of this face.
-                # http://projects.scipy.org/numpy/ticket/1673
-                edge_idx = numpy.nonzero(
-                    self.faces['edges'][face_id] == edge_id
-                    )[0][0]
-                # faceNodes and faceEdges need to be coordinates such that
-                # the node faceNodes[face_id][k] and the edge
-                # faceEdges[face_id][k] are opposing in the face face_id.
-                opposing_point = \
-                    self.node_coords[self.faces['nodes'][face_id][edge_idx]]
+        # 1/3. * (0.5 * edge_length) * covolume
+        vals = self.edge_lengths * self.covolumes / 6.0
 
-                # Get the other point of one adjacent cell.
-                # This involves:
-                #   (a) Get the cell, get all its faces.
-                #   (b) Find out which local index face_id is.
-                # Then we rely on the data structure organized such that
-                # cellsNodes[i][k] is opposite of cellsEdges[i][k] in
-                # cell i.
-                cell0 = self.faces['cells'][face_id][0]
-                face0_idx = \
-                    numpy.nonzero(self.cells['faces'][cell0] == face_id)[0][0]
-                other0 = \
-                    self.node_coords[self.cells['nodes'][cell0][face0_idx]]
+        edge_nodes = self.edges['nodes']
+        numpy.add.at(self.control_volumes, edge_nodes[:, 0], vals)
+        numpy.add.at(self.control_volumes, edge_nodes[:, 1], vals)
 
-                cc = self.cell_circumcenters[self.faces['cells'][face_id]]
-                if len(cc) == 2:
-                    # Get opposing point of the other cell.
-                    cell1 = self.faces['cells'][face_id][1]
-                    face1_idx = numpy.nonzero(
-                        self.cells['faces'][cell0] == face_id
-                        )[0][0]
-                    other1 = \
-                        self.node_coords[self.cells['nodes'][cell1][face1_idx]]
-                    gauge = numpy.dot(
-                            edge,
-                            numpy.cross(
-                                other1 - other0, opposing_point - edge_midpoint
-                                ))
-                    alpha += numpy.sign(gauge) \
-                        * numpy.dot(edge, numpy.cross(cc[1] - edge_midpoint,
-                                                      cc[0] - edge_midpoint
-                                                      ))
-                elif len(cc) == 1:
-                    # Each boundary face circumcenter is computed three times.
-                    # Probably one could save a bit of CPU time by caching
-                    # those.
-                    face_cc = self._get_face_circumcenter(face_id)
-                    gauge = \
-                        numpy.dot(edge,
-                                  numpy.cross(face_cc - other0,
-                                              opposing_point - edge_midpoint
-                                              ))
-                    alpha += numpy.sign(gauge) \
-                        * numpy.dot(edge, numpy.cross(face_cc - edge_midpoint,
-                                                      cc[0] - edge_midpoint))
-                else:
-                    raise RuntimeError('A face should have either '
-                                       '1 or 2 adjacent cells.'
-                                       )
-
-            # We add the pyramid volume
-            #   p_vol = covolume * 0.5*edgelength / 3,
-            # which, given
-            #   covolume = 0.5 * alpha / edge_length
-            # is just
-            #   p_vol = 0.25 * alpha / 3.
-            self.control_volumes[edge_node_ids] += alpha / 12.0
-
-        # Sanity checks.
-        sum_cv = sum(self.control_volumes)
-        sum_cells = sum(self.cell_volumes)
-        alpha = sum_cv - sum_cells
-        if abs(alpha) > 1.0e-6:
-            msg = ('Sum of control volumes sum does not coincide with the sum '
-                   'of the cell volumes (|cv|-|cells| = %g - %g = %g.'
-                   ) % (sum_cv, sum_cells, alpha)
-            raise RuntimeError(msg)
-        if any(self.control_volumes < 0.0):
-            raise RuntimeError('Not all control volumes are positive. '
-                               'This is likely due do the triangulation not '
-                               'being Delaunay. Abort.'
-                               )
         return
 
     def check_delaunay(self):

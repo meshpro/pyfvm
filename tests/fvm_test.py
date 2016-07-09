@@ -68,7 +68,7 @@ class TestPDEs(unittest.TestCase):
         self.poisson(
                 mesh,
                 0.0,
-                0.00061882494399534383
+                0.00061344097536402699
                 )
         return
 
