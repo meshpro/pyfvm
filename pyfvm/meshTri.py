@@ -195,15 +195,6 @@ class meshTri(_base_mesh):
         numpy.add.at(self.control_volumes, edge_nodes[:, 0], vals)
         numpy.add.at(self.control_volumes, edge_nodes[:, 1], vals)
 
-        # Sanity checks.
-        sum_cv = numpy.sum(self.control_volumes)
-        sum_cells = numpy.sum(self.cell_volumes)
-        assert abs(sum_cv - sum_cells) < 1.0e-6
-
-        if any(self.control_volumes < 0.0):
-            msg = 'Not all control volumes are positive. This is due do ' \
-                + 'the triangulation not being Delaunay.'
-            warnings.warn(msg)
         return
 
     def compute_gradient(self, u):
