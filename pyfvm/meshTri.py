@@ -31,7 +31,6 @@ class meshTri(_base_mesh):
 
         self.create_edges()
         # self.create_halfedges()
-        self.compute_cell_circumcenters()
         self.compute_edge_lengths()
         self.compute_covolumes()
         self.compute_control_volumes()
@@ -39,6 +38,8 @@ class meshTri(_base_mesh):
         self.mark_default_subdomains()
 
         self.compute_surface_areas()
+
+        self.cell_circumcenters = None
 
         return
 
@@ -256,6 +257,9 @@ class meshTri(_base_mesh):
            International Journal for Numerical Methods in Engineering,
            http://dx.doi.org/10.1002/nme.2187.
         '''
+        if self.cell_circumcenters is None:
+            self.compute_cell_circumcenters()
+
         # This only works for flat meshes.
         assert (abs(self.node_coords[:, 2]) < 1.0e-10).all()
         node_coords2d = self.node_coords[:, :2]
@@ -380,6 +384,9 @@ class meshTri(_base_mesh):
         return curl
 
     def check_delaunay(self):
+        if self.cell_circumcenters is None:
+            self.compute_cell_circumcenters()
+
         num_interior_edges = 0
         num_delaunay_violations = 0
 
@@ -435,6 +442,9 @@ class meshTri(_base_mesh):
         :param show_covolumes: If true, show all covolumes of the mesh, too.
         :type show_covolumes: bool, optional
         '''
+        if self.cell_circumcenters is None:
+            self.compute_cell_circumcenters()
+
         # from mpl_toolkits.mplot3d import Axes3D
         fig = plt.figure()
         # ax = fig.gca(projection='3d')
