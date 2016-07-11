@@ -146,18 +146,12 @@ class meshTri(_base_mesh):
 
         self.boundary_edges = numpy.where(cts == 1)[0]
 
-        # Create edge->cells relationships
-        num_cells = len(self.cells['nodes'])
-        edge_cells = [[] for k in range(len(idx))]
-        for k, edge_id in enumerate(inv):
-            edge_cells[edge_id].append(k % num_cells)
-
         self.edges = {
             'nodes': edge_nodes,
-            'cells': edge_cells
             }
 
         # cell->edges relationship
+        num_cells = len(self.cells['nodes'])
         cells_edges = inv.reshape([3, num_cells]).T
         cells = self.cells['nodes']
         self.cells = {
@@ -165,6 +159,18 @@ class meshTri(_base_mesh):
             'edges': cells_edges
             }
 
+        # store inv for possible later use in create_edge_cells
+        self._inv = inv
+
+        return
+
+    def create_edge_cells(self):
+        # Create edge->cells relationships
+        num_cells = len(self.cells['nodes'])
+        edge_cells = [[] for k in range(len(self.edges['nodes']))]
+        for k, edge_id in enumerate(self._inv):
+            edge_cells[edge_id].append(k % num_cells)
+        self.edges['cells'] = edge_cells
         return
 
     def get_edges(self, subdomain):
@@ -255,6 +261,9 @@ class meshTri(_base_mesh):
         '''
         if self.cell_circumcenters is None:
             self.compute_cell_circumcenters()
+
+        if 'cells' not in self.edges:
+            self.create_edge_cells()
 
         # This only works for flat meshes.
         assert (abs(self.node_coords[:, 2]) < 1.0e-10).all()
@@ -383,6 +392,9 @@ class meshTri(_base_mesh):
         if self.cell_circumcenters is None:
             self.compute_cell_circumcenters()
 
+        if 'cells' not in self.edges:
+            self.create_edge_cells()
+
         num_interior_edges = 0
         num_delaunay_violations = 0
 
@@ -440,6 +452,9 @@ class meshTri(_base_mesh):
         '''
         if self.cell_circumcenters is None:
             self.compute_cell_circumcenters()
+
+        if 'cells' not in self.edges:
+            self.create_edge_cells()
 
         # from mpl_toolkits.mplot3d import Axes3D
         fig = plt.figure()
