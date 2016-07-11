@@ -50,21 +50,14 @@ class meshTri(_base_mesh):
                 'half_edges': []
                 }
 
-        # Find the boundary edges, i.e., all edges that belong to just one
-        # cell.
-        boundary_edges = []
-        for k, edge_cells in enumerate(self.edges['cells']):
-            if len(edge_cells) == 1:
-                boundary_edges.append(k)
-
         # Get vertices on the boundary edges
         boundary_vertices = numpy.unique(
-                self.edges['nodes'][boundary_edges].flatten()
+                self.edges['nodes'][self.boundary_edges].flatten()
                 )
 
         self.subdomains['Boundary'] = {
                 'vertices': boundary_vertices,
-                'edges': boundary_edges,
+                'edges': self.boundary_edges,
                 'half_edges': []
                 }
 
@@ -143,8 +136,15 @@ class meshTri(_base_mesh):
         b = numpy.ascontiguousarray(a).view(
                 numpy.dtype((numpy.void, a.dtype.itemsize * a.shape[1]))
                 )
-        _, idx, inv = numpy.unique(b, return_index=True, return_inverse=True)
+        _, idx, inv, cts = numpy.unique(
+                b,
+                return_index=True,
+                return_inverse=True,
+                return_counts=True
+                )
         edge_nodes = a[idx]
+
+        self.boundary_edges = numpy.where(cts == 1)[0]
 
         # Create edge->cells relationships
         num_cells = len(self.cells['nodes'])
