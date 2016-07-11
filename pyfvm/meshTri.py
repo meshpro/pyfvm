@@ -238,8 +238,8 @@ class meshTri(_base_mesh):
         self.covolumes = numpy.zeros(num_edges, dtype=float)
         numpy.add.at(
                 self.covolumes,
-                self.cells['edges'].flatten(),
-                sol.flatten()
+                self.cells['edges'],
+                sol
                 )
 
         self.covolumes *= self.edge_lengths

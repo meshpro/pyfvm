@@ -591,8 +591,8 @@ class meshTetra(_base_mesh):
         self.covolumes = numpy.zeros(num_edges, dtype=float)
         numpy.add.at(
                 self.covolumes,
-                self.cells['edges'].flatten(),
-                sol.flatten()
+                self.cells['edges'],
+                sol
                 )
 
         # Here, self.covolumes contains the covolume-edgelength ratios. Make
@@ -640,8 +640,8 @@ class meshTetra(_base_mesh):
         self.covolumes = numpy.zeros(num_edges, dtype=float)
         numpy.add.at(
                 self.covolumes,
-                self.cells['edges'].flatten(),
-                sol.flatten()
+                self.cells['edges'],
+                sol
                 )
 
         # Here, self.covolumes contains the covolume-edgelength ratios. Make
