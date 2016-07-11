@@ -394,7 +394,7 @@ class meshTri(_base_mesh):
 
             num_interior_edges += 1
 
-            # Each interior edge divides the domain into to half-planes.  The
+            # Each interior edge divides the domain into to half-planes. The
             # Delaunay condition is fulfilled if and only if the circumcenters
             # of the adjacent cells are in "the right order", i.e., line
             # between the nodes of the cells which do not sit on the hyperplane

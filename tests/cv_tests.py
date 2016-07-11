@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 import os
+from math import fsum
 import numpy
 import unittest
 
@@ -13,7 +14,7 @@ class TestVolumes(unittest.TestCase):
         return
 
     def _run_test(self, mesh, volume, cv_norms, covol_norms, cellvol_norms):
-        tol = 1.0e-5
+        tol = 1.0e-12
 
         if mesh.cells['nodes'].shape[1] == 3:
             dim = 2
@@ -22,14 +23,9 @@ class TestVolumes(unittest.TestCase):
         else:
             raise ValueError('Can only handle triangles and tets.')
 
-        # Check the volume by summing over the cell volume.
-        vol2 = numpy.sum(mesh.cell_volumes)
-
-        self.assertAlmostEqual(volume, vol2, delta=tol)
-
         # Check cell volumes.
-        total_cellvolume = numpy.sum(mesh.cell_volumes)
-        self.assertAlmostEqual(volume, total_cellvolume, delta=tol)
+        total_cellvolume = fsum(mesh.cell_volumes)
+        self.assertAlmostEqual(volume, total_cellvolume, delta=tol * volume)
         norm = numpy.linalg.norm(mesh.cell_volumes, ord=2)
         self.assertAlmostEqual(cellvol_norms[0], norm, delta=tol)
         norm = numpy.linalg.norm(mesh.cell_volumes, ord=numpy.Inf)
@@ -38,8 +34,8 @@ class TestVolumes(unittest.TestCase):
         # Check the volume by summing over the
         #   1/n * edge_lengths * covolumes
         # covolumes.
-        total_covolume = numpy.sum(mesh.edge_lengths * mesh.covolumes / dim)
-        self.assertAlmostEqual(volume, total_covolume, delta=tol)
+        total_covolume = fsum(mesh.edge_lengths * mesh.covolumes / dim)
+        self.assertAlmostEqual(volume, total_covolume, delta=tol * volume)
         # Check covolume norms.
         norm = numpy.linalg.norm(mesh.covolumes, ord=2)
         self.assertAlmostEqual(covol_norms[0], norm, delta=tol)
@@ -48,20 +44,12 @@ class TestVolumes(unittest.TestCase):
 
         # Check the volume by summing over the absolute value of the
         # control volumes.
-        vol = numpy.sum(mesh.control_volumes)
-        self.assertAlmostEqual(volume, vol, delta=tol)
+        vol = fsum(mesh.control_volumes)
+        self.assertAlmostEqual(volume, vol, delta=tol * volume)
         # Check control volume norms.
         norm = numpy.linalg.norm(mesh.control_volumes, ord=2)
         self.assertAlmostEqual(cv_norms[0], norm, delta=tol)
         norm = numpy.linalg.norm(mesh.control_volumes, ord=numpy.Inf)
-
-        # print('covolumes:')
-        # for cv in mesh.covolumes:
-        #     print('%0.15f' % cv)
-        # print
-        # print('control volumes:')
-        # for cv in mesh.control_volumes:
-        #     print('%0.15f' % cv)
         self.assertAlmostEqual(cv_norms[1], norm, delta=tol)
 
         return
@@ -98,21 +86,29 @@ class TestVolumes(unittest.TestCase):
                 mesh,
                 total_vol,
                 [0.60207972893961459, 0.325],
-                [3.5014282800022278, 2.4],
+                [3.5014282800023189, 2.4],
                 [0.070710678118654766, 0.05]
                 )
         return
 
     def test_rectanglesmall(self):
-        filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                'rectanglesmall.e')
-        mesh, _, _ = pyfvm.reader.read(filename)
+        points = numpy.array([
+            [0.0, 0.0, 0.0],
+            [10.0, 0.0, 0.0],
+            [10.0, 1.0, 0.0],
+            [0.0, 1.0, 0.0]
+            ])
+        cells = numpy.array([
+            [0, 1, 2],
+            [0, 2, 3]
+            ])
+        mesh = pyfvm.meshTri.meshTri(points, cells)
         self._run_test(
                 mesh,
                 10,
                 [5.0, 2.5],
-                [7.1063352028243898, 5.0],
-                [7.0710678, 5.0]
+                [7.1063352017759476, 5.0],
+                [7.0710678118654755, 5.0]
                 )
         return
 
@@ -145,82 +141,108 @@ class TestVolumes(unittest.TestCase):
 
     def test_tetrahedron(self):
         filename = os.path.join(
-            os.path.dirname(os.path.realpath(__file__)), 'tetrahedron.e'
+            os.path.dirname(os.path.realpath(__file__)), 'tetrahedron.vtu'
             )
         mesh, _, _ = pyfvm.reader.read(filename)
         # mesh.show_edge(54)
         self._run_test(
                 mesh,
-                64.150024385579613,
-                [15.633459930030972, 9.0023269417919636],
-                [22.456543028439334, 12.09471520942393],
-                [9.9014500007902146, 2.0061426114663363]
+                64.1500299099584,
+                [17.07120343309435, 7.5899731568813653],
+                [15.098404151997405, 4.5503630826356547],
+                [11.571692332290635, 2.9699087921277054]
                 )
         return
 
     def test_pacman(self):
         filename = os.path.join(
-                os.path.dirname(os.path.realpath(__file__)), 'pacman.e'
+                os.path.dirname(os.path.realpath(__file__)), 'pacman.vtu'
                 )
         mesh, _, _ = pyfvm.reader.read(filename)
         self._run_test(
                 mesh,
-                302.5227006226778,
-                [15.3857579093391, 1.12779746704366],
-                [21.636574419194687, 1.3500278827154624],
-                [11.268149, 0.6166423]
+                73.64573933105898,
+                [3.596101914906618, 0.26638548094154707],
+                [10.770014443821761, 0.67825038377950408],
+                [2.6213234038171014, 0.13841739494523228]
                 )
         return
 
     def test_shell(self):
-        filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                'shell.e')
-        mesh, _, _ = pyfvm.reader.read(filename)
+        points = numpy.array([
+            [0.0,  0.0,  1.0],
+            [1.0,  0.0,  0.0],
+            [0.0,  1.0,  0.0],
+            [-1.0,  0.0,  0.0],
+            [0.0, -1.0,  0.0]
+            ])
+        cells = numpy.array([
+            [0, 1, 2],
+            [0, 2, 3],
+            [0, 3, 4],
+            [0, 1, 4]
+            ])
+        mesh = pyfvm.meshTri.meshTri(points, cells)
         self._run_test(
                 mesh,
-                3.4641015529632568,
+                3.4641016151377544,
                 [1.63299316185545, 1.15470053837925],
-                [1.8257417943354759, 0.81649655229931284],
-                [1.7320508, 0.86602539]
+                [1.8257418583505536, 0.81649658092772603],
+                [1.7320508075688772, 0.8660254037844386]
                 )
         return
 
     def test_sphere(self):
         filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                'sphere.e')
+                                'sphere.vtu')
         mesh, _, _ = pyfvm.reader.read(filename)
         self._run_test(
                 mesh,
-                11.974194,
-                [1.39047542328083, 0.198927169088121],
-                [5.1108705055302739, 0.60864468986577691],
-                [1.0051631, 0.10569005]
+                12.273645818711595,
+                [1.0177358705967492, 0.10419690304323895],
+                [5.2511248219539466, 0.34998394343357359],
+                [0.72653362732751214, 0.05350373815413411]
                 )
         return
 
     def test_cubesmall(self):
-        filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                'cubesmall.e')
-        mesh, _, _ = pyfvm.reader.read(filename)
+        points = numpy.array([
+            [-0.5, -0.5, -5.0],
+            [-0.5,  0.5, -5.0],
+            [0.5, -0.5, -5.0],
+            [-0.5, -0.5,  5.0],
+            [0.5,  0.5, -5.0],
+            [0.5,  0.5,  5.0],
+            [-0.5,  0.5,  5.0],
+            [0.5, -0.5,  5.0]
+            ])
+        cells = numpy.array([
+            [0, 1, 2, 3],
+            [1, 2, 4, 5],
+            [1, 2, 3, 5],
+            [1, 3, 5, 6],
+            [2, 3, 5, 7]
+            ])
+        mesh = pyfvm.meshTetra.meshTetra(points, cells)
         self._run_test(
                 mesh,
                 10.0,
-                [3.7267798925256708, 5.0/3.0],
-                [5.7759558765734713, 2.3452374507983533],
+                [3.7267799624996485, 5.0/3.0],
+                [5.775955909342338, 2.3452374909353835],
                 [4.714045207910317, 10.0/3.0]
                 )
         return
 
-    def test_brick(self):
+    def test_toy(self):
         filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                'brick-w-hole.e')
+                                'toy.vtu')
         mesh, _, _ = pyfvm.reader.read(filename)
         self._run_test(
                 mesh,
-                388.68629134684704,
-                [16.885287218950758, 1.532783118899316],
-                [28.247403902696792, 1.9147280888306519],
-                [7.7222399978401217, 0.39368048446522058]
+                9.3875504672601107,
+                [0.20348466631551548, 0.010271101930468585],
+                [3.827477464269331, 0.81666108124852155],
+                [0.091903119589148916, 0.0019959463063558944]
                 )
         return
 
