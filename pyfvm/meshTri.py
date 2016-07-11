@@ -198,6 +198,22 @@ class meshTri(_base_mesh):
         return
 
     def compute_covolumes(self):
+        # The covolumes for the edges of each cell is the solution of the
+        # equation system
+        #
+        # |simplex| ||u||^2 = \sum_i \alpha_i <u,e_i> <e_i,u>,
+        #
+        # where alpha_i are the covolume contributions for the edges.
+        #
+        # This equation system to hold for all vectors u in the plane spanned
+        # by the edges, particularly by the edges themselves.
+        #
+        # For triangles, the exact solution of the system is
+        #
+        #  x_1 = <e_2, e_3> / <e1 x e2, e1 x e3> * |simplex|;
+        #
+        # see <http://math.stackexchange.com/a/1855380/36678>.
+        #
         # Precompute edges.
         edges = \
             self.node_coords[self.edges['nodes'][:, 1]] - \
