@@ -27,12 +27,11 @@ class meshTri(_base_mesh):
                 dtype=numpy.dtype([('nodes', (int, 3))])
                 )
         self.cells['nodes'] = cells
-        self.create_cell_volumes()
 
         self.create_edges()
         # self.create_halfedges()
         self.compute_edge_lengths()
-        self.compute_covolumes()
+        self.compute_cell_and_covolumes()
         self.compute_control_volumes()
 
         self.mark_default_subdomains()
@@ -113,16 +112,6 @@ class meshTri(_base_mesh):
 
         return
 
-    def create_cell_volumes(self):
-        '''Computes the area of all triangles in the mesh.
-        '''
-        X = self.node_coords[self.cells['nodes']]
-        a = X[:, 0, :] - X[:, 2, :]
-        b = X[:, 1, :] - X[:, 2, :]
-        a_cross_b = numpy.cross(a, b)
-        self.cell_volumes = 0.5 * numpy.sqrt(_row_dot(a_cross_b, a_cross_b))
-        return
-
     def compute_cell_circumcenters(self):
         '''Computes the center of the circumcenter of each cell.
         '''
@@ -198,7 +187,7 @@ class meshTri(_base_mesh):
 
         return
 
-    def compute_covolumes(self):
+    def compute_cell_and_covolumes(self):
         # The covolumes for the edges of each cell is the solution of the
         # equation system
         #
@@ -228,6 +217,13 @@ class meshTri(_base_mesh):
         e0_cross_e1 = numpy.cross(e0, e1)
         e1_cross_e2 = numpy.cross(e1, e2)
         e2_cross_e0 = numpy.cross(e2, e0)
+
+        # It doesn't matter much which cross product we take for computing the
+        # cell volume.
+        self.cell_volumes = 0.5 * numpy.sqrt(
+                _row_dot(e0_cross_e1, e0_cross_e1)
+                )
+
         a = _row_dot(e1, e2) / _row_dot(e0_cross_e1, -e2_cross_e0)
         b = _row_dot(e2, e0) / _row_dot(e1_cross_e2, -e0_cross_e1)
         c = _row_dot(e0, e1) / _row_dot(e2_cross_e0, -e1_cross_e2)
