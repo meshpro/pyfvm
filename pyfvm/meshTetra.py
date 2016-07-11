@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 import numpy
-from pyfvm.base import _base_mesh
+from pyfvm.base import _base_mesh, _row_dot
 import os
 import matplotlib as mpl
 from mpl_toolkits.mplot3d import Axes3D
@@ -552,4 +552,100 @@ class meshTetra(_base_mesh):
             for edge in self.cells['edges'][cell_id]:
                 x = self.node_coords[self.edges['nodes'][edge]]
                 ax.plot(x[:, 0], x[:, 1], x[:, 2], col, linestyle='dashed')
+        return
+
+    def compute_covolumes(self):
+        # Precompute edges.
+        edges = \
+            self.node_coords[self.edges['nodes'][:, 1]] - \
+            self.node_coords[self.edges['nodes'][:, 0]]
+
+        # Build the equation system:
+        # The equation
+        #
+        # |simplex| ||u||^2 = \sum_i \alpha_i <u,e_i> <e_i,u>
+        #
+        # has to hold for all vectors u in the plane spanned by the edges,
+        # particularly by the edges themselves.
+        cells_edges = edges[self.cells['edges']]
+        # <http://stackoverflow.com/a/38110345/353337>
+        A = numpy.einsum('ijk,ilk->ijl', cells_edges, cells_edges)
+        # print(numpy.linalg.cond(A))
+        A = A**2
+
+        # Compute the RHS  cell_volume * <edge, edge>.
+        # The dot product <edge, edge> is also on the diagonals of A (before
+        # squaring), but simply computing it again is cheaper than extracting
+        # it from A.
+        edge_dot_edge = _row_dot(edges, edges)
+        rhs = edge_dot_edge[self.cells['edges']] * self.cell_volumes[..., None]
+
+        # Solve all k-by-k systems at once ("broadcast"). (`k` is the number of
+        # edges per simplex here.)
+        # If the matrix A is (close to) singular if and only if the cell is
+        # (close to being) degenerate. Hence, it has volume 0, and so all the
+        # edge coefficients are 0, too. Hence, do nothing.
+        sol = numpy.linalg.solve(A, rhs)
+
+        num_edges = len(self.edges['nodes'])
+        self.covolumes = numpy.zeros(num_edges, dtype=float)
+        numpy.add.at(
+                self.covolumes,
+                self.cells['edges'].flatten(),
+                sol.flatten()
+                )
+
+        # Here, self.covolumes contains the covolume-edgelength ratios. Make
+        # sure we end up with the covolumes.
+        self.covolumes *= self.edge_lengths
+
+        return
+
+    def compute_covolumes2(self):
+        # Precompute edges.
+        edges = \
+            self.node_coords[self.edges['nodes'][:, 1]] - \
+            self.node_coords[self.edges['nodes'][:, 0]]
+
+        scaled_edges = edges / self.edge_lengths[:, None]
+
+        # Build the equation system:
+        # The equation
+        #
+        # |simplex| ||u||^2 = \sum_i \alpha_i <u,e_i> <e_i,u>
+        #
+        # has to hold for all vectors u in the plane spanned by the edges,
+        # particularly by the edges themselves.
+        cells_edges = scaled_edges[self.cells['edges']]
+        # <http://stackoverflow.com/a/38110345/353337>
+        A = numpy.einsum('ijk,ilk->ijl', cells_edges, cells_edges)
+
+        A = A**2
+
+        # Compute the RHS  cell_volume * <edge, edge>.
+        # The dot product <edge, edge> is also on the diagonals of A (before
+        # squaring), but simply computing it again is cheaper than extracting
+        # it from A.
+        rhs = numpy.ones((len(self.cell_volumes), cells_edges.shape[1])) \
+            * self.cell_volumes[..., None]
+
+        # Solve all k-by-k systems at once ("broadcast"). (`k` is the number of
+        # edges per simplex here.)
+        # If the matrix A is (close to) singular if and only if the cell is
+        # (close to being) degenerate. Hence, it has volume 0, and so all the
+        # edge coefficients are 0, too. Hence, do nothing.
+        sol = numpy.linalg.solve(A, rhs)
+
+        num_edges = len(self.edges['nodes'])
+        self.covolumes = numpy.zeros(num_edges, dtype=float)
+        numpy.add.at(
+                self.covolumes,
+                self.cells['edges'].flatten(),
+                sol.flatten()
+                )
+
+        # Here, self.covolumes contains the covolume-edgelength ratios. Make
+        # sure we end up with the covolumes.
+        self.covolumes /= self.edge_lengths
+
         return

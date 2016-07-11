@@ -186,14 +186,47 @@ class meshTri(_base_mesh):
     def compute_control_volumes(self):
         '''Compute the control volumes of all nodes in the mesh.
         '''
-        self.control_volumes = numpy.zeros(len(self.node_coords), dtype=float)
-
         # 0.5 * (0.5 * edge_length) * covolume
         vals = 0.25 * self.edge_lengths * self.covolumes
 
         edge_nodes = self.edges['nodes']
+
+        self.control_volumes = numpy.zeros(len(self.node_coords), dtype=float)
         numpy.add.at(self.control_volumes, edge_nodes[:, 0], vals)
         numpy.add.at(self.control_volumes, edge_nodes[:, 1], vals)
+
+        return
+
+    def compute_covolumes(self):
+        # Precompute edges.
+        edges = \
+            self.node_coords[self.edges['nodes'][:, 1]] - \
+            self.node_coords[self.edges['nodes'][:, 0]]
+
+        cells_edges = edges[self.cells['edges']]
+
+        e0 = cells_edges[:, 0, :]
+        e1 = cells_edges[:, 1, :]
+        e2 = cells_edges[:, 2, :]
+        e0_cross_e1 = numpy.cross(e0, e1)
+        e1_cross_e2 = numpy.cross(e1, e2)
+        e2_cross_e0 = numpy.cross(e2, e0)
+        a = _row_dot(e1, e2) / _row_dot(e0_cross_e1, -e2_cross_e0)
+        b = _row_dot(e2, e0) / _row_dot(e1_cross_e2, -e0_cross_e1)
+        c = _row_dot(e0, e1) / _row_dot(e2_cross_e0, -e1_cross_e2)
+
+        sol = numpy.column_stack((a, b, c))
+        sol *= self.cell_volumes[:, None]
+
+        num_edges = len(self.edges['nodes'])
+        self.covolumes = numpy.zeros(num_edges, dtype=float)
+        numpy.add.at(
+                self.covolumes,
+                self.cells['edges'].flatten(),
+                sol.flatten()
+                )
+
+        self.covolumes *= self.edge_lengths
 
         return
 

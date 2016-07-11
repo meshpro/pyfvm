@@ -23,32 +23,9 @@ class TestVolumes(unittest.TestCase):
             raise ValueError('Can only handle triangles and tets.')
 
         # Check the volume by summing over the cell volume.
-        vol2 = sum(mesh.cell_volumes)
+        vol2 = numpy.sum(mesh.cell_volumes)
 
         self.assertAlmostEqual(volume, vol2, delta=tol)
-
-        # Check the volume by summing over the absolute value of the
-        # control volumes.
-        vol = numpy.sum(mesh.control_volumes)
-        self.assertAlmostEqual(volume, vol, delta=tol)
-
-        # Check control volume norms.
-        norm = numpy.linalg.norm(mesh.control_volumes, ord=2)
-        self.assertAlmostEqual(cv_norms[0], norm, delta=tol)
-        norm = numpy.linalg.norm(mesh.control_volumes, ord=numpy.Inf)
-        self.assertAlmostEqual(cv_norms[1], norm, delta=tol)
-
-        # Check the volume by summing over the
-        #   1/n * edge_lengths * covolumes
-        # covolumes.
-        total_covolume = numpy.sum(mesh.edge_lengths * mesh.covolumes / dim)
-        self.assertAlmostEqual(volume, total_covolume, delta=tol)
-
-        # Check covolume norms.
-        norm = numpy.linalg.norm(mesh.covolumes, ord=2)
-        self.assertAlmostEqual(covol_norms[0], norm, delta=tol)
-        norm = numpy.linalg.norm(mesh.covolumes, ord=numpy.Inf)
-        self.assertAlmostEqual(covol_norms[1], norm, delta=tol)
 
         # Check cell volumes.
         total_cellvolume = numpy.sum(mesh.cell_volumes)
@@ -58,21 +35,50 @@ class TestVolumes(unittest.TestCase):
         norm = numpy.linalg.norm(mesh.cell_volumes, ord=numpy.Inf)
         self.assertAlmostEqual(cellvol_norms[1], norm, delta=tol)
 
+        # Check the volume by summing over the
+        #   1/n * edge_lengths * covolumes
+        # covolumes.
+        total_covolume = numpy.sum(mesh.edge_lengths * mesh.covolumes / dim)
+        self.assertAlmostEqual(volume, total_covolume, delta=tol)
+        # Check covolume norms.
+        norm = numpy.linalg.norm(mesh.covolumes, ord=2)
+        self.assertAlmostEqual(covol_norms[0], norm, delta=tol)
+        norm = numpy.linalg.norm(mesh.covolumes, ord=numpy.Inf)
+        self.assertAlmostEqual(covol_norms[1], norm, delta=tol)
+
+        # Check the volume by summing over the absolute value of the
+        # control volumes.
+        vol = numpy.sum(mesh.control_volumes)
+        self.assertAlmostEqual(volume, vol, delta=tol)
+        # Check control volume norms.
+        norm = numpy.linalg.norm(mesh.control_volumes, ord=2)
+        self.assertAlmostEqual(cv_norms[0], norm, delta=tol)
+        norm = numpy.linalg.norm(mesh.control_volumes, ord=numpy.Inf)
+
+        # print('covolumes:')
+        # for cv in mesh.covolumes:
+        #     print('%0.15f' % cv)
+        # print
+        # print('control volumes:')
+        # for cv in mesh.control_volumes:
+        #     print('%0.15f' % cv)
+        self.assertAlmostEqual(cv_norms[1], norm, delta=tol)
+
         return
 
     def test_degenerate_small0(self):
         points = numpy.array([
             [0, 0, 0],
             [1, 0, 0],
-            [0.5, 0.01, 0.0],
+            [0.5, 1.0e-2, 0.0],
             ])
         cells = numpy.array([[0, 1, 2]])
         mesh = pyfvm.meshTri.meshTri(points, cells)
         self._run_test(
                 mesh,
                 0.005,
-                [3.8268185015427627, 3.12625],
-                [21.650635675842587, 12.50249975229104],
+                [3.8268185015427632, 3.12625],
+                [21.650635671961226, 12.502499750049987],
                 [0.005, 0.005]
                 )
         return
@@ -145,7 +151,7 @@ class TestVolumes(unittest.TestCase):
         # mesh.show_edge(54)
         self._run_test(
                 mesh,
-                64.150028545707983,
+                64.150024385579613,
                 [15.633459930030972, 9.0023269417919636],
                 [22.456543028439334, 12.09471520942393],
                 [9.9014500007902146, 2.0061426114663363]
@@ -159,7 +165,7 @@ class TestVolumes(unittest.TestCase):
         mesh, _, _ = pyfvm.reader.read(filename)
         self._run_test(
                 mesh,
-                302.52270072101,
+                302.5227006226778,
                 [15.3857579093391, 1.12779746704366],
                 [21.636574419194687, 1.3500278827154624],
                 [11.268149, 0.6166423]
@@ -172,7 +178,7 @@ class TestVolumes(unittest.TestCase):
         mesh, _, _ = pyfvm.reader.read(filename)
         self._run_test(
                 mesh,
-                3.46410161513775,
+                3.4641015529632568,
                 [1.63299316185545, 1.15470053837925],
                 [1.8257417943354759, 0.81649655229931284],
                 [1.7320508, 0.86602539]
@@ -185,7 +191,7 @@ class TestVolumes(unittest.TestCase):
         mesh, _, _ = pyfvm.reader.read(filename)
         self._run_test(
                 mesh,
-                11.9741927059035,
+                11.974194,
                 [1.39047542328083, 0.198927169088121],
                 [5.1108705055302739, 0.60864468986577691],
                 [1.0051631, 0.10569005]
@@ -211,7 +217,7 @@ class TestVolumes(unittest.TestCase):
         mesh, _, _ = pyfvm.reader.read(filename)
         self._run_test(
                 mesh,
-                388.68629169464117,
+                388.68629134684704,
                 [16.885287218950758, 1.532783118899316],
                 [28.247403902696792, 1.9147280888306519],
                 [7.7222399978401217, 0.39368048446522058]
