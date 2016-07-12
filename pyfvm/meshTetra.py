@@ -23,12 +23,9 @@ class meshTetra(_base_mesh):
         '''
         super(meshTetra, self).__init__(node_coords, cells)
 
-        num_cells = len(cells)
-        self.cells = numpy.empty(
-                num_cells,
-                dtype=numpy.dtype([('nodes', (int, 4))])
-                )
-        self.cells['nodes'] = cells
+        self.cells = {
+            'nodes': cells
+            }
 
         self.create_adjacent_entities()
         self.create_cell_volumes()
@@ -48,14 +45,8 @@ class meshTetra(_base_mesh):
                 'faces': range(len(self.faces['nodes']))
                 }
 
-        # Find the boundary edges, i.e., all edges that belong to just one
-        # cell.
-        boundary_faces = []
-        for k, faces_cells in enumerate(self.faces['cells']):
-            if len(faces_cells) == 1:
-                boundary_faces.append(k)
-
-        # Get vertices on the boundary edges
+        # Get vertices on the boundary faces
+        boundary_faces = numpy.where(self.is_boundary_face)[0]
         boundary_vertices = numpy.unique(
                 self.faces['nodes'][boundary_faces].flatten()
                 )
@@ -124,114 +115,94 @@ class meshTetra(_base_mesh):
         return
 
     def create_adjacent_entities(self):
-        '''Setup edge-node, edge-cell, edge-face, face-node, and face-cell
+        '''Set up edge-node, edge-cell, edge-face, face-node, and face-cell
         relations.
         '''
+        self.cells['nodes'].sort(axis=1)
+
+        self.create_cell_face_relationships()
+        self.create_cell_edge_relationships()
+
+        return
+
+    def create_cell_face_relationships(self):
+        # All possible faces
+        a = numpy.vstack([
+            self.cells['nodes'][:, [0, 1, 2]],
+            self.cells['nodes'][:, [0, 1, 3]],
+            self.cells['nodes'][:, [0, 2, 3]],
+            self.cells['nodes'][:, [1, 2, 3]]
+            ])
+
+        # Find the unique faces
+        b = numpy.ascontiguousarray(a).view(
+                numpy.dtype((numpy.void, a.dtype.itemsize * a.shape[1]))
+                )
+        _, idx, inv, cts = numpy.unique(
+                b,
+                return_index=True,
+                return_inverse=True,
+                return_counts=True
+                )
+        face_nodes = a[idx]
+
+        self.is_boundary_face = (cts == 1)
+
+        self.faces = {
+            'nodes': face_nodes
+            }
+
+        # cell->faces relationship
         num_cells = len(self.cells['nodes'])
+        cells_faces = inv.reshape([4, num_cells]).T
+        self.cells['faces'] = cells_faces
 
-        # Get upper bound for number of edges; trim later.
-        max_num_edges = 6 * num_cells
-        dt = numpy.dtype([('nodes', (int, 2)),
-                          ('faces', numpy.object),
-                          ('cells', numpy.object)
-                          ])
-        # To create an array of empty lists, do what's described at
-        # http://mail.scipy.org/pipermail/numpy-discussion/2009-November/046566.html
-        self.edges = numpy.empty(max_num_edges, dt)
-        filler = numpy.frompyfunc(lambda x: list(), 1, 1)
-        self.edges['faces'] = filler(self.edges['faces'])
-        self.edges['cells'] = filler(self.edges['cells'])
+        # Create face->cells relationships
+        num_cells = len(self.cells['nodes'])
+        face_cells = [[] for k in range(len(self.faces['nodes']))]
+        for k, face_id in enumerate(inv):
+            face_cells[face_id].append(k % num_cells)
+        self.faces['cells'] = face_cells
 
-        # Extend the self.cells array by the keywords 'edges' and 'faces'.
-        cells = self.cells['nodes']
-        dt = numpy.dtype([('nodes', (int, 4)),
-                          ('edges', (int, 6)),
-                          ('faces', (int, 4))
-                          ])
-        self.cells = numpy.empty(len(cells), dtype=dt)
-        self.cells['nodes'] = cells
+        return
 
-        # The (sorted) dictionary node_edges keeps track of how nodes and edges
-        # are connected.
-        # If  node_edges[(3,4)] == 17  is true, then the nodes (3,4) are
-        # connected  by edge 17.
-        registered_edges = {}
-        new_edge_gid = 0
-        # Create edges.
-        import itertools
-        for cell_id, cell in enumerate(self.cells):
-            # We're treating simplices so loop over all combinations of
-            # local nodes.
-            # Make sure cellNodes are sorted.
-            self.cells['nodes'][cell_id] = numpy.sort(cell['nodes'])
-            for k, indices in enumerate(itertools.combinations(cell['nodes'],
-                                        2)
-                                        ):
-                if indices in registered_edges:
-                    # edge already assigned
-                    edge_gid = registered_edges[indices]
-                    self.edges['cells'][edge_gid].append(cell_id)
-                    self.cells['edges'][cell_id][k] = edge_gid
-                else:
-                    # add edge
-                    self.edges['nodes'][new_edge_gid] = indices
-                    self.edges['cells'][new_edge_gid].append(cell_id)
-                    self.cells['edges'][cell_id][k] = new_edge_gid
-                    registered_edges[indices] = new_edge_gid
-                    new_edge_gid += 1
+    def create_cell_edge_relationships(self):
+        a = numpy.vstack([
+            self.cells['nodes'][:, [0, 1]],
+            self.cells['nodes'][:, [0, 2]],
+            self.cells['nodes'][:, [0, 3]],
+            self.cells['nodes'][:, [1, 2]],
+            self.cells['nodes'][:, [1, 3]],
+            self.cells['nodes'][:, [2, 3]]
+            ])
 
-        # trim edges
-        self.edges = self.edges[:new_edge_gid]
+        # Find the unique edges
+        b = numpy.ascontiguousarray(a).view(
+                numpy.dtype((numpy.void, a.dtype.itemsize * a.shape[1]))
+                )
+        _, idx, inv = numpy.unique(
+                b,
+                return_index=True,
+                return_inverse=True
+                )
+        edge_nodes = a[idx]
 
-        # Create faces.
-        max_num_faces = 4 * num_cells
-        dt = numpy.dtype([('nodes', (int, 3)),
-                          ('edges', (int, 3)),
-                          ('cells', numpy.object)
-                          ])
-        self.faces = numpy.empty(max_num_faces, dt)
-        self.faces['cells'] = filler(self.faces['cells'])
+        self.edges = {
+            'nodes': edge_nodes
+            }
 
-        # Loop over all elements.
-        new_face_gid = 0
-        registered_faces = {}
-        for cell_id, cell in enumerate(self.cells):
-            # Make sure cellNodes are sorted.
-            self.cells['nodes'][cell_id] = numpy.sort(cell['nodes'])
-            for k in range(4):
-                # Remove the k-th element. This makes sure that the k-th
-                # face is opposite of the k-th node. Useful later in
-                # in construction of face normals.
-                indices = tuple(cell['nodes'][:k]) \
-                    + tuple(cell['nodes'][k+1:])
-                if indices in registered_faces:
-                    # Face already assigned, just register it with the
-                    # current cell.
-                    face_gid = registered_faces[indices]
-                    self.faces['cells'][face_gid].append(cell_id)
-                    self.cells['faces'][cell_id][k] = face_gid
-                else:
-                    # Add face.
-                    # Make sure that facesNodes[k] and facesEdge[k] are
-                    # coordinated in such a way that facesNodes[k][i]
-                    # and facesEdge[k][i] are opposite in face k.
-                    self.faces['nodes'][new_face_gid] = indices
-                    # Register edges.
-                    for kk in range(len(indices)):
-                        # Note that node_tuple is also sorted, and thus
-                        # is a key in the edges dictionary.
-                        node_tuple = indices[:kk] + indices[kk+1:]
-                        edge_id = registered_edges[node_tuple]
-                        self.edges['faces'][edge_id].append(new_face_gid)
-                        self.faces['edges'][new_face_gid][kk] = edge_id
-                    # Register cells.
-                    self.faces['cells'][new_face_gid].append(cell_id)
-                    self.cells['faces'][cell_id][k] = new_face_gid
-                    # Finalize.
-                    registered_faces[indices] = new_face_gid
-                    new_face_gid += 1
-        # trim faces
-        self.faces = self.faces[:new_face_gid]
+        # cell->edge relationship
+        num_cells = len(self.cells['nodes'])
+        cells_edges = inv.reshape([6, num_cells]).T
+        self.cells['edges'] = cells_edges
+
+        # Create edge->cells relationships
+        num_cells = len(self.cells['nodes'])
+        edge_cells = [[] for k in range(len(self.edges['nodes']))]
+        for k, edge_id in enumerate(inv):
+            edge_cells[edge_id].append(k % num_cells)
+        self.edges['cells'] = edge_cells
+
         return
 
     def create_cell_circumcenters(self):
@@ -243,11 +214,12 @@ class meshTetra(_base_mesh):
                 num_cells,
                 dtype=numpy.dtype((float, 3))
                 )
-        for cell_id, cell in enumerate(self.cells):
+        for cell_id in range(len(self.cells['nodes'])):
             # Explicitly cast indices to 'int' here as the array node_coords
             # might only accept those. (This is the case with tetgen arrays,
             # for example.)
-            x = self.node_coords[cell['nodes']]
+            node_ids = self.cells['nodes'][cell_id]
+            x = self.node_coords[node_ids]
             vtkTetra.Circumsphere(x[0], x[1], x[2], x[3],
                                   self.cell_circumcenters[cell_id])
             # # http://www.cgafaq.info/wiki/Tetrahedron_Circumsphere
@@ -406,8 +378,8 @@ class meshTetra(_base_mesh):
 
         # There are not node->edge relations so manually build the list.
         adjacent_edge_ids = []
-        for edge_id, edge in enumerate(self.edges):
-            if node_id in edge['nodes']:
+        for edge_id, nodes in enumerate(self.edges['nodes']):
+            if node_id in nodes:
                 adjacent_edge_ids.append(edge_id)
 
         # Loop over all adjacent edges and plot the edges and their covolumes.
