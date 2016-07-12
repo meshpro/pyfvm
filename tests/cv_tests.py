@@ -66,7 +66,7 @@ class TestVolumes(unittest.TestCase):
                 mesh,
                 0.005,
                 [3.8268185015427632, 3.12625],
-                [468.750025, 12.502499750049987],
+                [468.750025, numpy.sqrt(156.3125)],
                 [0.005, 0.005]
                 )
         return
@@ -85,9 +85,9 @@ class TestVolumes(unittest.TestCase):
         self._run_test(
                 mesh,
                 total_vol,
-                [0.60207972893961459, 0.325],
+                [numpy.sqrt(0.3625), 0.325],
                 [12.26, 2.4],
-                [0.070710678118654766, 0.05]
+                [numpy.sqrt(1.0/200.0), 0.05]
                 )
         return
 
@@ -107,7 +107,7 @@ class TestVolumes(unittest.TestCase):
                 mesh,
                 total_vol,
                 [0.12038850913902652, 77.0/720.0],
-                [11791.0/28800.0, 0.33202869688562492],
+                [11791.0/28800.0, numpy.sqrt(127.0/1152.0)],
                 [1.0/60.0, 1.0/60.0]
                 )
         return
@@ -133,7 +133,7 @@ class TestVolumes(unittest.TestCase):
                 total_vol,
                 [0.18734818957173291, 77.0/720.0],
                 [1211.0/1200.0, 23.0/60.0],
-                [0.023570226039551584, 1.0/60.0]
+                [1.0 / numpy.sqrt(2.0) / 30., 1.0/60.0]
                 )
         return
 
@@ -154,7 +154,7 @@ class TestVolumes(unittest.TestCase):
                 10,
                 [5.0, 2.5],
                 [50.5, 5.0],
-                [7.0710678118654755, 5.0]
+                [numpy.sqrt(50.0), 5.0]
                 )
         return
 
@@ -179,9 +179,9 @@ class TestVolumes(unittest.TestCase):
         self._run_test(
                 mesh,
                 1.2,
-                [0.54867112189361633, 0.354],
-                [95609. / 4500., 2.4709512338368973],
-                [0.67082039324993692, 0.45]
+                [numpy.sqrt(0.30104), 0.354],
+                [95609. / 4500., numpy.sqrt(6.1056)],
+                [numpy.sqrt(0.45), 0.45]
                 )
         return
 
