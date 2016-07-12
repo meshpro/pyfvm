@@ -8,7 +8,7 @@ import numpy
 import unittest
 
 
-class GradientTest(unittest.TestCase):
+class CurlTest(unittest.TestCase):
 
     def setUp(self):
         return
@@ -29,7 +29,7 @@ class GradientTest(unittest.TestCase):
         #     cell_data={'B': B}
         #     )
 
-        tol = 1.0e-5
+        tol = 1.0e-14
         for k in range(len(B)):
             self.assertAlmostEqual(B[k][0], 0.0, delta=tol)
             self.assertAlmostEqual(B[k][1], 0.0, delta=tol)
