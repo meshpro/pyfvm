@@ -343,7 +343,7 @@ class meshTetra(_base_mesh):
 
         return
 
-    def check_delaunay(self):
+    def num_delaunay_violations(self):
         # is_delaunay = True
         num_faces = len(self.faces['nodes'])
         num_interior_faces = 0
@@ -391,7 +391,7 @@ class meshTetra(_base_mesh):
             # in the "same" direction.
             if numpy.dot(edge_midpoint-other0, cc[1]-cc[0]) < 0.0:
                 num_delaunay_violations += 1
-        return num_delaunay_violations, num_interior_faces
+        return num_delaunay_violations
 
     def show_control_volume(self, node_id):
         '''Displays a node with its surrounding control volume.

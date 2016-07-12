@@ -51,13 +51,14 @@ class meshTri(_base_mesh):
                 }
 
         # Get vertices on the boundary edges
+        boundary_edges = numpy.where(self.is_boundary_edge)[0]
         boundary_vertices = numpy.unique(
-                self.edges['nodes'][self.boundary_edges].flatten()
+                self.edges['nodes'][boundary_edges].flatten()
                 )
 
         self.subdomains['Boundary'] = {
                 'vertices': boundary_vertices,
-                'edges': self.boundary_edges,
+                'edges': boundary_edges,
                 'half_edges': []
                 }
 
@@ -144,7 +145,7 @@ class meshTri(_base_mesh):
                 )
         edge_nodes = a[idx]
 
-        self.boundary_edges = numpy.where(cts == 1)[0]
+        self.is_boundary_edge = (cts == 1)
 
         self.edges = {
             'nodes': edge_nodes,
@@ -388,61 +389,10 @@ class meshTri(_base_mesh):
         curl /= self.cell_volumes[..., None]
         return curl
 
-    def check_delaunay(self):
-        if self.cell_circumcenters is None:
-            self.compute_cell_circumcenters()
-
-        if 'cells' not in self.edges:
-            self.create_edge_cells()
-
-        num_interior_edges = 0
-        num_delaunay_violations = 0
-
-        num_edges = len(self.edges['nodes'])
-        for edge_id in range(num_edges):
-            # Boundary edges don't need to be checked.
-            if len(self.edges['cells'][edge_id]) != 2:
-                continue
-
-            num_interior_edges += 1
-
-            # Each interior edge divides the domain into to half-planes. The
-            # Delaunay condition is fulfilled if and only if the circumcenters
-            # of the adjacent cells are in "the right order", i.e., line
-            # between the nodes of the cells which do not sit on the hyperplane
-            # have the same orientation as the line between the circumcenters.
-
-            # The orientation of the coedge needs gauging.  Do it in such as a
-            # way that the control volume contribution is positive if and only
-            # if the area of the triangle (node, other0, edge_midpoint) (in
-            # this order) is positive.  Equivalently, the triangles (node,
-            # edge_midpoint, other1) or (node, other0, other1) could  be
-            # considered.  other{0,1} refers to the the node opposing the edge
-            # in the adjacent cell {0,1}.
-            # Get the opposing node of the first adjacent cell.
-            cell0 = self.edges['cells'][edge_id][0]
-            # This nonzero construct is an ugly replacement for the nonexisting
-            # index() method. (Compare with Python lists.)
-            edge_lid = numpy.nonzero(
-                    self.cells['edges'][cell0] == edge_id
-                    )[0][0]
-            # This makes use of the fact that cellsEdges and cellsNodes
-            # are coordinated such that in cell #i, the edge cellsEdges[i][k]
-            # opposes cellsNodes[i][k].
-            other0 = self.node_coords[self.cells['nodes'][cell0][edge_lid]]
-
-            # Get the edge midpoint.
-            node_ids = self.edges['nodes'][edge_id]
-            node_coords = self.node_coords[node_ids]
-            edge_midpoint = 0.5 * (node_coords[0] + node_coords[1])
-
-            # Get the circumcenters of the adjacent cells.
-            cc = self.cell_circumcenters[self.edges['cells'][edge_id]]
-            # Check if cc[1]-cc[0] and the gauge point
-            # in the "same" direction.
-            if numpy.dot(edge_midpoint-other0, cc[1]-cc[0]) < 0.0:
-                num_delaunay_violations += 1
-        return num_delaunay_violations, num_interior_edges
+    def num_delaunay_violations(self):
+        # Delaunay violations are present exactly on the interior edges where
+        # the covolume is negative. Count those.
+        return numpy.sum(self.covolumes[~self.is_boundary_edge] < 0.0)
 
     def show(self, show_covolumes=True):
         '''Show the mesh using matplotlib.

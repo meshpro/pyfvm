@@ -55,10 +55,11 @@ class TestVolumes(unittest.TestCase):
         return
 
     def test_degenerate_small0(self):
+        h = 1.0e-2
         points = numpy.array([
             [0, 0, 0],
             [1, 0, 0],
-            [0.5, 1.0e-2, 0.0],
+            [0.5, h, 0.0],
             ])
         cells = numpy.array([[0, 1, 2]])
         mesh = pyfvm.meshTri.meshTri(points, cells)
@@ -69,14 +70,17 @@ class TestVolumes(unittest.TestCase):
                 [468.750025, numpy.sqrt(156.3125)],
                 [0.005, 0.005]
                 )
+
+        self.assertEqual(mesh.num_delaunay_violations(), 0)
         return
 
     def test_degenerate_small1(self):
+        h = 1.0e-1
         points = numpy.array([
             [0, 0, 0],
             [1, 0, 0],
-            [0.5, 0.1, 0.0],
-            [0.5, -0.1, 0.0]
+            [0.5, h, 0.0],
+            [0.5, -h, 0.0]
             ])
         cells = numpy.array([[0, 1, 2], [0, 1, 3]])
         # Manually compute the volumes.
@@ -89,6 +93,11 @@ class TestVolumes(unittest.TestCase):
                 [12.26, 2.4],
                 [numpy.sqrt(1.0/200.0), 0.05]
                 )
+
+        print(mesh.covolumes)
+
+        self.assertEqual(mesh.num_delaunay_violations(), 1)
+
         return
 
     def test_degenerate_tet0(self):
@@ -156,6 +165,9 @@ class TestVolumes(unittest.TestCase):
                 [50.5, 5.0],
                 [numpy.sqrt(50.0), 5.0]
                 )
+
+        self.assertEqual(mesh.num_delaunay_violations(), 0)
+
         return
 
     def test_arrow3d(self):
@@ -183,6 +195,9 @@ class TestVolumes(unittest.TestCase):
                 [95609. / 4500., numpy.sqrt(6.1056)],
                 [numpy.sqrt(0.45), 0.45]
                 )
+
+        self.assertEqual(mesh.num_delaunay_violations(), 2)
+
         return
 
     def test_tetrahedron(self):
@@ -212,6 +227,9 @@ class TestVolumes(unittest.TestCase):
                 [115.99321112012936, 0.67825038377950408],
                 [2.6213234038171014, 0.13841739494523228]
                 )
+
+        self.assertEqual(mesh.num_delaunay_violations(), 0)
+
         return
 
     def test_shell(self):
@@ -236,6 +254,9 @@ class TestVolumes(unittest.TestCase):
                 [10.0 / 3.0, numpy.sqrt(2.0 / 3.0)],
                 [numpy.sqrt(3.0), numpy.sqrt(3.0) / 2.0]
                 )
+
+        self.assertEqual(mesh.num_delaunay_violations(), 0)
+
         return
 
     def test_sphere(self):
@@ -249,6 +270,9 @@ class TestVolumes(unittest.TestCase):
                 [27.574311895740863, 0.34998394343357359],
                 [0.72653362732751214, 0.05350373815413411]
                 )
+
+        self.assertEqual(mesh.num_delaunay_violations(), 54)
+
         return
 
     def test_cubesmall(self):

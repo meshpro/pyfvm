@@ -18,7 +18,8 @@ class TestIo(unittest.TestCase):
                 zigzag=True
                 )
         mesh = pyfvm.meshTri.meshTri(vertices, cells)
-        assert mesh.check_delaunay()
+
+        self.assertEqual(mesh.num_delaunay_violations(), 0)
 
         import matplotlib.pyplot as plt
         mesh.show()
@@ -42,7 +43,8 @@ class TestIo(unittest.TestCase):
                 2, 2, 2
                 )
         mesh = pyfvm.meshTetra.meshTetra(vertices, cells)
-        assert mesh.check_delaunay()
+
+        self.assertEqual(mesh.num_delaunay_violations(), 0)
 
         import matplotlib.pyplot as plt
         mesh.show_control_volume(0)
