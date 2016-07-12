@@ -195,35 +195,22 @@ class meshTetra(_base_mesh):
     def create_cell_circumcenters(self):
         '''Computes the center of the circumsphere of each cell.
         '''
-        from vtk import vtkTetra
-        num_cells = len(self.cells['nodes'])
-        self.cell_circumcenters = numpy.empty(
-                num_cells,
-                dtype=numpy.dtype((float, 3))
-                )
-        for cell_id in range(len(self.cells['nodes'])):
-            # Explicitly cast indices to 'int' here as the array node_coords
-            # might only accept those. (This is the case with tetgen arrays,
-            # for example.)
-            node_ids = self.cells['nodes'][cell_id]
-            x = self.node_coords[node_ids]
-            vtkTetra.Circumsphere(x[0], x[1], x[2], x[3],
-                                  self.cell_circumcenters[cell_id])
-            # # http://www.cgafaq.info/wiki/Tetrahedron_Circumsphere
-            # x = self.node_coords[cell['nodes']]
-            # b = x[1] - x[0]
-            # c = x[2] - x[0]
-            # d = x[3] - x[0]
+        cell_coords = self.node_coords[self.cells['nodes']]
 
-            # omega = (2.0 * numpy.dot(b, numpy.cross(c, d)))
+        cell_coords[:, 1, :] -= cell_coords[:, 0, :]
+        cell_coords[:, 2, :] -= cell_coords[:, 0, :]
+        cell_coords[:, 3, :] -= cell_coords[:, 0, :]
 
-            # if abs(omega) < 1.0e-10:
-            #    raise ZeroDivisionError('Tetrahedron is degenerate.')
-            # self.cell_circumcenters[cell_id] = x[0] + (
-            #         numpy.dot(b, b) * numpy.cross(c, d) +
-            #         numpy.dot(c, c) * numpy.cross(d, b) +
-            #         numpy.dot(d, d) * numpy.cross(b, c)
-            #         ) / omega
+        b = cell_coords[:, 1, :]
+        c = cell_coords[:, 2, :]
+        d = cell_coords[:, 3, :]
+
+        omega = 2.0 * _row_dot(b, numpy.cross(c, d))
+        self.cell_circumcenters = cell_coords[:, 0, :] + (
+                numpy.cross(c, d) * _row_dot(b, b)[:, None] +
+                numpy.cross(d, b) * _row_dot(c, c)[:, None] +
+                numpy.cross(b, c) * _row_dot(d, d)[:, None]
+                ) / omega[:, None]
         return
 
     def _get_face_circumcenter(self, face_id):
