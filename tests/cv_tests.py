@@ -37,10 +37,10 @@ class TestVolumes(unittest.TestCase):
         total_covolume = fsum(mesh.edge_lengths * mesh.covolumes / dim)
         self.assertAlmostEqual(volume, total_covolume, delta=tol * volume)
         # Check covolume norms.
-        norm = numpy.linalg.norm(mesh.covolumes, ord=2)
-        self.assertAlmostEqual(covol_norms[0], norm, delta=tol)
-        norm = numpy.linalg.norm(mesh.covolumes, ord=numpy.Inf)
-        self.assertAlmostEqual(covol_norms[1], norm, delta=tol)
+        alpha = fsum(mesh.covolumes**2)
+        self.assertAlmostEqual(covol_norms[0], alpha, delta=tol)
+        alpha = max(abs(mesh.covolumes))
+        self.assertAlmostEqual(covol_norms[1], alpha, delta=tol)
 
         # Check the volume by summing over the absolute value of the
         # control volumes.
@@ -66,7 +66,7 @@ class TestVolumes(unittest.TestCase):
                 mesh,
                 0.005,
                 [3.8268185015427632, 3.12625],
-                [21.650635671961226, 12.502499750049987],
+                [468.750025, 12.502499750049987],
                 [0.005, 0.005]
                 )
         return
@@ -86,7 +86,7 @@ class TestVolumes(unittest.TestCase):
                 mesh,
                 total_vol,
                 [0.60207972893961459, 0.325],
-                [3.5014282800023189, 2.4],
+                [12.26, 2.4],
                 [0.070710678118654766, 0.05]
                 )
         return
@@ -107,7 +107,7 @@ class TestVolumes(unittest.TestCase):
                 mesh,
                 total_vol,
                 [0.12038850913902652, 77.0/720.0],
-                [0.63985132821793977, 0.33202869688562492],
+                [11791.0/28800.0, 0.33202869688562492],
                 [1.0/60.0, 1.0/60.0]
                 )
         return
@@ -132,7 +132,7 @@ class TestVolumes(unittest.TestCase):
                 mesh,
                 total_vol,
                 [0.18734818957173291, 77.0/720.0],
-                [1.0045728777280247, 23.0/60.0],
+                [1211.0/1200.0, 23.0/60.0],
                 [0.023570226039551584, 1.0/60.0]
                 )
         return
@@ -153,7 +153,7 @@ class TestVolumes(unittest.TestCase):
                 mesh,
                 10,
                 [5.0, 2.5],
-                [7.1063352017759476, 5.0],
+                [50.5, 5.0],
                 [7.0710678118654755, 5.0]
                 )
         return
@@ -180,7 +180,7 @@ class TestVolumes(unittest.TestCase):
                 mesh,
                 1.2,
                 [0.54867112189361633, 0.354],
-                [4.6093865583659497, 2.4709512338368973],
+                [95609. / 4500., 2.4709512338368973],
                 [0.67082039324993692, 0.45]
                 )
         return
@@ -195,7 +195,7 @@ class TestVolumes(unittest.TestCase):
                 mesh,
                 64.1500299099584,
                 [17.07120343309435, 7.5899731568813653],
-                [15.098404151997405, 4.5503630826356547],
+                [227.9618079370525, 4.5503630826356547],
                 [11.571692332290635, 2.9699087921277054]
                 )
         return
@@ -209,7 +209,7 @@ class TestVolumes(unittest.TestCase):
                 mesh,
                 73.64573933105898,
                 [3.596101914906618, 0.26638548094154707],
-                [10.770014443821761, 0.67825038377950408],
+                [115.99321112012936, 0.67825038377950408],
                 [2.6213234038171014, 0.13841739494523228]
                 )
         return
@@ -232,9 +232,9 @@ class TestVolumes(unittest.TestCase):
         self._run_test(
                 mesh,
                 2 * numpy.sqrt(3),
-                [numpy.sqrt(8.0/3.0), 1.15470053837925],
-                [1.8257418583505536, 0.81649658092772603],
-                [1.7320508075688772, 0.8660254037844386]
+                [2 * numpy.sqrt(2.0/3.0), 2.0/numpy.sqrt(3.0)],
+                [10.0 / 3.0, numpy.sqrt(2.0 / 3.0)],
+                [numpy.sqrt(3.0), numpy.sqrt(3.0) / 2.0]
                 )
         return
 
@@ -246,7 +246,7 @@ class TestVolumes(unittest.TestCase):
                 mesh,
                 12.273645818711595,
                 [1.0177358705967492, 0.10419690304323895],
-                [5.2511248219539466, 0.34998394343357359],
+                [27.574311895740863, 0.34998394343357359],
                 [0.72653362732751214, 0.05350373815413411]
                 )
         return
@@ -273,9 +273,9 @@ class TestVolumes(unittest.TestCase):
         self._run_test(
                 mesh,
                 10.0,
-                [3.7267799624996485, 5.0/3.0],
-                [5.775955909342338, 2.3452374909353835],
-                [4.714045207910317, 10.0/3.0]
+                [numpy.sqrt(5.0) * 5.0/3.0, 5.0/3.0],
+                [20017.0/600.0, numpy.sqrt(39601.0 / 7200.0)],
+                [numpy.sqrt(2.0) * 10.0/3.0, 10.0/3.0]
                 )
         return
 
@@ -287,7 +287,7 @@ class TestVolumes(unittest.TestCase):
                 mesh,
                 9.3875504672601107,
                 [0.20348466631551548, 0.010271101930468585],
-                [3.827477464269331, 0.81666108124852155],
+                [14.649583739489584, 0.81666108124852155],
                 [0.091903119589148916, 0.0019959463063558944]
                 )
         return
