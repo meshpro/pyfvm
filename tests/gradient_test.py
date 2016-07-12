@@ -29,7 +29,7 @@ class GradientTest(unittest.TestCase):
         # Compute the gradient numerically.
         grad_u = mesh.compute_gradient(u)
 
-        tol = 1.0e-3
+        tol = 1.0e-13
         for k in range(num_nodes):
             self.assertAlmostEqual(grad_u[k][0], sol[k][0], delta=tol)
             self.assertAlmostEqual(grad_u[k][1], sol[k][1], delta=tol)
