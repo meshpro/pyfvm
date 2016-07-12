@@ -87,31 +87,18 @@ class meshTetra(_base_mesh):
     def create_cell_volumes(self):
         '''Computes the volumes of the tetrahedra in the mesh.
         '''
-        num_cells = len(self.cells['nodes'])
-        self.cell_volumes = numpy.empty(num_cells, dtype=float)
+        # https://en.wikipedia.org/wiki/Tetrahedron#Volume
+        cell_coords = self.node_coords[self.cells['nodes']]
 
-        # edges
-        edge_coords = self.node_coords[self.edges['nodes'][:, 1]] - \
-            self.node_coords[self.edges['nodes'][:, 0]]
-        for cell_id, edges in enumerate(self.cells['edges']):
-            edge0 = edge_coords[edges[0]]
-            edge1 = edge_coords[edges[1]]
-            edge2 = edge_coords[edges[2]]
-            alpha = numpy.vdot(edge0, numpy.cross(edge1, edge2))
-            norm_prod = \
-                numpy.linalg.norm(edge0) * \
-                numpy.linalg.norm(edge1) * \
-                numpy.linalg.norm(edge2)
-            if abs(alpha) / norm_prod < 1.0e-5:
-                # Edges probably conplanar. Take a different set.
-                edge3 = edge_coods[edges[3]]
-                alpha = numpy.vdot(edge0, numpy.cross(edge1, edge3))
-                norm_prod = \
-                    numpy.linalg.norm(edge0) * \
-                    numpy.linalg.norm(edge1) * \
-                    numpy.linalg.norm(edge3)
+        cell_coords[:, 1, :] -= cell_coords[:, 0, :]
+        cell_coords[:, 2, :] -= cell_coords[:, 0, :]
+        cell_coords[:, 3, :] -= cell_coords[:, 0, :]
 
-            self.cell_volumes[cell_id] = abs(alpha) / 6.0
+        self.cell_volumes = abs(_row_dot(
+                cell_coords[:, 1, :],
+                numpy.cross(cell_coords[:, 2, :], cell_coords[:, 3, :])
+                )) / 6.0
+
         return
 
     def create_adjacent_entities(self):
