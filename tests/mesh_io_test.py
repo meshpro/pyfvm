@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 import meshzoo
+import tempfile
 import unittest
 
 import pyfvm
@@ -18,17 +19,19 @@ class TestIo(unittest.TestCase):
                 zigzag=True
                 )
         mesh = pyfvm.meshTri.meshTri(vertices, cells)
+        # mesh, _, _ = pyfvm.reader.read('pacman.vtu')
 
         self.assertEqual(mesh.num_delaunay_violations(), 0)
 
         import matplotlib.pyplot as plt
         mesh.show()
-        mesh.show_node(0)
+        mesh.show_vertex(0)
         # plt.show()
 
-        mesh.write('test.vtu')
+        _, fname = tempfile.mkstemp(suffix='.vtu')
+        mesh.write(fname)
 
-        mesh2, _, _ = pyfvm.reader.read('test.vtu')
+        mesh2, _, _ = pyfvm.reader.read(fname)
 
         for k in range(len(mesh.cells['nodes'])):
             self.assertEqual(
