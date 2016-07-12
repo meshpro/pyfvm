@@ -96,33 +96,31 @@ class meshTetra(_base_mesh):
     def create_cell_volumes(self):
         '''Computes the volumes of the tetrahedra in the mesh.
         '''
-        from vtk import vtkTetra
         num_cells = len(self.cells['nodes'])
         self.cell_volumes = numpy.empty(num_cells, dtype=float)
-        for cell_id, cell in enumerate(self.cells):
-            # edge0 = node0 - node1
-            # edge1 = node1 - node2
-            # edge2 = node2 - node3
-            # edge3 = node3 - node0
 
-            # alpha = numpy.vdot(edge0, numpy.cross(edge1, edge2))
-            # norm_prod = \
-            #     numpy.linalg.norm(edge0) * \
-            #     numpy.linalg.norm(edge1) * \
-            #     numpy.linalg.norm(edge2)
-            # if abs(alpha) / norm_prod < 1.0e-5:
-            #     # Edges probably conplanar. Take a different set.
-            #     alpha = numpy.vdot(edge0, numpy.cross(edge1, edge3))
-            #     norm_prod = \
-            #         numpy.linalg.norm(edge0) * \
-            #         numpy.linalg.norm(edge1) * \
-            #         numpy.linalg.norm(edge3)
+        # edges
+        edge_coords = self.node_coords[self.edges['nodes'][:, 1]] - \
+            self.node_coords[self.edges['nodes'][:, 0]]
+        for cell_id, edges in enumerate(self.cells['edges']):
+            edge0 = edge_coords[edges[0]]
+            edge1 = edge_coords[edges[1]]
+            edge2 = edge_coords[edges[2]]
+            alpha = numpy.vdot(edge0, numpy.cross(edge1, edge2))
+            norm_prod = \
+                numpy.linalg.norm(edge0) * \
+                numpy.linalg.norm(edge1) * \
+                numpy.linalg.norm(edge2)
+            if abs(alpha) / norm_prod < 1.0e-5:
+                # Edges probably conplanar. Take a different set.
+                edge3 = edge_coods[edges[3]]
+                alpha = numpy.vdot(edge0, numpy.cross(edge1, edge3))
+                norm_prod = \
+                    numpy.linalg.norm(edge0) * \
+                    numpy.linalg.norm(edge1) * \
+                    numpy.linalg.norm(edge3)
 
-            # self.cell_volumes[cell_id] = abs(alpha) / 6.0
-
-            x = self.node_coords[cell['nodes']]
-            self.cell_volumes[cell_id] = \
-                abs(vtkTetra.ComputeVolume(x[0], x[1], x[2], x[3]))
+            self.cell_volumes[cell_id] = abs(alpha) / 6.0
         return
 
     def create_adjacent_entities(self):
