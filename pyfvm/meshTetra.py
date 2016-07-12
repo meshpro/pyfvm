@@ -28,8 +28,7 @@ class meshTetra(_base_mesh):
             }
 
         self.create_adjacent_entities()
-        self.create_cell_volumes()
-        self.create_cell_circumcenters()
+        self.create_cell_circumcenters_and_volumes()
         self.compute_edge_lengths()
         self.compute_covolumes()
         self.compute_control_volumes()
@@ -192,7 +191,7 @@ class meshTetra(_base_mesh):
 
         return
 
-    def create_cell_circumcenters(self):
+    def create_cell_circumcenters_and_volumes(self):
         '''Computes the center of the circumsphere of each cell.
         '''
         cell_coords = self.node_coords[self.cells['nodes']]
@@ -205,12 +204,16 @@ class meshTetra(_base_mesh):
         c = cell_coords[:, 2, :]
         d = cell_coords[:, 3, :]
 
-        omega = 2.0 * _row_dot(b, numpy.cross(c, d))
+        omega = _row_dot(b, numpy.cross(c, d))
+
         self.cell_circumcenters = cell_coords[:, 0, :] + (
                 numpy.cross(c, d) * _row_dot(b, b)[:, None] +
                 numpy.cross(d, b) * _row_dot(c, c)[:, None] +
                 numpy.cross(b, c) * _row_dot(d, d)[:, None]
-                ) / omega[:, None]
+                ) / (2.0 * omega[:, None])
+
+        # https://en.wikipedia.org/wiki/Tetrahedron#Volume
+        self.cell_volumes = abs(omega) / 6.0
         return
 
     def _get_face_circumcenter(self, face_id):
