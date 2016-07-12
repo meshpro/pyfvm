@@ -91,6 +91,52 @@ class TestVolumes(unittest.TestCase):
                 )
         return
 
+    def test_degenerate_tet0(self):
+        h = 1.0e-1
+        points = numpy.array([
+            [0, 0, 0],
+            [1, 0, 0],
+            [0, 1, 0],
+            [0.25, 0.25, h],
+            ])
+        cells = numpy.array([[0, 1, 2, 3]])
+        # Manually compute the volumes.
+        total_vol = 1.0/3.0 * 0.5 * h
+        mesh = pyfvm.meshTetra.meshTetra(points, cells)
+        self._run_test(
+                mesh,
+                total_vol,
+                [0.12038850913902652, 77.0/720.0],
+                [0.63985132821793977, 0.33202869688562492],
+                [1.0/60.0, 1.0/60.0]
+                )
+        return
+
+    def test_degenerate_tet1(self):
+        h = 1.0e-1
+        points = numpy.array([
+            [0, 0, 0],
+            [1, 0, 0],
+            [0, 1, 0],
+            [0.25, 0.25, h],
+            [0.25, 0.25, -h],
+            ])
+        cells = numpy.array([
+            [0, 1, 2, 3],
+            [0, 1, 2, 4]
+            ])
+        # Manually compute the volumes.
+        total_vol = 2 * 1.0/3.0 * 0.5 * h
+        mesh = pyfvm.meshTetra.meshTetra(points, cells)
+        self._run_test(
+                mesh,
+                total_vol,
+                [0.18734818957173291, 77.0/720.0],
+                [1.0045728777280247, 23.0/60.0],
+                [0.023570226039551584, 1.0/60.0]
+                )
+        return
+
     def test_rectanglesmall(self):
         points = numpy.array([
             [0.0, 0.0, 0.0],
