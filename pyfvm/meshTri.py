@@ -250,6 +250,21 @@ class meshTri(_base_mesh):
 
         return
 
+    def compute_surface_areas(self):
+        self.surface_areas = numpy.zeros(len(self.get_vertices('everywhere')))
+        b_edge = self.get_edges('Boundary')
+        numpy.add.at(
+            self.surface_areas,
+            self.edges['nodes'][b_edge, 0],
+            0.5 * self.edge_lengths[b_edge]
+            )
+        numpy.add.at(
+            self.surface_areas,
+            self.edges['nodes'][b_edge, 1],
+            0.5 * self.edge_lengths[b_edge]
+            )
+        return
+
     def compute_gradient(self, u):
         '''Computes an approximation to the gradient :math:`\\nabla u` of a
         given scalar valued function :math:`u`, defined in the node points.
@@ -400,12 +415,6 @@ class meshTri(_base_mesh):
         :param show_covolumes: If true, show all covolumes of the mesh, too.
         :type show_covolumes: bool, optional
         '''
-        if self.cell_circumcenters is None:
-            self.compute_cell_circumcenters()
-
-        if 'cells' not in self.edges:
-            self.create_edge_cells()
-
         # from mpl_toolkits.mplot3d import Axes3D
         fig = plt.figure()
         # ax = fig.gca(projection='3d')
@@ -413,30 +422,25 @@ class meshTri(_base_mesh):
         plt.axis('equal')
 
         # plot edges
-        col = 'k'
         for node_ids in self.edges['nodes']:
             x = self.node_coords[node_ids]
-            ax.plot(x[:, 0], x[:, 1], col)
+            ax.plot(x[:, 0], x[:, 1], 'k')
 
-        # Highlight covolumes.
         if show_covolumes:
-            covolume_col = '0.8'
-            for edge_id in range(len(self.edges['cells'])):
-                ccs = self.cell_circumcenters[self.edges['cells'][edge_id]]
-                if len(ccs) == 2:
-                    p = ccs.T
-                elif len(ccs) == 1:
-                    edge_midpoint = \
-                        0.5 * (
-                            self.node_coords[self.edges['nodes'][edge_id][0]] +
-                            self.node_coords[self.edges['nodes'][edge_id][1]]
-                            )
-                    p = numpy.c_[ccs[0], edge_midpoint]
-                else:
-                    raise RuntimeError('An edge has to have either 1 '
-                                       'or 2 adjacent cells.'
-                                       )
-                ax.plot(p[0], p[1], color=covolume_col)
+            # Connect all cell circumcenters with the edge midpoints
+            if self.cell_circumcenters is None:
+                self.compute_cell_circumcenters()
+            edge_midpoints = 0.5 * (
+                self.node_coords[self.edges['nodes'][:, 0]] +
+                self.node_coords[self.edges['nodes'][:, 1]]
+                )
+            for cell_id, edges in enumerate(self.cells['edges']):
+                for edge_id in edges:
+                    p = numpy.c_[
+                            self.cell_circumcenters[cell_id],
+                            edge_midpoints[edge_id],
+                            ]
+                    ax.plot(p[0], p[1], color='0.8')
         return
 
     def show_node(self, node_id, show_covolume=True):
@@ -489,19 +493,4 @@ class meshTri(_base_mesh):
                                            )
                     ax.fill(q[0], q[1], color=covolume_area_col)
                     ax.plot(p[0], p[1], color=covolume_boundary_col)
-        return
-
-    def compute_surface_areas(self):
-        self.surface_areas = numpy.zeros(len(self.get_vertices('everywhere')))
-        b_edge = self.get_edges('Boundary')
-        numpy.add.at(
-            self.surface_areas,
-            self.edges['nodes'][b_edge, 0],
-            0.5 * self.edge_lengths[b_edge]
-            )
-        numpy.add.at(
-            self.surface_areas,
-            self.edges['nodes'][b_edge, 1],
-            0.5 * self.edge_lengths[b_edge]
-            )
         return
