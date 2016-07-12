@@ -29,7 +29,6 @@ class meshTri(_base_mesh):
         self.cells['nodes'] = cells
 
         self.create_edges()
-        # self.create_halfedges()
         self.compute_edge_lengths()
         self.compute_cell_and_covolumes()
         self.compute_control_volumes()
@@ -46,8 +45,7 @@ class meshTri(_base_mesh):
         self.subdomains = {}
         self.subdomains['everywhere'] = {
                 'vertices': range(len(self.node_coords)),
-                'edges': range(len(self.edges['nodes'])),
-                'half_edges': []
+                'edges': range(len(self.edges['nodes']))
                 }
 
         # Get vertices on the boundary edges
@@ -58,8 +56,7 @@ class meshTri(_base_mesh):
 
         self.subdomains['Boundary'] = {
                 'vertices': boundary_vertices,
-                'edges': boundary_edges,
-                'half_edges': []
+                'edges': boundary_edges
                 }
 
         return
@@ -331,12 +328,7 @@ class meshTri(_base_mesh):
                         )
 
             # Compute the coefficient r for both contributions
-            # The term
-            #    numpy.sqrt(numpy.dot(coedge, coedge))
-            # could be replaced by (self.covolumes[edge_id]). However, the two
-            # values are always slightly off (1.0e-6 or so). That shouldn't be
-            # the case, actually.
-            coeffs = numpy.sqrt(numpy.dot(coedge, coedge)) / \
+            coeffs = self.covolumes[edge_id] / \
                 self.edge_lengths[edge_id] / \
                 self.control_volumes[self.edges['nodes'][edge_id]]
 
@@ -443,7 +435,7 @@ class meshTri(_base_mesh):
                     ax.plot(p[0], p[1], color='0.8')
         return
 
-    def show_node(self, node_id, show_covolume=True):
+    def show_vertex(self, node_id, show_covolume=True):
         '''Plot the vicinity of a node and its covolume.
 
         :param node_id: Node ID of the node to be shown.
@@ -456,41 +448,41 @@ class meshTri(_base_mesh):
         ax = fig.gca()
         plt.axis('equal')
 
-        # plot edges
-        col = 'k'
-        for node_ids in self.edges['nodes']:
-            if node_id in node_ids:
-                x = self.node_coords[node_ids]
-                ax.plot(x[:, 0],
-                        x[:, 1],
-                        col)
+        # Find the edges that contain the vertex
+        edge_ids = numpy.where((self.edges['nodes'] == node_id).any(axis=1))[0]
+        # ... and plot them
+        for node_ids in self.edges['nodes'][edge_ids]:
+            x = self.node_coords[node_ids]
+            ax.plot(x[:, 0], x[:, 1], 'k')
 
         # Highlight covolumes.
         if show_covolume:
-            covolume_boundary_col = '0.5'
-            covolume_area_col = '0.7'
-            for edge_id in range(len(self.edges['cells'])):
-                node_ids = self.edges['nodes'][edge_id]
-                if node_id in node_ids:
-                    ccs = self.cell_circumcenters[self.edges['cells'][edge_id]]
-                    if len(ccs) == 2:
-                        p = ccs.T
-                        q = numpy.c_[ccs[0], ccs[1], self.node_coords[node_id]]
-                    elif len(ccs) == 1:
-                        edge_midpoint = 0.5 * (
-                                self.node_coords[node_ids[0]] +
-                                self.node_coords[node_ids[1]]
-                                )
-                        p = numpy.c_[ccs[0], edge_midpoint]
-                        q = numpy.c_[
-                                ccs[0],
-                                edge_midpoint,
-                                self.node_coords[node_id]
-                                ]
-                    else:
-                        raise RuntimeError('An edge has to have either 1 or 2'
-                                           'adjacent cells.'
-                                           )
-                    ax.fill(q[0], q[1], color=covolume_area_col)
-                    ax.plot(p[0], p[1], color=covolume_boundary_col)
+            if self.cell_circumcenters is None:
+                self.compute_cell_circumcenters()
+
+            # Find the cells that contain the vertex
+            cell_ids = numpy.where(
+                (self.cells['nodes'] == node_id).any(axis=1)
+                )[0]
+
+            for cell_id in cell_ids:
+                for edge_id in self.cells['edges'][cell_id]:
+                    if node_id not in self.edges['nodes'][edge_id]:
+                        continue
+                    node_ids = self.edges['nodes'][edge_id]
+                    edge_midpoint = 0.5 * (
+                            self.node_coords[node_ids[0]] +
+                            self.node_coords[node_ids[1]]
+                            )
+                    p = numpy.c_[
+                        self.cell_circumcenters[cell_id],
+                        edge_midpoint
+                        ]
+                    q = numpy.c_[
+                        self.cell_circumcenters[cell_id],
+                        edge_midpoint,
+                        self.node_coords[node_id]
+                        ]
+                    ax.fill(q[0], q[1], color='0.5')
+                    ax.plot(p[0], p[1], color='0.7')
         return
