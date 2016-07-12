@@ -231,8 +231,8 @@ class TestVolumes(unittest.TestCase):
         mesh = pyfvm.meshTri.meshTri(points, cells)
         self._run_test(
                 mesh,
-                3.4641016151377544,
-                [1.63299316185545, 1.15470053837925],
+                2 * numpy.sqrt(3),
+                [numpy.sqrt(8.0/3.0), 1.15470053837925],
                 [1.8257418583505536, 0.81649658092772603],
                 [1.7320508075688772, 0.8660254037844386]
                 )
