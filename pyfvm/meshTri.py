@@ -2,12 +2,6 @@
 #
 import numpy
 from pyfvm.base import _base_mesh, _row_dot
-import matplotlib as mpl
-import os
-if 'DISPLAY' not in os.environ:
-    # headless mode, for remote executions (and travis)
-    mpl.use('Agg')
-from matplotlib import pyplot as plt
 
 __all__ = ['meshTri']
 
@@ -403,6 +397,14 @@ class meshTri(_base_mesh):
         :param show_covolumes: If true, show all covolumes of the mesh, too.
         :type show_covolumes: bool, optional
         '''
+        # Importing matplotlib takes a while, so don't do that at the header.
+        import os
+        if 'DISPLAY' not in os.environ:
+            import matplotlib as mpl
+            # headless mode, for remote executions (and travis)
+            mpl.use('Agg')
+        from matplotlib import pyplot as plt
+
         # from mpl_toolkits.mplot3d import Axes3D
         fig = plt.figure()
         # ax = fig.gca(projection='3d')
@@ -440,6 +442,14 @@ class meshTri(_base_mesh):
         :param show_covolume: If true, shows the covolume of the node, too.
         :type show_covolume: bool, optional
         '''
+        # Importing matplotlib takes a while, so don't do that at the header.
+        import os
+        if 'DISPLAY' not in os.environ:
+            import matplotlib as mpl
+            # headless mode, for remote executions (and travis)
+            mpl.use('Agg')
+        from matplotlib import pyplot as plt
+
         fig = plt.figure()
         ax = fig.gca()
         plt.axis('equal')

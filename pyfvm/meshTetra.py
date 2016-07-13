@@ -2,13 +2,6 @@
 #
 import numpy
 from pyfvm.base import _base_mesh, _row_dot
-import os
-import matplotlib as mpl
-from mpl_toolkits.mplot3d import Axes3D
-if 'DISPLAY' not in os.environ:
-    # headless mode, for remote executions (and travis)
-    mpl.use('Agg')
-from matplotlib import pyplot as plt
 
 __all__ = ['meshTetra']
 
@@ -452,6 +445,14 @@ class meshTetra(_base_mesh):
         :param node_id: Node ID for which to show the control volume.
         :type node_id: int
         '''
+        import os
+        import matplotlib as mpl
+        from mpl_toolkits.mplot3d import Axes3D
+        if 'DISPLAY' not in os.environ:
+            # headless mode, for remote executions (and travis)
+            mpl.use('Agg')
+        from matplotlib import pyplot as plt
+
         fig = plt.figure()
         ax = fig.gca(projection='3d')
         plt.axis('equal')
@@ -520,6 +521,14 @@ class meshTetra(_base_mesh):
         :param edge_id: Edge ID for which to show the covolume.
         :type edge_id: int
         '''
+        import os
+        import matplotlib as mpl
+        from mpl_toolkits.mplot3d import Axes3D
+        if 'DISPLAY' not in os.environ:
+            # headless mode, for remote executions (and travis)
+            mpl.use('Agg')
+        from matplotlib import pyplot as plt
+
         fig = plt.figure()
         ax = fig.gca(projection='3d')
         plt.axis('equal')
