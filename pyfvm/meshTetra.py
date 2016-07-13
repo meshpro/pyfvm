@@ -76,23 +76,6 @@ class meshTetra(_base_mesh):
     def get_vertices(self, subdomain):
         return self.subdomains[subdomain]['vertices']
 
-    def create_cell_volumes(self):
-        '''Computes the volumes of the tetrahedra in the mesh.
-        '''
-        # https://en.wikipedia.org/wiki/Tetrahedron#Volume
-        cell_coords = self.node_coords[self.cells['nodes']]
-
-        cell_coords[:, 1, :] -= cell_coords[:, 0, :]
-        cell_coords[:, 2, :] -= cell_coords[:, 0, :]
-        cell_coords[:, 3, :] -= cell_coords[:, 0, :]
-
-        self.cell_volumes = abs(_row_dot(
-                cell_coords[:, 1, :],
-                numpy.cross(cell_coords[:, 2, :], cell_coords[:, 3, :])
-                )) / 6.0
-
-        return
-
     def create_adjacent_entities(self):
         '''Set up edge-node, edge-cell, edge-face, face-node, and face-cell
         relations.
