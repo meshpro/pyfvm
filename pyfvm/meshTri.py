@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 #
 import numpy
-import warnings
 from pyfvm.base import _base_mesh, _row_dot
 import matplotlib as mpl
 import os
@@ -307,7 +306,6 @@ class meshTri(_base_mesh):
                         node_coords2d[node1]
                         )
                 cell0 = self.edges['cells'][edge_id][0]
-                coedge = cell_circumcenters2d[cell0] - edge_midpoint
                 coedge_midpoint = 0.5 * (
                         cell_circumcenters2d[cell0] +
                         edge_midpoint
@@ -316,8 +314,6 @@ class meshTri(_base_mesh):
                 cell0 = self.edges['cells'][edge_id][0]
                 cell1 = self.edges['cells'][edge_id][1]
                 # Interior edge.
-                coedge = cell_circumcenters2d[cell0] - \
-                    cell_circumcenters2d[cell1]
                 coedge_midpoint = 0.5 * (
                         cell_circumcenters2d[cell0] +
                         cell_circumcenters2d[cell1]
