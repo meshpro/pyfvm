@@ -125,25 +125,52 @@ class TestVolumes(unittest.TestCase):
         return
 
     def test_degenerate_tet0(self):
-        h = 1.0e-1
+        h = 1.0e-2
         points = numpy.array([
             [0, 0, 0],
             [1, 0, 0],
             [0, 1, 0],
-            [0.25, 0.25, h],
+            [0.5, 0.5, h],
             ])
         cells = numpy.array([[0, 1, 2, 3]])
         mesh = pyfvm.meshTetra.meshTetra(points, cells)
 
-        total_vol = h / 6.0
+        tol = 1.0e-10
 
-        self._run_test(
-                mesh,
-                total_vol,
-                [0.12038850913902652, 77.0/720.0],
-                [1.1259895833334386, 5.0/6.0],
-                [1.0/60.0, 1.0/60.0]
+        self.assertAlmostEqual(mesh.cell_circumcenters[0][0], 0.5, delta=tol)
+        self.assertAlmostEqual(mesh.cell_circumcenters[0][1], 0.5, delta=tol)
+        z = 0.5 * h - 1.0 / (4*h)
+        self.assertAlmostEqual(mesh.cell_circumcenters[0][2], z, delta=tol)
+
+        # covolume/edge length ratios
+        self.assertAlmostEqual(mesh.ce_ratios[0], h / 6.0, delta=tol)
+        self.assertAlmostEqual(mesh.ce_ratios[1], h / 6.0, delta=tol)
+        self.assertAlmostEqual(mesh.ce_ratios[2], 0.0, delta=tol)
+        self.assertAlmostEqual(mesh.ce_ratios[3], -1.0/24.0 / h, delta=tol)
+        self.assertAlmostEqual(mesh.ce_ratios[4],  1.0/12.0 / h, delta=tol)
+        self.assertAlmostEqual(mesh.ce_ratios[5],  1.0/12.0 / h, delta=tol)
+
+        # control volumes
+        self.assertAlmostEqual(mesh.control_volumes[0], h / 18.0, delta=tol)
+        self.assertAlmostEqual(
+                mesh.control_volumes[1],
+                1.0/72.0 * (3*h - 1.0/(2*h)),
+                delta=tol
                 )
+        self.assertAlmostEqual(
+                mesh.control_volumes[2],
+                1.0/72.0 * (3*h - 1.0/(2*h)),
+                delta=tol
+                )
+        self.assertAlmostEqual(
+                mesh.control_volumes[3],
+                1.0/36.0 * (h + 1.0/(2*h)),
+                delta=tol
+                )
+
+        # cell volumes
+        self.assertAlmostEqual(mesh.cell_volumes[0], h/6.0, delta=tol)
+
         return
 
     def test_degenerate_tet1(self):
