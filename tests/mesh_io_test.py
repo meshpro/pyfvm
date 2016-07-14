@@ -49,9 +49,9 @@ class TestIo(unittest.TestCase):
 
         self.assertEqual(mesh.num_delaunay_violations(), 0)
 
-        import matplotlib.pyplot as plt
-        mesh.show_control_volume(0)
-        mesh.show_edge(0)
+        # import matplotlib.pyplot as plt
+        # mesh.show_control_volume(0)
+        # mesh.show_edge(0)
         # plt.show()
 
         mesh.write('test.vtu')

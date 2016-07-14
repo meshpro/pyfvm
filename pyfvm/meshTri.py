@@ -23,7 +23,7 @@ class meshTri(_base_mesh):
 
         self.create_edges()
         self.compute_edge_lengths()
-        self.compute_cell_and_covolumes()
+        self.compute_cell_and_ce_ratios()
         self.compute_control_volumes()
 
         self.mark_default_subdomains()
@@ -173,8 +173,12 @@ class meshTri(_base_mesh):
     def compute_control_volumes(self):
         '''Compute the control volumes of all nodes in the mesh.
         '''
-        # 0.5 * (0.5 * edge_length) * covolume
-        vals = 0.25 * self.edge_lengths * self.covolumes
+        #   0.5 * (0.5 * edge_length) * ce_ratio
+        # = 0.5 * (0.5 * edge_length**2) * ce_ratio_edge_ratio
+        e = self.node_coords[self.edges['nodes'][:, 1]] - \
+            self.node_coords[self.edges['nodes'][:, 0]]
+
+        vals = 0.25 * _row_dot(e, e) * self.ce_ratios
 
         edge_nodes = self.edges['nodes']
 
@@ -184,13 +188,13 @@ class meshTri(_base_mesh):
 
         return
 
-    def compute_cell_and_covolumes(self):
-        # The covolumes for the edges of each cell is the solution of the
+    def compute_cell_and_ce_ratios(self):
+        # The ce_ratios for the edges of each cell is the solution of the
         # equation system
         #
         # |simplex| ||u||^2 = \sum_i \alpha_i <u,e_i> <e_i,u>,
         #
-        # where alpha_i are the covolume contributions for the edges.
+        # where alpha_i are the ce_ratio contributions for the edges.
         #
         # This equation system to hold for all vectors u in the plane spanned
         # by the edges, particularly by the edges themselves.
@@ -200,8 +204,6 @@ class meshTri(_base_mesh):
         #  x_1 = <e_2, e_3> / <e1 x e2, e1 x e3> * |simplex|;
         #
         # see <http://math.stackexchange.com/a/1855380/36678>.
-        #
-        # Precompute edges.
         edges = \
             self.node_coords[self.edges['nodes'][:, 1]] - \
             self.node_coords[self.edges['nodes'][:, 0]]
@@ -211,12 +213,10 @@ class meshTri(_base_mesh):
         e0 = cells_edges[:, 0, :]
         e1 = cells_edges[:, 1, :]
         e2 = cells_edges[:, 2, :]
+
         e0_cross_e1 = numpy.cross(e0, e1)
         e1_cross_e2 = numpy.cross(e1, e2)
         e2_cross_e0 = numpy.cross(e2, e0)
-
-        # It doesn't matter much which cross product we take for computing the
-        # cell volume.
         self.cell_volumes = 0.5 * numpy.sqrt(
                 _row_dot(e0_cross_e1, e0_cross_e1)
                 )
@@ -225,18 +225,49 @@ class meshTri(_base_mesh):
         b = _row_dot(e2, e0) / _row_dot(e1_cross_e2, -e0_cross_e1)
         c = _row_dot(e0, e1) / _row_dot(e2_cross_e0, -e1_cross_e2)
 
+        # Note
+        # ----
+        #
+        # There is an alternative formulation in terms of dot-products via
+        #
+        #   <e1 x e2, e1 x e3> = <e1, e1> <e2, e3> - <e1, e2> <e1, e3>.
+        #
+        # With this, the solution can be expressed as
+        #
+        #  x_1 / |simplex| * <e1, e1>
+        #    = <e1, e1> <e_2, e_3> / (<e1, e1> <e2, e3> - <e1, e2> <e1, e3>)
+        #
+        # It doesn't matter much which cross product we take for computing the
+        # cell volume.
+        # However, this approach is less favorable in terms of round-off
+        # errors: For almost degenerate triangles, the difference in the
+        # denominator is small, but the two values are large. This will lead to
+        # significant round-off in the denominator.
+        #
+        # e0_dot_e0 = _row_dot(cells_edges[:, 0, :], cells_edges[:, 0, :])
+        # e0_dot_e1 = _row_dot(cells_edges[:, 0, :], cells_edges[:, 1, :])
+        # e0_dot_e2 = _row_dot(cells_edges[:, 0, :], cells_edges[:, 2, :])
+        # e1_dot_e1 = _row_dot(cells_edges[:, 1, :], cells_edges[:, 1, :])
+        # e1_dot_e2 = _row_dot(cells_edges[:, 1, :], cells_edges[:, 2, :])
+        # e2_dot_e2 = _row_dot(cells_edges[:, 2, :], cells_edges[:, 2, :])
+        #
+        # a00 = e0_dot_e0 * e1_dot_e2
+        # a = a00 / (a00 - (e0_dot_e1 * e0_dot_e2))
+        # b00 = e1_dot_e1 * e0_dot_e2
+        # b = b00 / (b00 - (e0_dot_e1 * e1_dot_e2))
+        # c00 = e2_dot_e2 * e0_dot_e1
+        # c = c00 / (c00 - (e0_dot_e2 * e1_dot_e2))
+
         sol = numpy.column_stack((a, b, c))
         sol *= self.cell_volumes[:, None]
 
         num_edges = len(self.edges['nodes'])
-        self.covolumes = numpy.zeros(num_edges, dtype=float)
+        self.ce_ratios = numpy.zeros(num_edges, dtype=float)
         numpy.add.at(
-                self.covolumes,
+                self.ce_ratios,
                 self.cells['edges'],
                 sol
                 )
-
-        self.covolumes *= self.edge_lengths
 
         return
 
@@ -318,8 +349,7 @@ class meshTri(_base_mesh):
                         )
 
             # Compute the coefficient r for both contributions
-            coeffs = self.covolumes[edge_id] / \
-                self.edge_lengths[edge_id] / \
+            coeffs = self.ce_ratios[edge_id] / \
                 self.control_volumes[self.edges['nodes'][edge_id]]
 
             # Compute R*_{IJ} ((11) in [1]).
@@ -388,14 +418,14 @@ class meshTri(_base_mesh):
 
     def num_delaunay_violations(self):
         # Delaunay violations are present exactly on the interior edges where
-        # the covolume is negative. Count those.
-        return numpy.sum(self.covolumes[~self.is_boundary_edge] < 0.0)
+        # the ce_ratio is negative. Count those.
+        return numpy.sum(self.ce_ratios[~self.is_boundary_edge] < 0.0)
 
-    def show(self, show_covolumes=True):
+    def show(self, show_ce_ratios=True):
         '''Show the mesh using matplotlib.
 
-        :param show_covolumes: If true, show all covolumes of the mesh, too.
-        :type show_covolumes: bool, optional
+        :param show_ce_ratios: If true, show all ce_ratios of the mesh, too.
+        :type show_ce_ratios: bool, optional
         '''
         # Importing matplotlib takes a while, so don't do that at the header.
         import os
@@ -416,7 +446,7 @@ class meshTri(_base_mesh):
             x = self.node_coords[node_ids]
             ax.plot(x[:, 0], x[:, 1], 'k')
 
-        if show_covolumes:
+        if show_ce_ratios:
             # Connect all cell circumcenters with the edge midpoints
             if self.cell_circumcenters is None:
                 self.compute_cell_circumcenters()
@@ -433,14 +463,14 @@ class meshTri(_base_mesh):
                     ax.plot(p[0], p[1], color='0.8')
         return
 
-    def show_vertex(self, node_id, show_covolume=True):
-        '''Plot the vicinity of a node and its covolume.
+    def show_vertex(self, node_id, show_ce_ratio=True):
+        '''Plot the vicinity of a node and its ce_ratio.
 
         :param node_id: Node ID of the node to be shown.
         :type node_id: int
 
-        :param show_covolume: If true, shows the covolume of the node, too.
-        :type show_covolume: bool, optional
+        :param show_ce_ratio: If true, shows the ce_ratio of the node, too.
+        :type show_ce_ratio: bool, optional
         '''
         # Importing matplotlib takes a while, so don't do that at the header.
         import os
@@ -461,8 +491,8 @@ class meshTri(_base_mesh):
             x = self.node_coords[node_ids]
             ax.plot(x[:, 0], x[:, 1], 'k')
 
-        # Highlight covolumes.
-        if show_covolume:
+        # Highlight ce_ratios.
+        if show_ce_ratio:
             if self.cell_circumcenters is None:
                 self.compute_cell_circumcenters()
 

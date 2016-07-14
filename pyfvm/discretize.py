@@ -27,9 +27,9 @@ class EdgeKernel(object):
         x0 = X[:, 0, :].T
         x1 = X[:, 1, :].T
         zero = numpy.zeros(len(edge_ids))
-        edge_covolume = self.mesh.covolumes[edge_ids]
+        edge_ce_ratio = self.mesh.ce_ratios[edge_ids]
         edge_length = self.mesh.edge_lengths[edge_ids]
-        val = numpy.array(self.coeff(x0, x1, edge_covolume, edge_length, zero))
+        val = numpy.array(self.coeff(x0, x1, edge_ce_ratio, edge_length, zero))
         # if hasattr(val[0][0], '__len__'):
         #     assert len(val[0][0]) == 1
         #     val = [
@@ -38,7 +38,7 @@ class EdgeKernel(object):
         #         ]
         return (
             val,
-            numpy.array(self.affine(x0, x1, edge_covolume, edge_length, zero))
+            numpy.array(self.affine(x0, x1, edge_ce_ratio, edge_length, zero))
             )
 
 
@@ -90,8 +90,8 @@ class DirichletKernel(object):
         return self.val(X)
 
 
-def _discretize_edge_integral(integrand, x0, x1, edge_length, edge_covolume):
-    discretizer = DiscretizeEdgeIntegral(x0, x1, edge_length, edge_covolume)
+def _discretize_edge_integral(integrand, x0, x1, edge_length, edge_ce_ratio):
+    discretizer = DiscretizeEdgeIntegral(x0, x1, edge_length, edge_ce_ratio)
     return discretizer.generate(integrand)
 
 
@@ -101,12 +101,12 @@ if debug:
 
 
 class DiscretizeEdgeIntegral(object):
-    def __init__(self, x0, x1, edge_length, edge_covolume):
+    def __init__(self, x0, x1, edge_length, edge_ce_ratio):
         self.arg_translate = {}
         self.x0 = x0
         self.x1 = x1
         self.edge_length = edge_length
-        self.edge_covolume = edge_covolume
+        self.edge_ce_ratio = edge_ce_ratio
         return
 
     def visit(self, node):
@@ -141,7 +141,7 @@ class DiscretizeEdgeIntegral(object):
             if hasattr(f, 'nosh'):
                 function_vars.append(f.func)
 
-        out = self.edge_covolume * self.visit(expr)
+        out = self.edge_ce_ratio * self.edge_length * self.visit(expr)
 
         vector_vars = []
         for f in function_vars:
@@ -303,12 +303,12 @@ def discretize(cls, mesh):
             x0 = sympy.Symbol('x0')
             x1 = sympy.Symbol('x1')
             edge_length = sympy.Symbol('edge_length')
-            edge_covolume = sympy.Symbol('edge_covolume')
+            edge_ce_ratio = sympy.Symbol('edge_ce_ratio')
             expr, vector_vars = _discretize_edge_integral(
                     integral.integrand,
                     x0, x1,
                     edge_length,
-                    edge_covolume
+                    edge_ce_ratio
                     )
             coeff, affine, arguments, used_vars = _collect_variables(expr, u)
 
@@ -327,12 +327,12 @@ def discretize(cls, mesh):
                 EdgeKernel(
                     mesh,
                     sympy.lambdify(
-                        (x0, x1, edge_covolume, edge_length, zero),
+                        (x0, x1, edge_ce_ratio, edge_length, zero),
                         coeff,
                         modules=array2array
                         ),
                     sympy.lambdify(
-                        (x0, x1, edge_covolume, edge_length, zero),
+                        (x0, x1, edge_ce_ratio, edge_length, zero),
                         affine,
                         modules=array2array
                         )

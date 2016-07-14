@@ -23,7 +23,7 @@ class meshTetra(_base_mesh):
         self.create_adjacent_entities()
         self.create_cell_circumcenters_and_volumes()
         self.compute_edge_lengths()
-        self.compute_covolumes()
+        self.compute_ce_ratios()
         self.compute_control_volumes()
 
         self.mark_default_subdomains()
@@ -198,7 +198,7 @@ class meshTetra(_base_mesh):
         self.cell_volumes = abs(omega) / 6.0
         return
 
-    def compute_covolumes(self):
+    def compute_ce_ratios(self):
         # Precompute edges.
         edges = \
             self.node_coords[self.edges['nodes'][:, 1]] - \
@@ -232,20 +232,16 @@ class meshTetra(_base_mesh):
         sol = numpy.linalg.solve(A, rhs)
 
         num_edges = len(self.edges['nodes'])
-        self.covolumes = numpy.zeros(num_edges, dtype=float)
+        self.ce_ratios = numpy.zeros(num_edges, dtype=float)
         numpy.add.at(
-                self.covolumes,
+                self.ce_ratios,
                 self.cells['edges'],
                 sol
                 )
 
-        # Here, self.covolumes contains the covolume-edgelength ratios. Make
-        # sure we end up with the covolumes.
-        self.covolumes *= self.edge_lengths
-
         return
 
-    def compute_covolumes2(self):
+    def compute_ce_ratios2(self):
         # Precompute edges.
         edges = \
             self.node_coords[self.edges['nodes'][:, 1]] - \
@@ -281,16 +277,14 @@ class meshTetra(_base_mesh):
         sol = numpy.linalg.solve(A, rhs)
 
         num_edges = len(self.edges['nodes'])
-        self.covolumes = numpy.zeros(num_edges, dtype=float)
+        self.ce_ratios = numpy.zeros(num_edges, dtype=float)
         numpy.add.at(
-                self.covolumes,
+                self.ce_ratios,
                 self.cells['edges'],
                 sol
                 )
 
-        # Here, self.covolumes contains the covolume-edgelength ratios. Make
-        # sure we end up with the covolumes.
-        self.covolumes /= self.edge_lengths
+        self.ce_ratios /= self.edge_lengths**2
 
         return
 
@@ -299,8 +293,11 @@ class meshTetra(_base_mesh):
         '''
         self.control_volumes = numpy.zeros(len(self.node_coords), dtype=float)
 
-        # 1/3. * (0.5 * edge_length) * covolume
-        vals = self.edge_lengths * self.covolumes / 6.0
+        #   1/3. * (0.5 * edge_length) * ce_ratio
+        # = 1/6 * edge_length**2 * ce_ratio_edge_ratio
+        e = self.node_coords[self.edges['nodes'][:, 1]] - \
+            self.node_coords[self.edges['nodes'][:, 0]]
+        vals = _row_dot(e, e) * self.ce_ratios / 6.0
 
         edge_nodes = self.edges['nodes']
         numpy.add.at(self.control_volumes, edge_nodes[:, 0], vals)
@@ -452,7 +449,7 @@ class meshTetra(_base_mesh):
             if node_id in nodes:
                 adjacent_edge_ids.append(edge_id)
 
-        # Loop over all adjacent edges and plot the edges and their covolumes.
+        # Loop over all adjacent edges and plot the edges and their ce_ratios.
         for k, edge_id in enumerate(adjacent_edge_ids):
             # get rainbow color
             h = float(k) / len(adjacent_edge_ids)
@@ -469,7 +466,7 @@ class meshTetra(_base_mesh):
 
             # edge_midpoint = 0.5 * (edge_nodes[0] + edge_nodes[1])
 
-            # Plot covolume.
+            # Plot ce_ratio.
             # face_col = '0.7'
             edge_col = 'k'
             for k, face_id in enumerate(self.edges['faces'][edge_id]):
@@ -499,9 +496,9 @@ class meshTetra(_base_mesh):
         return
 
     def show_edge(self, edge_id):
-        '''Displays edge with covolume.
+        '''Displays edge with ce_ratio.
 
-        :param edge_id: Edge ID for which to show the covolume.
+        :param edge_id: Edge ID for which to show the ce_ratio.
         :type edge_id: int
         '''
         import os
@@ -558,7 +555,7 @@ class meshTetra(_base_mesh):
             ax.plot([face_cc[0]], [face_cc[1]], [face_cc[2]],
                     marker='o', color=col)
 
-        # plot covolume
+        # plot ce_ratio
         face_col = '0.7'
         col = 'k'
         for k, face_id in enumerate(self.edges['faces'][edge_id]):

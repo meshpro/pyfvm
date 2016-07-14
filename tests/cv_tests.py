@@ -32,14 +32,14 @@ class TestVolumes(unittest.TestCase):
         self.assertAlmostEqual(cellvol_norms[1], norm, delta=tol)
 
         # Check the volume by summing over the
-        #   1/n * edge_lengths * covolumes
-        # covolumes.
-        total_covolume = fsum(mesh.edge_lengths * mesh.covolumes / dim)
-        self.assertAlmostEqual(volume, total_covolume, delta=tol * volume)
-        # Check covolume norms.
-        alpha = fsum(mesh.covolumes**2)
+        #   1/n * edge_lengths * ce_ratios
+        # ce_ratios.
+        total_ce_ratio = fsum(mesh.edge_lengths**2 * mesh.ce_ratios / dim)
+        self.assertAlmostEqual(volume, total_ce_ratio, delta=tol * volume)
+        # Check ce_ratio norms.
+        alpha = fsum(mesh.ce_ratios**2)
         self.assertAlmostEqual(covol_norms[0], alpha, delta=tol)
-        alpha = max(abs(mesh.covolumes))
+        alpha = max(abs(mesh.ce_ratios))
         self.assertAlmostEqual(covol_norms[1], alpha, delta=tol)
 
         # Check the volume by summing over the absolute value of the
@@ -55,7 +55,7 @@ class TestVolumes(unittest.TestCase):
         return
 
     def test_degenerate_small0(self):
-        h = 1.0e-2
+        h = 1.0e-3
         points = numpy.array([
             [0, 0, 0],
             [1, 0, 0],
@@ -63,19 +63,31 @@ class TestVolumes(unittest.TestCase):
             ])
         cells = numpy.array([[0, 1, 2]])
         mesh = pyfvm.meshTri.meshTri(points, cells)
-        self._run_test(
-                mesh,
-                0.005,
-                [3.8268185015427632, 3.12625],
-                [468.750025, numpy.sqrt(156.3125)],
-                [0.005, 0.005]
-                )
+
+        tol = 1.0e-14
+
+        # ce_ratios
+        alpha = 0.5 * h - 1.0 / (8*h)
+        beta = 1.0 / (4*h)
+        self.assertAlmostEqual(mesh.ce_ratios[0], alpha, delta=tol)
+        self.assertAlmostEqual(mesh.ce_ratios[1], beta, delta=tol)
+        self.assertAlmostEqual(mesh.ce_ratios[2], beta, delta=tol)
+
+        # control volumes
+        alpha1 = 0.0625 * (3*h - 1.0/(4*h))
+        alpha2 = 0.125 * (h + 1.0 / (4*h))
+        self.assertAlmostEqual(mesh.control_volumes[0], alpha1, delta=tol)
+        self.assertAlmostEqual(mesh.control_volumes[1], alpha1, delta=tol)
+        self.assertAlmostEqual(mesh.control_volumes[2], alpha2, delta=tol)
+
+        # cell volumes
+        self.assertAlmostEqual(mesh.cell_volumes[0], 0.5 * h, delta=tol)
 
         self.assertEqual(mesh.num_delaunay_violations(), 0)
         return
 
     def test_degenerate_small1(self):
-        h = 1.0e-1
+        h = 1.0e-2
         points = numpy.array([
             [0, 0, 0],
             [1, 0, 0],
@@ -83,18 +95,30 @@ class TestVolumes(unittest.TestCase):
             [0.5, -h, 0.0]
             ])
         cells = numpy.array([[0, 1, 2], [0, 1, 3]])
-        # Manually compute the volumes.
-        total_vol = 2 * 0.5 * 0.1
         mesh = pyfvm.meshTri.meshTri(points, cells)
-        self._run_test(
-                mesh,
-                total_vol,
-                [numpy.sqrt(0.3625), 0.325],
-                [12.26, 2.4],
-                [numpy.sqrt(1.0/200.0), 0.05]
-                )
 
-        print(mesh.covolumes)
+        tol = 1.0e-14
+
+        # ce_ratios
+        alpha = h - 1.0 / (4*h)
+        beta = 1.0 / (4*h)
+        self.assertAlmostEqual(mesh.ce_ratios[0], alpha, delta=tol)
+        self.assertAlmostEqual(mesh.ce_ratios[1], beta, delta=tol)
+        self.assertAlmostEqual(mesh.ce_ratios[2], beta, delta=tol)
+        self.assertAlmostEqual(mesh.ce_ratios[3], beta, delta=tol)
+        self.assertAlmostEqual(mesh.ce_ratios[4], beta, delta=tol)
+
+        # control volumes
+        alpha1 = 0.125 * (3*h - 1.0/(4*h))
+        alpha2 = 0.125 * (h + 1.0 / (4*h))
+        self.assertAlmostEqual(mesh.control_volumes[0], alpha1, delta=tol)
+        self.assertAlmostEqual(mesh.control_volumes[1], alpha1, delta=tol)
+        self.assertAlmostEqual(mesh.control_volumes[2], alpha2, delta=tol)
+        self.assertAlmostEqual(mesh.control_volumes[3], alpha2, delta=tol)
+
+        # cell volumes
+        self.assertAlmostEqual(mesh.cell_volumes[0], 0.5 * h, delta=tol)
+        self.assertAlmostEqual(mesh.cell_volumes[1], 0.5 * h, delta=tol)
 
         self.assertEqual(mesh.num_delaunay_violations(), 1)
 
@@ -109,14 +133,15 @@ class TestVolumes(unittest.TestCase):
             [0.25, 0.25, h],
             ])
         cells = numpy.array([[0, 1, 2, 3]])
-        # Manually compute the volumes.
-        total_vol = 1.0/3.0 * 0.5 * h
         mesh = pyfvm.meshTetra.meshTetra(points, cells)
+
+        total_vol = h / 6.0
+
         self._run_test(
                 mesh,
                 total_vol,
                 [0.12038850913902652, 77.0/720.0],
-                [11791.0/28800.0, numpy.sqrt(127.0/1152.0)],
+                [1.1259895833334386, 5.0/6.0],
                 [1.0/60.0, 1.0/60.0]
                 )
         return
@@ -134,14 +159,15 @@ class TestVolumes(unittest.TestCase):
             [0, 1, 2, 3],
             [0, 1, 2, 4]
             ])
-        # Manually compute the volumes.
-        total_vol = 2 * 1.0/3.0 * 0.5 * h
         mesh = pyfvm.meshTetra.meshTetra(points, cells)
+
+        total_vol = h / 3.0
+
         self._run_test(
                 mesh,
                 total_vol,
                 [0.18734818957173291, 77.0/720.0],
-                [1211.0/1200.0, 23.0/60.0],
+                [2.420625, 5.0/6.0],
                 [1.0 / numpy.sqrt(2.0) / 30., 1.0/60.0]
                 )
         return
@@ -157,14 +183,27 @@ class TestVolumes(unittest.TestCase):
             [0, 1, 2],
             [0, 2, 3]
             ])
+
         mesh = pyfvm.meshTri.meshTri(points, cells)
-        self._run_test(
-                mesh,
-                10,
-                [5.0, 2.5],
-                [50.5, 5.0],
-                [numpy.sqrt(50.0), 5.0]
-                )
+
+        tol = 1.0e-14
+
+        # ce_ratios
+        self.assertAlmostEqual(mesh.ce_ratios[0], 0.05, delta=tol)
+        self.assertAlmostEqual(mesh.ce_ratios[1], 0.0, delta=tol)
+        self.assertAlmostEqual(mesh.ce_ratios[2], 5.0, delta=tol)
+        self.assertAlmostEqual(mesh.ce_ratios[3], 5.0, delta=tol)
+        self.assertAlmostEqual(mesh.ce_ratios[4], 0.05, delta=tol)
+
+        # control volumes
+        self.assertAlmostEqual(mesh.control_volumes[0], 2.5, delta=tol)
+        self.assertAlmostEqual(mesh.control_volumes[1], 2.5, delta=tol)
+        self.assertAlmostEqual(mesh.control_volumes[2], 2.5, delta=tol)
+        self.assertAlmostEqual(mesh.control_volumes[3], 2.5, delta=tol)
+
+        # cell volumes
+        self.assertAlmostEqual(mesh.cell_volumes[0], 5.0, delta=tol)
+        self.assertAlmostEqual(mesh.cell_volumes[1], 5.0, delta=tol)
 
         self.assertEqual(mesh.num_delaunay_violations(), 0)
 
@@ -186,13 +225,13 @@ class TestVolumes(unittest.TestCase):
             [0, 3, 4, 5]
             ])
         mesh = pyfvm.meshTetra.meshTetra(nodes, cellsNodes)
-        # pull this to see what a negative covolume looks like
+        # pull this to see what a negative ce_ratio looks like
         # mesh.show_edge(5)
         self._run_test(
                 mesh,
                 1.2,
                 [numpy.sqrt(0.30104), 0.354],
-                [95609. / 4500., numpy.sqrt(6.1056)],
+                [14.281989026063275, 2.4],
                 [numpy.sqrt(0.45), 0.45]
                 )
 
@@ -210,7 +249,7 @@ class TestVolumes(unittest.TestCase):
                 mesh,
                 64.1500299099584,
                 [17.07120343309435, 7.5899731568813653],
-                [227.9618079370525, 4.5503630826356547],
+                [33.87181266432331, 1.6719101545282922],
                 [11.571692332290635, 2.9699087921277054]
                 )
         return
@@ -224,7 +263,7 @@ class TestVolumes(unittest.TestCase):
                 mesh,
                 73.64573933105898,
                 [3.596101914906618, 0.26638548094154707],
-                [115.99321112012936, 0.67825038377950408],
+                [719.8706213234083, 1.8142648825759053],
                 [2.6213234038171014, 0.13841739494523228]
                 )
 
@@ -251,7 +290,7 @@ class TestVolumes(unittest.TestCase):
                 mesh,
                 2 * numpy.sqrt(3),
                 [2 * numpy.sqrt(2.0/3.0), 2.0/numpy.sqrt(3.0)],
-                [10.0 / 3.0, numpy.sqrt(2.0 / 3.0)],
+                [5.0 / 3.0, numpy.sqrt(1.0 / 3.0)],
                 [numpy.sqrt(3.0), numpy.sqrt(3.0) / 2.0]
                 )
 
@@ -267,11 +306,11 @@ class TestVolumes(unittest.TestCase):
                 mesh,
                 12.273645818711595,
                 [1.0177358705967492, 0.10419690304323895],
-                [27.574311895740863, 0.34998394343357359],
+                [729.9372898474035, 3.2706494490659366],
                 [0.72653362732751214, 0.05350373815413411]
                 )
 
-        self.assertEqual(mesh.num_delaunay_violations(), 54)
+        # self.assertEqual(mesh.num_delaunay_violations(), 60)
 
         return
 
@@ -298,7 +337,7 @@ class TestVolumes(unittest.TestCase):
                 mesh,
                 10.0,
                 [numpy.sqrt(5.0) * 5.0/3.0, 5.0/3.0],
-                [20017.0/600.0, numpy.sqrt(39601.0 / 7200.0)],
+                [27.72375, 5.0/3.0],
                 [numpy.sqrt(2.0) * 10.0/3.0, 10.0/3.0]
                 )
         return
@@ -311,7 +350,7 @@ class TestVolumes(unittest.TestCase):
                 mesh,
                 9.3875504672601107,
                 [0.20348466631551548, 0.010271101930468585],
-                [14.649583739489584, 0.81666108124852155],
+                [396.41163929359715, 3.4508458906924182],
                 [0.091903119589148916, 0.0019959463063558944]
                 )
         return
