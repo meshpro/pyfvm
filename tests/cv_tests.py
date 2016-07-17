@@ -54,6 +54,33 @@ class TestVolumes(unittest.TestCase):
 
         return
 
+    def test_regular_tri(self):
+        points = numpy.array([
+            [0, 0, 0],
+            [1, 0, 0],
+            [0, 1, 0]
+            ])
+        cells = numpy.array([[0, 1, 2]])
+        mesh = pyfvm.meshTri.meshTri(points, cells)
+
+        tol = 1.0e-14
+
+        # ce_ratios
+        self.assertAlmostEqual(mesh.ce_ratios[0], 0.5, delta=tol)
+        self.assertAlmostEqual(mesh.ce_ratios[1], 0.5, delta=tol)
+        self.assertAlmostEqual(mesh.ce_ratios[2], 0, delta=tol)
+
+        # control volumes
+        self.assertAlmostEqual(mesh.control_volumes[0], 0.25, delta=tol)
+        self.assertAlmostEqual(mesh.control_volumes[1], 0.125, delta=tol)
+        self.assertAlmostEqual(mesh.control_volumes[2], 0.125, delta=tol)
+
+        # cell volumes
+        self.assertAlmostEqual(mesh.cell_volumes[0], 0.5, delta=tol)
+
+        self.assertEqual(mesh.num_delaunay_violations(), 0)
+        return
+
     def test_degenerate_small0(self):
         h = 1.0e-3
         points = numpy.array([
@@ -121,6 +148,121 @@ class TestVolumes(unittest.TestCase):
         self.assertAlmostEqual(mesh.cell_volumes[1], 0.5 * h, delta=tol)
 
         self.assertEqual(mesh.num_delaunay_violations(), 1)
+
+        return
+
+    def test_regular_tet0(self):
+        a = 1.0  # edge length
+
+        points = numpy.array([
+            [1.0, 0, 0],
+            [-0.5,  numpy.sqrt(3.0) / 2.0, 0],
+            [-0.5, -numpy.sqrt(3.0) / 2.0, 0],
+            [0.0, 0.0, numpy.sqrt(2.0)],
+            ]) / numpy.sqrt(3.0) * a
+        cells = numpy.array([[0, 1, 2, 3]])
+        mesh = pyfvm.meshTetra.meshTetra(points, cells)
+
+        tol = 1.0e-10
+
+        self.assertAlmostEqual(mesh.cell_circumcenters[0][0], 0.0, delta=tol)
+        self.assertAlmostEqual(mesh.cell_circumcenters[0][1], 0.0, delta=tol)
+        z = a / numpy.sqrt(24.0)
+        self.assertAlmostEqual(mesh.cell_circumcenters[0][2], z, delta=tol)
+
+        # covolume/edge length ratios
+        val = a / 12.0 / numpy.sqrt(2)
+        self.assertAlmostEqual(mesh.ce_ratios[0], val, delta=tol)
+        self.assertAlmostEqual(mesh.ce_ratios[1], val, delta=tol)
+        self.assertAlmostEqual(mesh.ce_ratios[2], val, delta=tol)
+        self.assertAlmostEqual(mesh.ce_ratios[3], val, delta=tol)
+        self.assertAlmostEqual(mesh.ce_ratios[4], val, delta=tol)
+        self.assertAlmostEqual(mesh.ce_ratios[5], val, delta=tol)
+
+        # cell volumes
+        vol = a**3 / 6.0 / numpy.sqrt(2)
+        self.assertAlmostEqual(mesh.cell_volumes[0], vol, delta=tol)
+
+        # control volumes
+        val = vol / 4.0
+        self.assertAlmostEqual(mesh.control_volumes[0], val, delta=tol)
+        self.assertAlmostEqual(mesh.control_volumes[1], val, delta=tol)
+        self.assertAlmostEqual(mesh.control_volumes[2], val, delta=tol)
+        self.assertAlmostEqual(mesh.control_volumes[3], val, delta=tol)
+
+        return
+
+    def test_regular_tet1_algebraic(self):
+        a = 1.0  # basis edge length
+
+        points = numpy.array([
+            [0, 0, 0],
+            [a, 0, 0],
+            [0, a, 0],
+            [0, 0, a]
+            ])
+        cells = numpy.array([[0, 1, 2, 3]])
+        tol = 1.0e-10
+
+        mesh = pyfvm.meshTetra.meshTetra(points, cells, mode='algebraic')
+
+        self.assertAlmostEqual(mesh.cell_circumcenters[0][0], a/2.0, delta=tol)
+        self.assertAlmostEqual(mesh.cell_circumcenters[0][1], a/2.0, delta=tol)
+        self.assertAlmostEqual(mesh.cell_circumcenters[0][2], a/2.0, delta=tol)
+
+        # covolume/edge length ratios
+        self.assertAlmostEqual(mesh.ce_ratios[0], a/6.0, delta=tol)
+        self.assertAlmostEqual(mesh.ce_ratios[1], a/6.0, delta=tol)
+        self.assertAlmostEqual(mesh.ce_ratios[2], a/6.0, delta=tol)
+        self.assertAlmostEqual(mesh.ce_ratios[3], 0.0, delta=tol)
+        self.assertAlmostEqual(mesh.ce_ratios[4], 0.0, delta=tol)
+        self.assertAlmostEqual(mesh.ce_ratios[5], 0.0, delta=tol)
+
+        # cell volumes
+        self.assertAlmostEqual(mesh.cell_volumes[0], a**3/6.0, delta=tol)
+
+        # control volumes
+        self.assertAlmostEqual(mesh.control_volumes[0], a**3/12.0, delta=tol)
+        self.assertAlmostEqual(mesh.control_volumes[1], a**3/36.0, delta=tol)
+        self.assertAlmostEqual(mesh.control_volumes[2], a**3/36.0, delta=tol)
+        self.assertAlmostEqual(mesh.control_volumes[3], a**3/36.0, delta=tol)
+
+        return
+
+    def test_regular_tet1_geometric(self):
+        a = 1.0  # basis edge length
+
+        points = numpy.array([
+            [0, 0, 0],
+            [a, 0, 0],
+            [0, a, 0],
+            [0, 0, a]
+            ])
+        cells = numpy.array([[0, 1, 2, 3]])
+        tol = 1.0e-10
+
+        mesh = pyfvm.meshTetra.meshTetra(points, cells, mode='geometric')
+
+        self.assertAlmostEqual(mesh.cell_circumcenters[0][0], a/2.0, delta=tol)
+        self.assertAlmostEqual(mesh.cell_circumcenters[0][1], a/2.0, delta=tol)
+        self.assertAlmostEqual(mesh.cell_circumcenters[0][2], a/2.0, delta=tol)
+
+        # covolume/edge length ratios
+        self.assertAlmostEqual(mesh.ce_ratios[0], a/4.0, delta=tol)
+        self.assertAlmostEqual(mesh.ce_ratios[1], a/4.0, delta=tol)
+        self.assertAlmostEqual(mesh.ce_ratios[2], a/4.0, delta=tol)
+        self.assertAlmostEqual(mesh.ce_ratios[3], -a/24.0, delta=tol)
+        self.assertAlmostEqual(mesh.ce_ratios[4], -a/24.0, delta=tol)
+        self.assertAlmostEqual(mesh.ce_ratios[5], -a/24.0, delta=tol)
+
+        # cell volumes
+        self.assertAlmostEqual(mesh.cell_volumes[0], a**3/6.0, delta=tol)
+
+        # control volumes
+        self.assertAlmostEqual(mesh.control_volumes[0], a**3/8.0, delta=tol)
+        self.assertAlmostEqual(mesh.control_volumes[1], a**3/72.0, delta=tol)
+        self.assertAlmostEqual(mesh.control_volumes[2], a**3/72.0, delta=tol)
+        self.assertAlmostEqual(mesh.control_volumes[3], a**3/72.0, delta=tol)
 
         return
 
@@ -377,7 +519,7 @@ class TestVolumes(unittest.TestCase):
                 mesh,
                 9.3875504672601107,
                 [0.20348466631551548, 0.010271101930468585],
-                [396.41163929359715, 3.4508458906924182],
+                [396.4116393776213, 3.4508458933423918],
                 [0.091903119589148916, 0.0019959463063558944]
                 )
         return
