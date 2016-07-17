@@ -55,3 +55,72 @@ class _base_mesh(object):
             - self.node_coords[self.edges['nodes'][:, 0]]
         self.edge_lengths = numpy.sqrt(_row_dot(edges, edges))
         return
+
+    def compute_tri_areas_and_ce_ratios(self, e0, e1, e2):
+        '''Given triangles (specified by their edges) and vertex
+        coordinates, this routine will return the triangle areas and the signed
+        distances of the triangle circumcenters to the edge midpoints.
+        '''
+        # The covolume-edge ratios for the edges of each cell is the solution
+        # of the equation system
+        #
+        # |simplex| ||u||^2 = \sum_i \alpha_i <u,e_i> <e_i,u>,
+        #
+        # where alpha_i are the covolume contributions for the edges.
+        #
+        # This equation system to hold for all vectors u in the plane spanned
+        # by the edges, particularly by the edges themselves.
+        #
+        # For triangles, the exact solution of the system is
+        #
+        #  x_1 = <e_2, e_3> / <e1 x e2, e1 x e3> * |simplex|;
+        #
+        # see <http://math.stackexchange.com/a/1855380/36678>.
+
+        e0_cross_e1 = numpy.cross(e0, e1)
+        e1_cross_e2 = numpy.cross(e1, e2)
+        e2_cross_e0 = numpy.cross(e2, e0)
+        cell_volumes = 0.5 * numpy.sqrt(
+                _row_dot(e0_cross_e1, e0_cross_e1)
+                )
+
+        a = _row_dot(e1, e2) / _row_dot(e0_cross_e1, -e2_cross_e0)
+        b = _row_dot(e2, e0) / _row_dot(e1_cross_e2, -e0_cross_e1)
+        c = _row_dot(e0, e1) / _row_dot(e2_cross_e0, -e1_cross_e2)
+
+        # Note
+        # ----
+        #
+        # There is an alternative formulation in terms of dot-products via
+        #
+        #   <e1 x e2, e1 x e3> = <e1, e1> <e2, e3> - <e1, e2> <e1, e3>.
+        #
+        # With this, the solution can be expressed as
+        #
+        #  x_1 / |simplex| * <e1, e1>
+        #    = <e1, e1> <e_2, e_3> / (<e1, e1> <e2, e3> - <e1, e2> <e1, e3>)
+        #
+        # It doesn't matter much which cross product we take for computing the
+        # cell volume.
+        # However, this approach is less favorable in terms of round-off
+        # errors: For almost degenerate triangles, the difference in the
+        # denominator is small, but the two values are large. This will lead to
+        # significant round-off in the denominator.
+        #
+        # e0_dot_e0 = _row_dot(cells_edges[:, 0, :], cells_edges[:, 0, :])
+        # e0_dot_e1 = _row_dot(cells_edges[:, 0, :], cells_edges[:, 1, :])
+        # e0_dot_e2 = _row_dot(cells_edges[:, 0, :], cells_edges[:, 2, :])
+        # e1_dot_e1 = _row_dot(cells_edges[:, 1, :], cells_edges[:, 1, :])
+        # e1_dot_e2 = _row_dot(cells_edges[:, 1, :], cells_edges[:, 2, :])
+        # e2_dot_e2 = _row_dot(cells_edges[:, 2, :], cells_edges[:, 2, :])
+        #
+        # a00 = e0_dot_e0 * e1_dot_e2
+        # a = e1_dot_e2 / (a00 - (e0_dot_e1 * e0_dot_e2))
+        # b00 = e1_dot_e1 * e0_dot_e2
+        # b = e0_dot_e2 / (b00 - (e0_dot_e1 * e1_dot_e2))
+        # c00 = e2_dot_e2 * e0_dot_e1
+        # c = e0_dot_e1 / (c00 - (e0_dot_e2 * e1_dot_e2))
+
+        sol = numpy.column_stack((a, b, c)) * cell_volumes[:, None]
+
+        return cell_volumes, sol

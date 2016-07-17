@@ -6,12 +6,16 @@ from pyfvm.base import _base_mesh, _row_dot
 __all__ = ['meshTetra']
 
 
+def _my_dot(a, b):
+    return numpy.einsum('ijk, ijk->ij', a, b)
+
+
 class meshTetra(_base_mesh):
     '''Class for handling tetrahedral meshes.
 
     .. inheritance-diagram:: meshTetra
     '''
-    def __init__(self, node_coords, cells):
+    def __init__(self, node_coords, cells, mode='algebraic'):
         '''Initialization.
         '''
         super(meshTetra, self).__init__(node_coords, cells)
@@ -23,7 +27,13 @@ class meshTetra(_base_mesh):
         self.create_adjacent_entities()
         self.create_cell_circumcenters_and_volumes()
         self.compute_edge_lengths()
-        self.compute_ce_ratios()
+        if mode == 'geometric':
+            self.compute_ce_ratios_geometric()
+        elif mode == 'algebraic':
+            self.compute_ce_ratios_algebraic()
+        else:
+            raise ValueError('Illegal mode \'%s\'.' % mode)
+
         self.compute_control_volumes()
 
         self.mark_default_subdomains()
@@ -83,7 +93,7 @@ class meshTetra(_base_mesh):
         self.cells['nodes'].sort(axis=1)
 
         self.create_cell_face_relationships()
-        self.create_cell_edge_relationships()
+        self.create_face_edge_relationships()
 
         return
 
@@ -94,6 +104,12 @@ class meshTetra(_base_mesh):
             self.cells['nodes'][:, [0, 1, 3]],
             self.cells['nodes'][:, [0, 2, 3]],
             self.cells['nodes'][:, [1, 2, 3]]
+            ])
+        other = numpy.vstack([
+            self.cells['nodes'][:, [3]],
+            self.cells['nodes'][:, [2]],
+            self.cells['nodes'][:, [1]],
+            self.cells['nodes'][:, [0]]
             ])
 
         # Find the unique faces
@@ -119,6 +135,9 @@ class meshTetra(_base_mesh):
         cells_faces = inv.reshape([4, num_cells]).T
         self.cells['faces'] = cells_faces
 
+        # Store the opposing nodes too
+        self.cells['opposing vertex'] = other.reshape([4, num_cells]).T
+
         # save for create_edge_cells
         self._inv_faces = inv
 
@@ -133,14 +152,11 @@ class meshTetra(_base_mesh):
         self.faces['cells'] = face_cells
         return
 
-    def create_cell_edge_relationships(self):
+    def create_face_edge_relationships(self):
         a = numpy.vstack([
-            self.cells['nodes'][:, [0, 1]],
-            self.cells['nodes'][:, [0, 2]],
-            self.cells['nodes'][:, [0, 3]],
-            self.cells['nodes'][:, [1, 2]],
-            self.cells['nodes'][:, [1, 3]],
-            self.cells['nodes'][:, [2, 3]]
+            self.faces['nodes'][:, [0, 1]],
+            self.faces['nodes'][:, [0, 2]],
+            self.faces['nodes'][:, [1, 2]]
             ])
 
         # Find the unique edges
@@ -158,23 +174,11 @@ class meshTetra(_base_mesh):
             'nodes': edge_nodes
             }
 
-        # cell->edge relationship
-        num_cells = len(self.cells['nodes'])
-        cells_edges = inv.reshape([6, num_cells]).T
-        self.cells['edges'] = cells_edges
+        # face->edge relationship
+        num_faces = len(self.faces['nodes'])
+        face_edges = inv.reshape([3, num_faces]).T
+        self.faces['edges'] = face_edges
 
-        # save for create_edge_cells
-        self._inv_edges = inv
-
-        return
-
-    def create_edge_cells(self):
-        # Create edge->cells relationships
-        num_cells = len(self.cells['nodes'])
-        edge_cells = [[] for k in range(len(self.edges['nodes']))]
-        for k, edge_id in enumerate(self._inv_edges):
-            edge_cells[edge_id].append(k % num_cells)
-        self.edges['cells'] = edge_cells
         return
 
     def create_cell_circumcenters_and_volumes(self):
@@ -182,27 +186,36 @@ class meshTetra(_base_mesh):
         '''
         cell_coords = self.node_coords[self.cells['nodes']]
 
-        b = cell_coords[:, 1, :] - cell_coords[:, 0, :]
-        c = cell_coords[:, 2, :] - cell_coords[:, 0, :]
-        d = cell_coords[:, 3, :] - cell_coords[:, 0, :]
+        a = cell_coords[:, 1, :] - cell_coords[:, 0, :]
+        b = cell_coords[:, 2, :] - cell_coords[:, 0, :]
+        c = cell_coords[:, 3, :] - cell_coords[:, 0, :]
 
-        omega = _row_dot(b, numpy.cross(c, d))
+        omega = _row_dot(a, numpy.cross(b, c))
 
         self.cell_circumcenters = cell_coords[:, 0, :] + (
-                numpy.cross(c, d) * _row_dot(b, b)[:, None] +
-                numpy.cross(d, b) * _row_dot(c, c)[:, None] +
-                numpy.cross(b, c) * _row_dot(d, d)[:, None]
+                numpy.cross(b, c) * _row_dot(a, a)[:, None] +
+                numpy.cross(c, a) * _row_dot(b, b)[:, None] +
+                numpy.cross(a, b) * _row_dot(c, c)[:, None]
                 ) / (2.0 * omega[:, None])
 
         # https://en.wikipedia.org/wiki/Tetrahedron#Volume
         self.cell_volumes = abs(omega) / 6.0
         return
 
-    def compute_ce_ratios(self):
+    def compute_ce_ratios_algebraic(self):
         # Precompute edges.
         edges = \
             self.node_coords[self.edges['nodes'][:, 1]] - \
             self.node_coords[self.edges['nodes'][:, 0]]
+
+        # create cells -> edges
+        num_cells = len(self.cells['nodes'])
+        cells_edges = numpy.empty((num_cells, 6), dtype=int)
+        for cell_id, face_ids in enumerate(self.cells['faces']):
+            edges_set = set(self.faces['edges'][face_ids].flatten())
+            cells_edges[cell_id] = list(edges_set)
+
+        self.cells['edges'] = cells_edges
 
         # Build the equation system:
         # The equation
@@ -214,7 +227,6 @@ class meshTetra(_base_mesh):
         cells_edges = edges[self.cells['edges']]
         # <http://stackoverflow.com/a/38110345/353337>
         A = numpy.einsum('ijk,ilk->ijl', cells_edges, cells_edges)
-        # print(numpy.linalg.cond(A))
         A = A**2
 
         # Compute the RHS  cell_volume * <edge, edge>.
@@ -241,51 +253,60 @@ class meshTetra(_base_mesh):
 
         return
 
-    def compute_ce_ratios2(self):
-        # Precompute edges.
-        edges = \
-            self.node_coords[self.edges['nodes'][:, 1]] - \
-            self.node_coords[self.edges['nodes'][:, 0]]
+    def compute_ce_ratios_geometric(self):
 
-        scaled_edges = edges / self.edge_lengths[:, None]
+        v0 = self.faces['nodes'][self.cells['faces']][:, :, 0]
+        v1 = self.faces['nodes'][self.cells['faces']][:, :, 1]
+        v2 = self.faces['nodes'][self.cells['faces']][:, :, 2]
+        v_op = self.cells['opposing vertex']
 
-        # Build the equation system:
-        # The equation
-        #
-        # |simplex| ||u||^2 = \sum_i \alpha_i <u,e_i> <e_i,u>
-        #
-        # has to hold for all vectors u in the plane spanned by the edges,
-        # particularly by the edges themselves.
-        cells_edges = scaled_edges[self.cells['edges']]
-        # <http://stackoverflow.com/a/38110345/353337>
-        A = numpy.einsum('ijk,ilk->ijl', cells_edges, cells_edges)
+        x0 = self.node_coords[v0] - self.node_coords[v_op]
+        x1 = self.node_coords[v1] - self.node_coords[v_op]
+        x2 = self.node_coords[v2] - self.node_coords[v_op]
 
-        A = A**2
+        e0_cross_e1 = numpy.cross(x2 - x0, x1 - x0)
+        face_areas = numpy.sqrt(_my_dot(e0_cross_e1, e0_cross_e1))
 
-        # Compute the RHS  cell_volume * <edge, edge>.
-        # The dot product <edge, edge> is also on the diagonals of A (before
-        # squaring), but simply computing it again is cheaper than extracting
-        # it from A.
-        rhs = numpy.ones((len(self.cell_volumes), cells_edges.shape[1])) \
-            * self.cell_volumes[..., None]
+        x0_cross_x1 = numpy.cross(x0, x1)
+        x1_cross_x2 = numpy.cross(x1, x2)
+        x2_cross_x0 = numpy.cross(x2, x0)
+        x0_dot_x0 = _my_dot(x0, x0)
+        x1_dot_x1 = _my_dot(x1, x1)
+        x2_dot_x2 = _my_dot(x2, x2)
 
-        # Solve all k-by-k systems at once ("broadcast"). (`k` is the number of
-        # edges per simplex here.)
-        # If the matrix A is (close to) singular if and only if the cell is
-        # (close to being) degenerate. Hence, it has volume 0, and so all the
-        # edge coefficients are 0, too. Hence, do nothing.
-        sol = numpy.linalg.solve(A, rhs)
+        a = (
+            2 * _my_dot(numpy.cross(x0, x1), x2)**2 -
+            _my_dot(
+                x0_cross_x1 + x1_cross_x2 + x2_cross_x0,
+                x0_cross_x1 * x2_dot_x2[..., None] +
+                x1_cross_x2 * x0_dot_x0[..., None] +
+                x2_cross_x0 * x1_dot_x1[..., None]
+            )) / (12.0 * face_areas)
 
-        num_edges = len(self.edges['nodes'])
-        self.ce_ratios = numpy.zeros(num_edges, dtype=float)
+        # Distances of the cell circumcenter to the faces.
+        # (shape: num_cells x 4)
+        d = a / self.cell_volumes[:, None]
+
+        # prepare face edges
+        e = self.node_coords[self.edges['nodes'][self.faces['edges'], 1]] - \
+            self.node_coords[self.edges['nodes'][self.faces['edges'], 0]]
+
+        e0 = e[:, 0, :]
+        e1 = e[:, 1, :]
+        e2 = e[:, 2, :]
+
+        _, face_ce_ratios = self.compute_tri_areas_and_ce_ratios(e0, e1, e2)
+
+        # Multiply
+        s = 0.5 * face_ce_ratios * d[..., None]
+
+        # Add s together for the edges
+        self.ce_ratios = numpy.zeros(len(self.edges['nodes']))
         numpy.add.at(
                 self.ce_ratios,
-                self.cells['edges'],
-                sol
+                self.faces['edges'][self.cells['faces']],
+                s
                 )
-
-        self.ce_ratios /= self.edge_lengths**2
-
         return
 
     def compute_control_volumes(self):
@@ -293,7 +314,7 @@ class meshTetra(_base_mesh):
         '''
         self.control_volumes = numpy.zeros(len(self.node_coords), dtype=float)
 
-        #   1/3. * (0.5 * edge_length) * ce_ratio
+        #   1/3. * (0.5 * edge_length) * covolume
         # = 1/6 * edge_length**2 * ce_ratio_edge_ratio
         e = self.node_coords[self.edges['nodes'][:, 1]] - \
             self.node_coords[self.edges['nodes'][:, 0]]
