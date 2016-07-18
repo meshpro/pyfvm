@@ -14,6 +14,10 @@ class meshTri(_base_mesh):
     def __init__(self, nodes, cells):
         '''Initialization.
         '''
+        # Make sure all nodes appear in the cells.
+        cell_nodes = numpy.unique(cells.flatten())
+        assert len(cell_nodes) == len(nodes)
+
         super(meshTri, self).__init__(nodes, cells)
         self.cells = numpy.empty(
                 len(cells),
