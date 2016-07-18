@@ -14,9 +14,10 @@ class meshTri(_base_mesh):
     def __init__(self, nodes, cells):
         '''Initialization.
         '''
-        # Make sure all nodes appear in the cells.
-        cell_nodes = numpy.unique(cells.flatten())
-        assert len(cell_nodes) == len(nodes)
+        # Make sure to only to include those vertices which are part of a cell
+        uvertices, uidx = numpy.unique(cells, return_inverse=True)
+        cells = uidx.reshape(cells.shape)
+        nodes = nodes[uvertices]
 
         super(meshTri, self).__init__(nodes, cells)
         self.cells = numpy.empty(

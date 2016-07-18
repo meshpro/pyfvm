@@ -18,9 +18,10 @@ class meshTetra(_base_mesh):
     def __init__(self, node_coords, cells, mode='algebraic'):
         '''Initialization.
         '''
-        # Make sure all nodes appear in the cells.
-        cell_nodes = numpy.unique(cells.flatten())
-        assert len(cell_nodes) == len(nodes)
+        # Make sure to only to include those vertices which are part of a cell
+        uvertices, uidx = numpy.unique(cells, return_inverse=True)
+        cells = uidx.reshape(cells.shape)
+        nodes = nodes[uvertices]
 
         super(meshTetra, self).__init__(node_coords, cells)
 
