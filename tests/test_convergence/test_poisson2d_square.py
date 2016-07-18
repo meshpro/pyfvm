@@ -32,8 +32,7 @@ def get_mesh(k):
             n+1, n+1,
             zigzag=True
             )
-    h = 1.0 / n
-    return pyfvm.meshTri.meshTri(vertices, cells), h
+    return pyfvm.meshTri.meshTri(vertices, cells)
 
 
 class ConvergencePoisson2dSquareTest(unittest.TestCase):
@@ -55,8 +54,9 @@ class ConvergencePoisson2dSquareTest(unittest.TestCase):
         H, error_norm_1, error_norm_inf, order_1, order_inf = self.solve()
 
         expected_order = 2
-        self.assertAlmostEqual(order_1[-1], expected_order, delta=1.0e-2)
-        self.assertAlmostEqual(order_inf[-1], expected_order, delta=1.0e-2)
+        tol = 1.0e-2
+        self.assertGreater(order_1[-1], expected_order - tol)
+        self.assertGreater(order_inf[-1], expected_order - tol)
 
         return
 
