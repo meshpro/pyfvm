@@ -17,8 +17,10 @@ def perform_convergence_tests(
 
     if do_print:
         print(60 * '-')
-        print('h' + 18*' ' + '||error||_1' + 8*' ' + '||error||_inf')
-        print(' ' + 18*' ' + '(order)' + 12*' ' + '(order)')
+        print('k' + 5*' ' + 'h' + 18*' ' +
+              '||error||_1' + 8*' ' + '||error||_inf'
+              )
+        print(' ' + 5*' ' + ' ' + 18*' ' + '(order)' + 12*' ' + '(order)')
         print(60 * '-')
 
     for k in rng:
@@ -44,14 +46,14 @@ def perform_convergence_tests(
                 numpy.log(H[k-1] / H[k])
             if do_print:
                 print
-                print((19*' ' + '%0.5f' + 12*' ' + '%0.5f') %
+                print((25*' ' + '%0.5f' + 12*' ' + '%0.5f') %
                       (order_1[k-1], order_inf[k-1])
                       )
                 print
 
         if do_print:
-            print('%0.10e   %0.10e   %0.10e' %
-                  (H[k], error_norm_1[k], error_norm_inf[k])
+            print('%2d    %0.10e   %0.10e   %0.10e' %
+                  (k, H[k], error_norm_1[k], error_norm_inf[k])
                   )
 
     return H, error_norm_1, error_norm_inf, order_1, order_inf
