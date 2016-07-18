@@ -21,7 +21,7 @@ class meshTetra(_base_mesh):
         # Make sure to only to include those vertices which are part of a cell
         uvertices, uidx = numpy.unique(cells, return_inverse=True)
         cells = uidx.reshape(cells.shape)
-        nodes = nodes[uvertices]
+        node_coords = node_coords[uvertices]
 
         super(meshTetra, self).__init__(node_coords, cells)
 
