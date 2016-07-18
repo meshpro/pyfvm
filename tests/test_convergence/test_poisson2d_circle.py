@@ -34,7 +34,7 @@ def get_mesh(k):
     circle = geom.add_circle([0.0, 0.0, 0.0], 1.0, h)
     ll = geom.add_line_loop(circle)
     surf = geom.add_plane_surface(ll)
-    points, cells = pygmsh.generate_mesh(geom, do_print=False)
+    points, cells = pygmsh.generate_mesh(geom, verbose=False)
     return pyfvm.meshTri.meshTri(points, cells['triangle'])
 
 
@@ -44,13 +44,13 @@ class ConvergencePoisson2dCircleTest(unittest.TestCase):
         return
 
     @staticmethod
-    def solve(do_print=False):
+    def solve(verbose=False):
         return helpers.perform_convergence_tests(
             Poisson,
             exact_sol,
             get_mesh,
             range(7),
-            do_print=do_print
+            verbose=verbose
             )
 
     def test(self):
@@ -68,7 +68,7 @@ if __name__ == '__main__':
     from matplotlib import pyplot as plt
 
     H, error_norm_1, error_norm_inf, order_1, order_inf = \
-        ConvergencePoisson2dCircleTest.solve(do_print=True)
+        ConvergencePoisson2dCircleTest.solve(verbose=True)
 
     helpers.plot_error_data(H, error_norm_1, error_norm_inf)
     plt.show()

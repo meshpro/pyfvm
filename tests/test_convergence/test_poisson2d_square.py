@@ -41,13 +41,13 @@ class ConvergencePoisson2dSquareTest(unittest.TestCase):
         return
 
     @staticmethod
-    def solve(do_print=False):
+    def solve(verbose=False):
         return helpers.perform_convergence_tests(
             Poisson,
             exact_sol,
             get_mesh,
             range(6),
-            do_print=do_print
+            verbose=verbose
             )
 
     def test(self):
@@ -65,7 +65,7 @@ if __name__ == '__main__':
     from matplotlib import pyplot as plt
 
     H, error_norm_1, error_norm_inf, order_1, order_inf = \
-        ConvergencePoisson2dSquareTest.solve(do_print=True)
+        ConvergencePoisson2dSquareTest.solve(verbose=True)
 
     helpers.plot_error_data(H, error_norm_1, error_norm_inf)
     plt.show()

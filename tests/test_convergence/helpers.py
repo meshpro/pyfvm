@@ -6,7 +6,7 @@ from scipy.sparse import linalg
 
 
 def perform_convergence_tests(
-        problem, exact_sol, get_mesh, rng, do_print=False
+        problem, exact_sol, get_mesh, rng, verbose=False
         ):
     n = len(rng)
     H = numpy.empty(n)
@@ -15,7 +15,7 @@ def perform_convergence_tests(
     error_norm_inf = numpy.empty(n)
     order_inf = numpy.empty(n-1)
 
-    if do_print:
+    if verbose:
         print(60 * '-')
         print('k' + 5*' ' + 'h' + 18*' ' +
               '||error||_1' + 8*' ' + '||error||_inf'
@@ -44,14 +44,14 @@ def perform_convergence_tests(
             order_inf[k-1] = \
                 numpy.log(error_norm_inf[k-1] / error_norm_inf[k]) / \
                 numpy.log(H[k-1] / H[k])
-            if do_print:
+            if verbose:
                 print
                 print((25*' ' + '%0.5f' + 12*' ' + '%0.5f') %
                       (order_1[k-1], order_inf[k-1])
                       )
                 print
 
-        if do_print:
+        if verbose:
             print('%2d    %0.10e   %0.10e   %0.10e' %
                   (k, H[k], error_norm_1[k], error_norm_inf[k])
                   )

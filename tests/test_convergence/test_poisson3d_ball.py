@@ -32,7 +32,7 @@ def get_mesh(k):
     h = 0.5**k
     geom = pygmsh.Geometry()
     geom.add_ball([0, 0, 0], 1.0, lcar=h)
-    points, cells = pygmsh.generate_mesh(geom, do_print=False)
+    points, cells = pygmsh.generate_mesh(geom, verbose=False)
     return pyfvm.meshTetra.meshTetra(points, cells['tetra'])
 
 
@@ -42,13 +42,13 @@ class ConvergencePoisson3dBallTest(unittest.TestCase):
         return
 
     @staticmethod
-    def solve(do_print=False):
+    def solve(verbose=False):
         return helpers.perform_convergence_tests(
             Poisson,
             exact_sol,
             get_mesh,
             range(5),
-            do_print=do_print
+            verbose=verbose
             )
 
     def test(self):
@@ -66,7 +66,7 @@ if __name__ == '__main__':
     from matplotlib import pyplot as plt
 
     H, error_norm_1, error_norm_inf, order_1, order_inf = \
-        ConvergencePoisson3dBallTest.solve(do_print=True)
+        ConvergencePoisson3dBallTest.solve(verbose=True)
 
     helpers.plot_error_data(H, error_norm_1, error_norm_inf)
     plt.show()
