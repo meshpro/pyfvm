@@ -41,15 +41,18 @@ class ConvergencePoisson2dSquareTest(unittest.TestCase):
     def setUp(self):
         return
 
+    @staticmethod
+    def solve(do_print=False):
+        return helpers.perform_convergence_tests(
+            Poisson,
+            exact_sol,
+            get_mesh,
+            range(6),
+            do_print=do_print
+            )
+
     def test(self):
-        H, error_norm_1, error_norm_inf, order_1, order_inf = \
-            helpers.perform_convergence_tests(
-                Poisson,
-                exact_sol,
-                get_mesh,
-                range(6),
-                do_print=False
-                )
+        H, error_norm_1, error_norm_inf, order_1, order_inf = self.solve()
 
         expected_order = 2
         self.assertAlmostEqual(order_1[-1], expected_order, delta=1.0e-2)
@@ -62,13 +65,7 @@ if __name__ == '__main__':
     from matplotlib import pyplot as plt
 
     H, error_norm_1, error_norm_inf, order_1, order_inf = \
-        helpers.perform_convergence_tests(
-            Poisson,
-            exact_sol,
-            get_mesh,
-            range(6),
-            do_print=True
-            )
+        ConvergencePoisson2dSquareTest.solve(do_print=True)
 
     helpers.plot_error_data(H, error_norm_1, error_norm_inf)
     plt.show()
