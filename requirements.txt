@@ -4,5 +4,6 @@ matplotlib
 meshio
 meshzoo
 numpy
+pygmsh
 scipy
 sympy
