@@ -22,14 +22,16 @@ def perform_convergence_tests(
         print(60 * '-')
 
     for k in rng:
-        mesh, H[k] = get_mesh(k)
+        mesh = get_mesh(k)
+        H[k] = max(mesh.edge_lengths)
+
         linear_system = pyfvm.discretize(problem, mesh)
 
         x = linalg.spsolve(linear_system.matrix, linear_system.rhs)
 
         diff = x - exact_sol(mesh.node_coords.T)
 
-        error_norm_1[k] = numpy.sum(mesh.control_volumes * diff)
+        error_norm_1[k] = numpy.sum(abs(mesh.control_volumes * diff))
         error_norm_inf[k] = max(abs(diff))
 
         # numerical orders of convergence
