@@ -15,7 +15,7 @@ class meshTetra(_base_mesh):
 
     .. inheritance-diagram:: meshTetra
     '''
-    def __init__(self, node_coords, cells, mode='algebraic'):
+    def __init__(self, node_coords, cells, mode='geometric'):
         '''Initialization.
         '''
         # Make sure to only to include those vertices which are part of a cell

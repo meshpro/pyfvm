@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
+import mshr
+import dolfin
 import helpers
 import numpy
 from numpy import pi
 import pyfvm
 from pyfvm.form_language import *
-import pygmsh
 from sympy import sin, cos
 import unittest
 
@@ -30,12 +31,14 @@ def exact_sol(x):
 
 
 def get_mesh(k):
-    h = 0.5**k
-    geom = pygmsh.Geometry()
-    geom.add_ball([0, 0, 0], 1.0, lcar=h)
-    points, cells = pygmsh.generate_mesh(geom, verbose=False)
-    # return pyfvm.meshTetra.meshTetra(points, cells['tetra'], mode='algebraic')
-    return pyfvm.meshTetra.meshTetra(points, cells['tetra'], mode='geometric')
+    h = 0.5**(k+2)
+    c = mshr.Sphere(dolfin.Point(0., 0., 0.), 1.0, int(2*pi / h))
+    m = mshr.generate_mesh(c, 2.0 / h)
+    return pyfvm.meshTetra.meshTetra(
+            m.coordinates(),
+            m.cells(),
+            mode='geometric'
+            )
 
 
 class ConvergenceReaction3dBallTest(unittest.TestCase):
@@ -49,7 +52,7 @@ class ConvergenceReaction3dBallTest(unittest.TestCase):
             Reaction,
             exact_sol,
             get_mesh,
-            range(6),
+            range(3),
             verbose=verbose
             )
 
