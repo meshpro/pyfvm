@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from matplotlib import pyplot as plt
 import numpy
+import pyamg
 import pyfvm
 from scipy.sparse import linalg
 
@@ -16,12 +17,12 @@ def perform_convergence_tests(
     order_inf = numpy.empty(n-1)
 
     if verbose:
-        print(60 * '-')
-        print('k' + 5*' ' + 'h' + 18*' ' +
+        print(79 * '-')
+        print('k' + 5*' ' + 'num verts' + 4*' ' + 'max edge length' + 4*' ' +
               '||error||_1' + 8*' ' + '||error||_inf'
               )
-        print(' ' + 5*' ' + ' ' + 18*' ' + '(order)' + 12*' ' + '(order)')
-        print(60 * '-')
+        print(38*' ' + '(order)' + 12*' ' + '(order)')
+        print(79 * '-')
 
     for k in rng:
         mesh = get_mesh(k)
@@ -29,7 +30,9 @@ def perform_convergence_tests(
 
         linear_system = pyfvm.discretize(problem, mesh)
 
-        x = linalg.spsolve(linear_system.matrix, linear_system.rhs)
+        # x = linalg.spsolve(linear_system.matrix, linear_system.rhs)
+        ml = pyamg.ruge_stuben_solver(linear_system.matrix)
+        x = ml.solve(linear_system.rhs, tol=1e-10)
 
         diff = x - exact_sol(mesh.node_coords.T)
 
@@ -46,14 +49,15 @@ def perform_convergence_tests(
                 numpy.log(H[k-1] / H[k])
             if verbose:
                 print
-                print((25*' ' + '%0.5f' + 12*' ' + '%0.5f') %
+                print((38*' ' + '%0.5f' + 12*' ' + '%0.5f') %
                       (order_1[k-1], order_inf[k-1])
                       )
                 print
 
         if verbose:
-            print('%2d    %0.10e   %0.10e   %0.10e' %
-                  (k, H[k], error_norm_1[k], error_norm_inf[k])
+            num_nodes = len(mesh.control_volumes)
+            print('%2d    %5.3e    %0.10e   %0.10e   %0.10e' %
+                  (k, num_nodes, H[k], error_norm_1[k], error_norm_inf[k])
                   )
 
     return H, error_norm_1, error_norm_inf, order_1, order_inf
