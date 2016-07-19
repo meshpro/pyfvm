@@ -301,9 +301,10 @@ class meshTetra(_base_mesh):
         e2 = e[:, 2, :]
 
         _, face_ce_ratios = self.compute_tri_areas_and_ce_ratios(e0, e1, e2)
+        fce_ratios = face_ce_ratios[self.cells['faces']]
 
         # Multiply
-        s = 0.5 * face_ce_ratios * d[..., None]
+        s = 0.5 * fce_ratios * d[..., None]
 
         # Add s together for the edges
         self.ce_ratios = numpy.zeros(len(self.edges['nodes']))
