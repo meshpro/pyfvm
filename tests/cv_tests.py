@@ -13,9 +13,13 @@ class TestVolumes(unittest.TestCase):
     def setUp(self):
         return
 
-    def _run_test(self, mesh, volume, cv_norms, covol_norms, cellvol_norms):
-        tol = 1.0e-12
-
+    def _run_test(
+            self,
+            mesh,
+            volume,
+            cv_norms, covol_norms, cellvol_norms,
+            tol=1.0e-12
+            ):
         if mesh.cells['nodes'].shape[1] == 3:
             dim = 2
         elif mesh.cells['nodes'].shape[1] == 4:
@@ -277,7 +281,7 @@ class TestVolumes(unittest.TestCase):
         cells = numpy.array([[0, 1, 2, 3]])
         mesh = pyfvm.meshTetra.meshTetra(points, cells)
 
-        tol = 1.0e-10
+        tol = 1.0e-7
 
         self.assertAlmostEqual(mesh.cell_circumcenters[0][0], 0.5, delta=tol)
         self.assertAlmostEqual(mesh.cell_circumcenters[0][1], 0.5, delta=tol)
@@ -520,7 +524,8 @@ class TestVolumes(unittest.TestCase):
                 9.3875504672601107,
                 [0.20348466631551548, 0.010271101930468585],
                 [396.4116393776213, 3.4508458933423918],
-                [0.091903119589148916, 0.0019959463063558944]
+                [0.091903119589148916, 0.0019959463063558944],
+                tol=1.0e-7
                 )
         return
 
