@@ -33,7 +33,8 @@ def get_mesh(k):
     geom = pygmsh.Geometry()
     geom.add_ball([0, 0, 0], 1.0, lcar=h)
     points, cells = pygmsh.generate_mesh(geom, verbose=False)
-    return pyfvm.meshTetra.meshTetra(points, cells['tetra'])
+    # return pyfvm.meshTetra.meshTetra(points, cells['tetra'], mode='algebraic')
+    return pyfvm.meshTetra.meshTetra(points, cells['tetra'], mode='geometric')
 
 
 class ConvergencePoisson3dBallTest(unittest.TestCase):
