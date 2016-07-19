@@ -3,6 +3,6 @@ matplotlib
 meshio
 meshzoo
 numpy
-pygmsh
+pyamg
 scipy
 sympy
