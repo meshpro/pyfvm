@@ -4,7 +4,8 @@ import numpy
 from numpy import pi
 import pyfvm
 from pyfvm.form_language import *
-import pygmsh
+import mshr
+import dolfin
 from sympy import sin, cos
 import unittest
 
@@ -31,12 +32,13 @@ def exact_sol(x):
 
 def get_mesh(k):
     h = 0.5**k
-    geom = pygmsh.Geometry()
-    circle = geom.add_circle([0.0, 0.0, 0.0], 1.0, h)
-    ll = geom.add_line_loop(circle)
-    surf = geom.add_plane_surface(ll)
-    points, cells = pygmsh.generate_mesh(geom, verbose=False)
-    return pyfvm.meshTri.meshTri(points, cells['triangle'])
+    # cell_size = 2 * pi / num_boundary_points
+    c = mshr.Circle(dolfin.Point(0., 0., 0.), 1, int(2*pi / h))
+    # cell_size = 2 * bounding_box_radius / res
+    m = mshr.generate_mesh(c, 2.0 / h)
+    coords = m.coordinates()
+    coords = numpy.c_[coords, numpy.zeros(len(coords))]
+    return pyfvm.meshTri.meshTri(coords, m.cells())
 
 
 class ConvergenceReaction2dCircleTest(unittest.TestCase):

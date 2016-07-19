@@ -49,7 +49,7 @@ class ConvergenceReaction3dBallTest(unittest.TestCase):
             Reaction,
             exact_sol,
             get_mesh,
-            range(5),
+            range(6),
             verbose=verbose
             )
 
