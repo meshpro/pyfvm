@@ -3,7 +3,6 @@
 import pyfvm
 
 import os
-import meshio
 import numpy
 import unittest
 
