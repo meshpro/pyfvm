@@ -340,66 +340,6 @@ class meshTetra(_base_mesh):
 
         return numpy.sum(sums < 0.0)
 
-    def _get_face_circumcenter(self, face_id):
-        '''Computes the center of the circumcircle of a given face.
-
-        :params face_id: Face ID for which to compute circumcenter.
-        :type face_id: int
-        :returns circumcenter: Circumcenter of the face with given face ID.
-        :type circumcenter: numpy.ndarray((float,3))
-        '''
-        from vtk import vtkTriangle
-
-        x = self.node_coords[self.faces['nodes'][face_id]]
-        # Project triangle to 2D.
-        v = numpy.empty(3, dtype=numpy.dtype((float, 2)))
-        vtkTriangle.ProjectTo2D(x[0], x[1], x[2],
-                                v[0], v[1], v[2])
-        # Get the circumcenter in 2D.
-        cc_2d = numpy.empty(2, dtype=float)
-        vtkTriangle.Circumcircle(v[0], v[1], v[2], cc_2d)
-        # Project back to 3D by using barycentric coordinates.
-        bcoords = numpy.empty(3, dtype=float)
-        vtkTriangle.BarycentricCoords(cc_2d, v[0], v[1], v[2], bcoords)
-        return bcoords[0] * x[0] + bcoords[1] * x[1] + bcoords[2] * x[2]
-
-        # a = x[0] - x[1]
-        # b = x[1] - x[2]
-        # c = x[2] - x[0]
-        # w = numpy.cross(a, b)
-        # omega = 2.0 * numpy.dot(w, w)
-        # if abs(omega) < 1.0e-10:
-        #     raise ZeroDivisionError(
-        #             'The nodes don''t seem to form a proper triangle.'
-        #             )
-        # alpha = -numpy.dot(b, b) * numpy.dot(a, c) / omega
-        # beta = -numpy.dot(c, c) * numpy.dot(b, a) / omega
-        # gamma = -numpy.dot(a, a) * numpy.dot(c, b) / omega
-        # m = alpha * x[0] + beta * x[1] + gamma * x[2]
-
-        # # Alternative implementation from
-        # # https://www.ics.uci.edu/~eppstein/junkyard/circumcenter.html
-        # a = x[1] - x[0]
-        # b = x[2] - x[0]
-        # alpha = numpy.dot(a, a)
-        # beta = numpy.dot(b, b)
-        # w = numpy.cross(a, b)
-        # omega = 2.0 * numpy.dot(w, w)
-        # m = numpy.empty(3)
-        # m[0] = x[0][0] + (
-        #         (alpha * b[1] - beta * a[1]) * w[2] -
-        #         (alpha * b[2] - beta * a[2]) * w[1]
-        #         ) / omega
-        # m[1] = x[0][1] + (
-        #         (alpha * b[2] - beta * a[2]) * w[0] -
-        #         (alpha * b[0] - beta * a[0]) * w[2]
-        #         ) / omega
-        # m[2] = x[0][2] + (
-        #         (alpha * b[0] - beta * a[0]) * w[1] -
-        #         (alpha * b[1] - beta * a[1]) * w[0]
-        #         ) / omega
-        # return
-
     def show(self):
         import matplotlib as mpl
         from mpl_toolkits.mplot3d import Axes3D
