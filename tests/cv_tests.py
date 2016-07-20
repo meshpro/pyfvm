@@ -167,6 +167,11 @@ class TestVolumes(unittest.TestCase):
         cells = numpy.array([[0, 1, 2, 3]])
         mesh = pyfvm.meshTetra.meshTetra(points, cells)
 
+        mesh.show()
+        mesh.show_edge(0)
+        # from matplotlib import pyplot as plt
+        # plt.show()
+
         tol = 1.0e-10
 
         self.assertAlmostEqual(mesh.cell_circumcenters[0][0], 0.0, delta=tol)
@@ -398,8 +403,13 @@ class TestVolumes(unittest.TestCase):
             [0, 3, 4, 5]
             ])
         mesh = pyfvm.meshTetra.meshTetra(nodes, cellsNodes)
-        # pull this to see what a negative ce_ratio looks like
-        # mesh.show_edge(5)
+
+        # # pull this to see what a negative ce_ratio looks like
+        # mesh.show()
+        # mesh.show_edge(12)
+        # from matplotlib import pyplot as plt
+        # plt.show()
+
         self._run_test(
                 mesh,
                 1.2,

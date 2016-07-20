@@ -101,23 +101,6 @@ class meshTri(_base_mesh):
 
         return
 
-    def compute_cell_circumcenters(self):
-        '''Computes the center of the circumcenter of each cell.
-        '''
-        # https://en.wikipedia.org/wiki/Circumscribed_circle#Higher_dimensions
-        X = self.node_coords[self.cells['nodes']]
-        a = X[:, 0, :] - X[:, 2, :]
-        b = X[:, 1, :] - X[:, 2, :]
-        a_dot_a = _row_dot(a, a)
-        a2_b = b * a_dot_a[..., None]
-        b_dot_b = _row_dot(b, b)
-        b2_a = a * b_dot_b[..., None]
-        a_cross_b = numpy.cross(a, b)
-        N = numpy.cross(a2_b - b2_a, a_cross_b)
-        a_cross_b2 = _row_dot(a_cross_b, a_cross_b)
-        self.cell_circumcenters = 0.5 * N / a_cross_b2[..., None] + X[:, 2, :]
-        return
-
     def create_edges(self):
         '''Setup edge-node and edge-cell relations.
         '''
@@ -240,7 +223,8 @@ class meshTri(_base_mesh):
            http://dx.doi.org/10.1002/nme.2187.
         '''
         if self.cell_circumcenters is None:
-            self.compute_cell_circumcenters()
+            X = self.node_coords[self.cells['nodes']]
+            self.cell_circumcenters = self.compute_triangle_circumcenters(X)
 
         if 'cells' not in self.edges:
             self.create_edge_cells()
@@ -392,7 +376,9 @@ class meshTri(_base_mesh):
         if show_ce_ratios:
             # Connect all cell circumcenters with the edge midpoints
             if self.cell_circumcenters is None:
-                self.compute_cell_circumcenters()
+                X = self.node_coords[self.cells['nodes']]
+                self.cell_circumcenters = \
+                    self.compute_triangle_circumcenters(X)
             edge_midpoints = 0.5 * (
                 self.node_coords[self.edges['nodes'][:, 0]] +
                 self.node_coords[self.edges['nodes'][:, 1]]
@@ -437,7 +423,9 @@ class meshTri(_base_mesh):
         # Highlight ce_ratios.
         if show_ce_ratio:
             if self.cell_circumcenters is None:
-                self.compute_cell_circumcenters()
+                X = self.node_coords[self.cells['nodes']]
+                self.cell_circumcenters = \
+                    self.compute_triangle_circumcenters(X)
 
             # Find the cells that contain the vertex
             cell_ids = numpy.where(

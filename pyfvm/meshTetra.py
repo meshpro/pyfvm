@@ -162,15 +162,6 @@ class meshTetra(_base_mesh):
 
         return
 
-    def create_face_cells(self):
-        # Create face->cells relationships
-        num_cells = len(self.cells['nodes'])
-        face_cells = [[] for k in range(len(self.faces['nodes']))]
-        for k, face_id in enumerate(self._inv_faces):
-            face_cells[face_id].append(k % num_cells)
-        self.faces['cells'] = face_cells
-        return
-
     def create_face_edge_relationships(self):
         a = numpy.vstack([
             self.faces['nodes'][:, [0, 1]],
@@ -333,6 +324,22 @@ class meshTetra(_base_mesh):
 
         return
 
+    def num_delaunay_violations(self):
+        # Delaunay violations are present exactly on the interior faces where
+        # the sum of the signed distances between face circumcenter and
+        # tetrahedron circumcenter is negative.
+        if self.circumcenter_face_distances is None:
+            self.compute_ce_ratios_geometric()
+
+        sums = numpy.zeros(len(self.faces['nodes']))
+        numpy.add.at(
+                sums,
+                self.cells['faces'],
+                self.circumcenter_face_distances
+                )
+
+        return numpy.sum(sums < 0.0)
+
     def _get_face_circumcenter(self, face_id):
         '''Computes the center of the circumcircle of a given face.
 
@@ -393,21 +400,22 @@ class meshTetra(_base_mesh):
         #         ) / omega
         # return
 
-    def num_delaunay_violations(self):
-        # Delaunay violations are present exactly on the interior faces where
-        # the sum of the signed distances between face circumcenter and
-        # tetrahedron circumcenter is negative.
-        if self.circumcenter_face_distances is None:
-            self.compute_ce_ratios_geometric()
+    def show(self):
+        from mpl_toolkits.mplot3d import Axes3D
+        import os
+        if 'DISPLAY' not in os.environ:
+            # headless mode, for remote executions (and travis)
+            mpl.use('Agg')
+        from matplotlib import pyplot as plt
 
-        sums = numpy.zeros(len(self.faces['nodes']))
-        numpy.add.at(
-                sums,
-                self.cells['faces'],
-                self.circumcenter_face_distances
-                )
+        fig = plt.figure()
+        ax = fig.gca(projection='3d')
+        plt.axis('equal')
 
-        return numpy.sum(sums < 0.0)
+        for edge_nodes in self.edges['nodes']:
+            x = self.node_coords[edge_nodes]
+            ax.plot(x[:, 0], x[:, 1], x[:, 2], 'k')
+        return
 
     def show_control_volume(self, node_id):
         '''Displays a node with its surrounding control volume.
@@ -427,17 +435,8 @@ class meshTetra(_base_mesh):
         ax = fig.gca(projection='3d')
         plt.axis('equal')
 
-        if 'cells' not in self.faces:
-            self.create_face_cells()
-
         # get cell circumcenters
         cell_ccs = self.cell_circumcenters
-
-        # There are not node->edge relations so manually build the list.
-        adjacent_edge_ids = []
-        for edge_id, nodes in enumerate(self.edges['nodes']):
-            if node_id in nodes:
-                adjacent_edge_ids.append(edge_id)
 
         # Loop over all adjacent edges and plot the edges and their ce_ratios.
         for k, edge_id in enumerate(adjacent_edge_ids):
@@ -503,91 +502,53 @@ class meshTetra(_base_mesh):
         ax = fig.gca(projection='3d')
         plt.axis('equal')
 
-        edge_nodes = self.node_coords[self.edges['nodes'][edge_id]]
+        # find all faces with this edge
+        adj_face_ids = numpy.where(
+            (self.faces['edges'] == edge_id).any(axis=1)
+            )[0]
+        # find all cells with the faces
+        # <http://stackoverflow.com/a/38481969/353337>
+        adj_cell_ids = numpy.where(numpy.in1d(
+            self.cells['faces'], adj_face_ids
+            ).reshape(self.cells['faces'].shape).any(axis=1)
+            )[0]
 
-        if 'cells' not in self.edges:
-            self.create_edge_cells()
-
-        # plot all adjacent cells
+        # plot all those adjacent cells; first collect all edges
+        adj_edge_ids = numpy.unique([
+            adj_edge_id
+            for adj_cell_id in adj_cell_ids
+            for face_id in self.cells['faces'][adj_cell_id]
+            for adj_edge_id in self.faces['edges'][face_id]
+            ])
         col = 'k'
-        for cell_id in self.edges['cells'][edge_id]:
-            for edge in self.cells['edges'][cell_id]:
-                x = self.node_coords[self.edges['nodes'][edge]]
-                ax.plot(x[:, 0], x[:, 1], x[:, 2], col)
+        for adj_edge_id in adj_edge_ids:
+            x = self.node_coords[self.edges['nodes'][adj_edge_id]]
+            ax.plot(x[:, 0], x[:, 1], x[:, 2], col)
 
-        # make clear which is the edge
-        ax.plot(edge_nodes[:, 0], edge_nodes[:, 1], edge_nodes[:, 2],
-                color=col, linewidth=3.0)
+        # make clear which is edge_id
+        x = self.node_coords[self.edges['nodes'][edge_id]]
+        ax.plot(x[:, 0], x[:, 1], x[:, 2], color=col, linewidth=3.0)
 
-        # get cell circumcenters
-        cell_ccs = self.cell_circumcenters
+        # connect the face circumcenters with the corresponding cell
+        # circumcenters
+        for cell_id in adj_cell_ids:
+            cc = self.cell_circumcenters[cell_id]
+            for face_id in self.cells['faces'][cell_id]:
+                if edge_id in self.faces['edges'][face_id]:
+                    # draw the connection
+                    #   tet circumcenter---face circumcenter
+                    X = self.node_coords[self.faces['nodes'][[face_id]]]
+                    fcc = self.compute_triangle_circumcenters(X)
+                    ax.plot(
+                        [cc[0], fcc[0, 0]],
+                        [cc[1], fcc[0, 1]],
+                        [cc[2], fcc[0, 2]],
+                        'b-'
+                        )
+                    # draw the face circumcenter
+                    ax.plot(fcc[:, 0], fcc[:, 1], fcc[:, 2], 'go')
 
-        edge_midpoint = 0.5 * (edge_nodes[0] + edge_nodes[1])
-
-        # plot faces in matching colors
-        num_local_faces = len(self.edges['faces'][edge_id])
-        for k, face_id in enumerate(self.edges['faces'][edge_id]):
-            # get rainbow color
-            h = float(k) / num_local_faces
-            hsv_face_col = numpy.array([[[h, 1.0, 1.0]]])
-            col = mpl.colors.hsv_to_rgb(hsv_face_col)[0][0]
-
-            # paint the face
-            import mpl_toolkits.mplot3d as mpl3
-            face_nodes = self.node_coords[self.faces['nodes'][face_id]]
-            tri = mpl3.art3d.Poly3DCollection([face_nodes])
-            tri.set_color(mpl.colors.rgb2hex(col))
-            # tri.set_alpha(0.5)
-            ax.add_collection3d(tri)
-
-            # mark face circumcenters
-            face_cc = self._get_face_circumcenter(face_id)
-            ax.plot([face_cc[0]], [face_cc[1]], [face_cc[2]],
-                    marker='o', color=col)
-
-        # plot ce_ratio
-        face_col = '0.7'
-        col = 'k'
-        for k, face_id in enumerate(self.edges['faces'][edge_id]):
-            ccs = cell_ccs[self.faces['cells'][face_id]]
-            if len(ccs) == 2:
-                tri = mpl3.art3d.Poly3DCollection([
-                    numpy.vstack((ccs, edge_midpoint))
-                    ])
-                tri.set_color(face_col)
-                ax.add_collection3d(tri)
-                ax.plot(ccs[:, 0], ccs[:, 1], ccs[:, 2], color=col)
-            elif len(ccs) == 1:
-                tri = mpl3.art3d.Poly3DCollection(
-                    [numpy.vstack((ccs[0], face_cc, edge_midpoint))]
-                    )
-                tri.set_color(face_col)
-                ax.add_collection3d(tri)
-                ax.plot([ccs[0][0], face_cc[0]],
-                        [ccs[0][1], face_cc[1]],
-                        [ccs[0][2], face_cc[2]],
-                        color=col)
-            else:
-                raise RuntimeError('???')
-
-        # ax.plot([edge_midpoint[0]],
-        #         [edge_midpoint[1]],
-        #         [edge_midpoint[2]],
-        #         'ro'
-        #         )
-
-        # highlight cells
-        highlight_cells = []  # [3]
-        col = 'r'
-        for k in highlight_cells:
-            cell_id = self.edges['cells'][edge_id][k]
-            ax.plot([cell_ccs[cell_id, 0]],
-                    [cell_ccs[cell_id, 1]],
-                    [cell_ccs[cell_id, 2]],
-                    color=col,
-                    marker='o'
-                    )
-            for edge in self.cells['edges'][cell_id]:
-                x = self.node_coords[self.edges['nodes'][edge]]
-                ax.plot(x[:, 0], x[:, 1], x[:, 2], col, linestyle='dashed')
+        # draw the cell circumcenters
+        cc = self.cell_circumcenters[adj_cell_ids]
+        ax.plot(cc[:, 0], cc[:, 1], cc[:, 2], 'ro')
         return

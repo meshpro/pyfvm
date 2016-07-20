@@ -124,3 +124,18 @@ class _base_mesh(object):
         sol = numpy.column_stack((a, b, c)) * cell_volumes[:, None]
 
         return cell_volumes, sol
+
+    def compute_triangle_circumcenters(self, X):
+        '''Computes the center of the circumcenter of all given triangles
+        '''
+        # https://en.wikipedia.org/wiki/Circumscribed_circle#Higher_dimensions
+        a = X[:, 0, :] - X[:, 2, :]
+        b = X[:, 1, :] - X[:, 2, :]
+        a_dot_a = _row_dot(a, a)
+        a2_b = b * a_dot_a[..., None]
+        b_dot_b = _row_dot(b, b)
+        b2_a = a * b_dot_b[..., None]
+        a_cross_b = numpy.cross(a, b)
+        N = numpy.cross(a2_b - b2_a, a_cross_b)
+        a_cross_b2 = _row_dot(a_cross_b, a_cross_b)
+        return 0.5 * N / a_cross_b2[..., None] + X[:, 2, :]
