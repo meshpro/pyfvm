@@ -401,6 +401,7 @@ class meshTetra(_base_mesh):
         # return
 
     def show(self):
+        import matplotlib as mpl
         from mpl_toolkits.mplot3d import Axes3D
         import os
         if 'DISPLAY' not in os.environ:
