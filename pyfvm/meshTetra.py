@@ -32,10 +32,24 @@ class meshTetra(_base_mesh):
         self.create_adjacent_entities()
         self.create_cell_circumcenters_and_volumes()
         self.compute_edge_lengths()
+
+        num_edges = len(self.edges['nodes'])
+        self.ce_ratios = numpy.zeros(num_edges, dtype=float)
         if mode == 'geometric':
-            self.compute_ce_ratios_geometric()
+            vals = self.compute_ce_ratios_geometric()
+            numpy.add.at(
+                    self.ce_ratios,
+                    self.faces['edges'][self.cells['faces']],
+                    vals
+                    )
         elif mode == 'algebraic':
-            self.compute_ce_ratios_algebraic()
+            vals = self.compute_ce_ratios_algebraic()
+            numpy.add.at(
+                    self.ce_ratios,
+                    self.cells['edges'],
+                    vals
+                    )
+            self.circumcenter_face_distances = None
         else:
             raise ValueError('Illegal mode \'%s\'.' % mode)
 
@@ -248,15 +262,7 @@ class meshTetra(_base_mesh):
         # edge coefficients are 0, too. Hence, do nothing.
         sol = numpy.linalg.solve(A, rhs)
 
-        num_edges = len(self.edges['nodes'])
-        self.ce_ratios = numpy.zeros(num_edges, dtype=float)
-        numpy.add.at(
-                self.ce_ratios,
-                self.cells['edges'],
-                sol
-                )
-
-        return
+        return sol
 
     def compute_ce_ratios_geometric(self):
 
@@ -292,6 +298,8 @@ class meshTetra(_base_mesh):
         # (shape: num_cells x 4)
         d = a / self.cell_volumes[:, None]
 
+        self.circumcenter_face_distances = d
+
         # prepare face edges
         e = self.node_coords[self.edges['nodes'][self.faces['edges'], 1]] - \
             self.node_coords[self.edges['nodes'][self.faces['edges'], 0]]
@@ -306,14 +314,7 @@ class meshTetra(_base_mesh):
         # Multiply
         s = 0.5 * fce_ratios * d[..., None]
 
-        # Add s together for the edges
-        self.ce_ratios = numpy.zeros(len(self.edges['nodes']))
-        numpy.add.at(
-                self.ce_ratios,
-                self.faces['edges'][self.cells['faces']],
-                s
-                )
-        return
+        return s
 
     def compute_control_volumes(self):
         '''Compute the control volumes of all nodes in the mesh.
@@ -393,58 +394,20 @@ class meshTetra(_base_mesh):
         # return
 
     def num_delaunay_violations(self):
-        # is_delaunay = True
-        num_faces = len(self.faces['nodes'])
-        num_interior_faces = 0
-        num_delaunay_violations = 0
+        # Delaunay violations are present exactly on the interior faces where
+        # the sum of the signed distances between face circumcenter and
+        # tetrahedron circumcenter is negative.
+        if self.circumcenter_face_distances is None:
+            self.compute_ce_ratios_geometric()
 
-        if 'cells' not in self.faces:
-            self.create_face_cells()
+        sums = numpy.zeros(len(self.faces['nodes']))
+        numpy.add.at(
+                sums,
+                self.cells['faces'],
+                self.circumcenter_face_distances
+                )
 
-        for face_id in range(num_faces):
-            # Boundary faces don't need to be checked.
-            if len(self.faces['cells'][face_id]) != 2:
-                continue
-
-            num_interior_faces += 1
-            # Each interior edge divides the domain into to half-planes.
-            # The Delaunay condition is fulfilled if and only if
-            # the circumcenters of the adjacent cells are in "the right order",
-            # i.e., line between the nodes of the cells which do not sit
-            # on the hyperplane have the same orientation as the line
-            # between the circumcenters.
-
-            # The orientation of the coedge needs gauging.
-            # Do it in such as a way that the control volume contribution
-            # is positive if and only if the area of the triangle
-            # (node, other0, edge_midpoint) (in this order) is positive.
-            # Equivalently, the triangles (node, edge_midpoint, other1)
-            # or (node, other0, other1) could  be considered.
-            # other{0,1} refers to the the node opposing the edge in the
-            # adjacent cell {0,1}.
-            # Get the opposing node of the first adjacent cell.
-            cell0 = self.faces['cells'][face_id][0]
-            # This nonzero construct is an ugly replacement for the nonexisting
-            # index() method. (Compare with Python lists.)
-            face_lid = \
-                numpy.nonzero(self.cells['faces'][cell0] == face_id)[0][0]
-            # This makes use of the fact that cellsEdges and cellsNodes
-            # are coordinated such that in cell #i, the edge cellsEdges[i][k]
-            # opposes cellsNodes[i][k].
-            other0 = self.node_coords[self.cells['nodes'][cell0][face_lid]]
-
-            # Get the edge midpoint.
-            node_ids = self.faces['nodes'][face_id]
-            node_coords = self.node_coords[node_ids]
-            edge_midpoint = 0.5 * (node_coords[0] + node_coords[1])
-
-            # Get the circumcenters of the adjacent cells.
-            cc = self.cell_circumcenters[self.faces['cells'][face_id]]
-            # Check if cc[1]-cc[0] and the gauge point
-            # in the "same" direction.
-            if numpy.dot(edge_midpoint-other0, cc[1]-cc[0]) < 0.0:
-                num_delaunay_violations += 1
-        return num_delaunay_violations
+        return numpy.sum(sums < 0.0)
 
     def show_control_volume(self, node_id):
         '''Displays a node with its surrounding control volume.
