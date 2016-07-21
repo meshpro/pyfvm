@@ -139,3 +139,54 @@ class _base_mesh(object):
         N = numpy.cross(a2_b - b2_a, a_cross_b)
         a_cross_b2 = _row_dot(a_cross_b, a_cross_b)
         return 0.5 * N / a_cross_b2[..., None] + X[:, 2, :]
+
+    def get_edges(self, subdomain):
+        if subdomain not in self.subdomains:
+            self.mark_subdomain(subdomain)
+        return self.subdomains[subdomain]['edges']
+
+    def get_vertices(self, subdomain):
+        if subdomain not in self.subdomains:
+            self.mark_subdomain(subdomain)
+        return self.subdomains[subdomain]['vertices']
+
+    def mark_subdomain(self, subdomain):
+        # find vertices in subdomain
+        if subdomain.is_boundary_only:
+            nodes = self.get_vertices('boundary')
+        else:
+            nodes = self.get_vertices('everywhere')
+
+        subdomain_vertices = []
+        for vertex_id in nodes:
+            if subdomain.is_inside(self.node_coords[vertex_id]):
+                subdomain_vertices.append(vertex_id)
+        subdomain_vertices = numpy.unique(subdomain_vertices)
+
+        # extract all edges which are completely or half in the subdomain
+        if subdomain.is_boundary_only:
+            edges = self.get_edges('boundary')
+        else:
+            edges = self.get_edges('everywhere')
+
+        subdomain_edges = []
+        subdomain_split_edges = []
+        for edge_id in edges:
+            verts = self.edges['nodes'][edge_id]
+            if verts[0] in subdomain_vertices:
+                if verts[1] in subdomain_vertices:
+                    subdomain_edges.append(edge_id)
+                else:
+                    subdomain_split_edges.append(edge_id)
+
+        subdomain_edges = numpy.unique(subdomain_edges)
+        subdomain_split_edges = numpy.unique(subdomain_split_edges)
+
+        name = subdomain.__class__
+        self.subdomains[subdomain] = {
+                'vertices': subdomain_vertices,
+                'edges': subdomain_edges,
+                'split_edges': subdomain_split_edges
+                }
+
+        return

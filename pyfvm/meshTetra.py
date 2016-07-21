@@ -71,39 +71,17 @@ class meshTetra(_base_mesh):
         boundary_vertices = numpy.unique(
                 self.faces['nodes'][boundary_faces].flatten()
                 )
+        boundary_edges = numpy.unique(
+                self.faces['edges'][boundary_faces].flatten()
+                )
 
-        self.subdomains['Boundary'] = {
-                'vertices': boundary_vertices
+        self.subdomains['boundary'] = {
+                'vertices': boundary_vertices,
+                'edges': boundary_edges,
+                'faces': boundary_faces
                 }
 
         return
-
-    def mark_subdomains(self, subdomains):
-        for subdomain in subdomains:
-            # find vertices in subdomain
-            if subdomain.is_boundary_only:
-                nodes = self.get_vertices('Boundary')
-            else:
-                nodes = self.get_vertices('everywhere')
-
-            subdomain_vertices = []
-            for vertex_id in nodes:
-                if subdomain.is_inside(self.node_coords[vertex_id]):
-                    subdomain_vertices.append(vertex_id)
-            subdomain_vertices = numpy.unique(subdomain_vertices)
-
-            name = subdomain.__class__.__name__
-            self.subdomains[name] = {
-                    'vertices': subdomain_vertices
-                    }
-
-        return
-
-    def get_edges(self, subdomain):
-        return self.subdomains[subdomain]['edges']
-
-    def get_vertices(self, subdomain):
-        return self.subdomains[subdomain]['vertices']
 
     def create_adjacent_entities(self):
         '''Set up edge-node, edge-cell, edge-face, face-node, and face-cell

@@ -20,7 +20,7 @@ class Reaction(LinearFvmProblem):
                 )
 
     dirichlet = [
-            (lambda x: 0.0, ['Boundary'])
+            (lambda x: 0.0, ['boundary'])
             ]
 
 

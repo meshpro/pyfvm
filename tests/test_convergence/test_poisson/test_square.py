@@ -16,7 +16,7 @@ class Poisson(LinearFvmProblem):
             - integrate(lambda x: 2*pi**2 * sin(pi*x[0]) * sin(pi*x[1]), dV)
 
     dirichlet = [
-            (lambda x: 0.0, ['Boundary'])
+            (lambda x: 0.0, ['boundary'])
             ]
 
 

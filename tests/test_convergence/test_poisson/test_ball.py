@@ -21,7 +21,7 @@ class Poisson(LinearFvmProblem):
             integrate(rhs, dV)
 
     dirichlet = [
-            (lambda x: 0.0, ['Boundary'])
+            (lambda x: 0.0, ['boundary'])
             ]
 
 

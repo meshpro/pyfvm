@@ -22,7 +22,7 @@ class TestPDEs(unittest.TestCase):
             def apply(u):
                 return integrate(lambda x: - n_dot_grad(u(x)), dS) \
                        - integrate(lambda x: 1.0, dV)
-            dirichlet = [(lambda x: 0.0, ['Boundary'])]
+            dirichlet = [(lambda x: 0.0, ['boundary'])]
 
         linear_system = pyfvm.discretize(Poisson, mesh)
 
@@ -91,8 +91,8 @@ class TestPDEs(unittest.TestCase):
                 return integrate(lambda x: -n_dot_grad(u(x)), dS) \
                        - integrate(lambda x: 1.0, dV)
             dirichlet = [
-                    (lambda x: 0.0, ['Gamma0']),
-                    (lambda x: 1.0, ['Gamma1'])
+                    (lambda x: 0.0, [Gamma0()]),
+                    (lambda x: 1.0, [Gamma1()])
                     ]
 
         # Create mesh using meshzoo
@@ -102,7 +102,6 @@ class TestPDEs(unittest.TestCase):
                 zigzag=True
                 )
         mesh = pyfvm.meshTri.meshTri(vertices, cells)
-        mesh.mark_subdomains([Gamma0(), Gamma1()])
 
         linear_system = pyfvm.discretize(Poisson, mesh)
 
@@ -134,7 +133,7 @@ class TestPDEs(unittest.TestCase):
                 return integrate(lambda x: - 1.0e-2 * n_dot_grad(u(x)), dS) \
                        + integrate(lambda x: u(x), dV) \
                        - integrate(lambda x: 1.0, dV)
-            dirichlet = [(lambda x: 0.0, ['Boundary'])]
+            dirichlet = [(lambda x: 0.0, ['boundary'])]
 
         # Create mesh using meshzoo
         vertices, cells = meshzoo.rectangle.create_mesh(
@@ -178,7 +177,7 @@ class TestPDEs(unittest.TestCase):
                 return integrate(lambda x: - n_dot_grad(u(x)), dS) \
                        + integrate(lambda x: 3.0, dGamma) \
                        - integrate(lambda x: 1.0, dV)
-            dirichlet = [(lambda x: 0.0, ['D1'])]
+            dirichlet = [(lambda x: 0.0, [D1()])]
 
         # Create mesh using meshzoo
         vertices, cells = meshzoo.rectangle.create_mesh(
@@ -187,7 +186,6 @@ class TestPDEs(unittest.TestCase):
                 zigzag=True
                 )
         mesh = pyfvm.meshTri.meshTri(vertices, cells)
-        mesh.mark_subdomains([D1()])
 
         linear_system = pyfvm.discretize(Poisson, mesh)
 
@@ -220,7 +218,7 @@ class TestPDEs(unittest.TestCase):
     #             a = sympy.Matrix([2, 1, 0])
     #             return integrate(lambda x: - n_dot_grad(u(x)) + dot(n, a) * u(x), dS) - \
     #                    integrate(lambda x: 1.0, dV)
-    #         dirichlet = [(lambda x: 0.0, ['Boundary'])]
+    #         dirichlet = [(lambda x: 0.0, ['boundary'])]
 
     #     # Create mesh using meshzoo
     #     vertices, cells = meshzoo.rectangle.create_mesh(
