@@ -52,7 +52,7 @@ class meshTri(_base_mesh):
                 self.edges['nodes'][boundary_edges].flatten()
                 )
 
-        self.subdomains['Boundary'] = {
+        self.subdomains['boundary'] = {
                 'vertices': boundary_vertices,
                 'edges': boundary_edges
                 }
@@ -63,7 +63,7 @@ class meshTri(_base_mesh):
         for subdomain in subdomains:
             # find vertices in subdomain
             if subdomain.is_boundary_only:
-                nodes = self.get_vertices('Boundary')
+                nodes = self.get_vertices('boundary')
             else:
                 nodes = self.get_vertices('everywhere')
 
@@ -75,7 +75,7 @@ class meshTri(_base_mesh):
 
             # extract all edges which are completely or half in the subdomain
             if subdomain.is_boundary_only:
-                edges = self.get_edges('Boundary')
+                edges = self.get_edges('boundary')
             else:
                 edges = self.get_edges('everywhere')
 
@@ -92,8 +92,8 @@ class meshTri(_base_mesh):
             subdomain_edges = numpy.unique(subdomain_edges)
             subdomain_half_edges = numpy.unique(subdomain_half_edges)
 
-            name = subdomain.__class__.__name__
-            self.subdomains[name] = {
+            name = subdomain.__class__
+            self.subdomains[subdomain] = {
                     'vertices': subdomain_vertices,
                     'edges': subdomain_edges,
                     'half_edges': subdomain_half_edges
@@ -153,9 +153,13 @@ class meshTri(_base_mesh):
         return
 
     def get_edges(self, subdomain):
+        if subdomain not in self.subdomains:
+            self.mark_subdomains([subdomain])
         return self.subdomains[subdomain]['edges']
 
     def get_vertices(self, subdomain):
+        if subdomain not in self.subdomains:
+            self.mark_subdomains([subdomain])
         return self.subdomains[subdomain]['vertices']
 
     def compute_control_volumes(self):
@@ -199,7 +203,7 @@ class meshTri(_base_mesh):
 
     def compute_surface_areas(self):
         self.surface_areas = numpy.zeros(len(self.get_vertices('everywhere')))
-        b_edge = self.get_edges('Boundary')
+        b_edge = self.get_edges('boundary')
         numpy.add.at(
             self.surface_areas,
             self.edges['nodes'][b_edge, 0],
@@ -242,7 +246,7 @@ class meshTri(_base_mesh):
         # Create an empty 2x2 matrix for the boundary nodes to hold the
         # edge correction ((17) in [1]).
         boundary_matrices = {}
-        for node in self.get_vertices('Boundary'):
+        for node in self.get_vertices('boundary'):
             boundary_matrices[node] = numpy.zeros((2, 2))
 
         for edge_id, edge in enumerate(self.edges['cells']):
