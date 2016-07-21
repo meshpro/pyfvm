@@ -70,10 +70,19 @@ def _get_VIJ(
 
             v_matrix, v_rhs = edge_kernel.eval(edges)
 
-            V.append(v_matrix[0, 0, :])
-            V.append(v_matrix[0, 1, :])
-            V.append(v_matrix[1, 0, :])
-            V.append(v_matrix[1, 1, :])
+            # if dot() is used in the expression, the shape of of v_matrix will
+            # be (2, 2, 1, k) instead of (2, 2, k).
+            if len(v_matrix.shape) == 4:
+                assert v_matrix.shape[2] == 1
+                V.append(v_matrix[0, 0, 0, :])
+                V.append(v_matrix[0, 1, 0, :])
+                V.append(v_matrix[1, 0, 0, :])
+                V.append(v_matrix[1, 1, 0, :])
+            else:
+                V.append(v_matrix[0, 0, :])
+                V.append(v_matrix[0, 1, :])
+                V.append(v_matrix[1, 0, :])
+                V.append(v_matrix[1, 1, :])
 
             I.append(edge_nodes[:, 0])
             I.append(edge_nodes[:, 0])

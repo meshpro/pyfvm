@@ -7,7 +7,7 @@ from .helpers import \
         is_affine_linear, \
         replace_nosh_functions
 from . import form_language
-from .form_language import n, neg_n, Expression
+from .form_language import n
 import linear_fvm_problem
 import logging
 import sympy
