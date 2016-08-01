@@ -57,7 +57,7 @@ class ConvergencePoisson3dBallTest(unittest.TestCase):
         H, error_norm_1, error_norm_inf, order_1, order_inf = self.solve()
 
         expected_order = 2
-        tol = 1.5e-1
+        tol = 2.0e-1
         self.assertGreater(order_1[-1], expected_order - tol)
         self.assertGreater(order_inf[-1], expected_order - tol)
 
