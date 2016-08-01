@@ -214,45 +214,46 @@ class TestPDEs(unittest.TestCase):
 
         return
 
-    # TODO reinstate test
-    # def test_convection(self):
-    #     import meshzoo
-    #     from scipy.sparse import linalg
+    def test_convection(self):
+        import meshzoo
+        from scipy.sparse import linalg
 
-    #     # Define the problem
-    #     class Poisson(LinearFvmProblem):
-    #         @staticmethod
-    #         def apply(u):
-    #             a = sympy.Matrix([2, 1, 0])
-    #             return integrate(lambda x: - n_dot_grad(u(x)) + dot(n, a) * u(x), dS) - \
-    #                    integrate(lambda x: 1.0, dV)
-    #         dirichlet = [(lambda x: 0.0, ['boundary'])]
+        # Define the problem
+        class Poisson(LinearFvmProblem):
+            def __init__(self):
+                self.dirichlet = [(lambda x: 0.0, ['boundary'])]
+                return
 
-    #     # Create mesh using meshzoo
-    #     vertices, cells = meshzoo.rectangle.create_mesh(
-    #             0.0, 1.0, 0.0, 1.0,
-    #             21, 21,
-    #             zigzag=True
-    #             )
-    #     mesh = pyfvm.meshTri.meshTri(vertices, cells)
+            def apply(self, u):
+                a = sympy.Matrix([2, 1, 0])
+                return integrate(lambda x: - n_dot_grad(u(x)) + dot(a.T, n) * u(x), dS) - \
+                       integrate(lambda x: 1.0, dV)
 
-    #     linear_system = pyfvm.discretize(Poisson, mesh)
+        # Create mesh using meshzoo
+        vertices, cells = meshzoo.rectangle.create_mesh(
+                0.0, 1.0, 0.0, 1.0,
+                21, 21,
+                zigzag=True
+                )
+        mesh = pyfvm.meshTri.meshTri(vertices, cells)
 
-    #     x = linalg.spsolve(linear_system.matrix, linear_system.rhs)
+        linear_system = pyfvm.discretize(Poisson(), mesh)
 
-    #     k0 = -1
-    #     for k, coord in enumerate(mesh.node_coords):
-    #         if numpy.linalg.norm(coord - [0.5, 0.5, 0.0]) < 1.0e-5:
-    #             k0 = k
-    #             break
+        x = linalg.spsolve(linear_system.matrix, linear_system.rhs)
 
-    #     self.assertNotEqual(k0, -1)
-    #     self.assertAlmostEqual(x[k0], 0.07041709172659899, delta=1.0e-7)
+        k0 = -1
+        for k, coord in enumerate(mesh.node_coords):
+            if numpy.linalg.norm(coord - [0.5, 0.5, 0.0]) < 1.0e-5:
+                k0 = k
+                break
 
-    #     x_dot_x = numpy.dot(x, mesh.control_volumes * x)
-    #     self.assertAlmostEqual(x_dot_x, 0.0, delta=1.0e-7)
+        self.assertNotEqual(k0, -1)
+        self.assertAlmostEqual(x[k0], 0.07041709172659899, delta=1.0e-7)
 
-    #     return
+        x_dot_x = numpy.dot(x, mesh.control_volumes * x)
+        self.assertAlmostEqual(x_dot_x, 0.0016076431631658172, delta=1.0e-7)
+
+        return
 
 
 if __name__ == '__main__':
