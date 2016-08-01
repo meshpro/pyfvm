@@ -70,7 +70,7 @@ class BoundaryKernel(object):
 
     def eval(self, vertex_ids):
         surface_areas = self.mesh.surface_areas[vertex_ids]
-        X = self.mesh.node_coords[vertex_ids]
+        X = self.mesh.node_coords[vertex_ids].T
         zero = numpy.zeros(len(vertex_ids))
         return (
             self.coeff(surface_areas, X, zero),
