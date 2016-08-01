@@ -18,13 +18,12 @@ class TestPDEs(unittest.TestCase):
 
         # Define the problem
         class Poisson(LinearFvmProblem):
-            def __init__(self):
-                self.dirichlet = [(lambda x: 0.0, ['boundary'])]
-                return
-
             def apply(self, u):
                 return integrate(lambda x: - n_dot_grad(u(x)), dS) \
                        - integrate(lambda x: 1.0, dV)
+
+            def dirichlet(self, u):
+                return [(u, ['boundary'])]
 
         linear_system = pyfvm.discretize(Poisson(), mesh)
 
@@ -88,16 +87,15 @@ class TestPDEs(unittest.TestCase):
 
         # Define the problem
         class Poisson(LinearFvmProblem):
-            def __init__(self):
-                self.dirichlet = [
-                    (lambda x: 0.0, [Gamma0()]),
-                    (lambda x: 1.0, [Gamma1()])
-                    ]
-                return
-
             def apply(self, u):
                 return integrate(lambda x: -n_dot_grad(u(x)), dS) \
                        - integrate(lambda x: 1.0, dV)
+
+            def dirichlet(self, u):
+                return [
+                    (lambda x: u(x) - 0.0, [Gamma0()]),
+                    (lambda x: u(x) - 1.0, [Gamma1()])
+                    ]
 
         # Create mesh using meshzoo
         vertices, cells = meshzoo.rectangle.create_mesh(
@@ -110,6 +108,10 @@ class TestPDEs(unittest.TestCase):
         linear_system = pyfvm.discretize(Poisson(), mesh)
 
         x = linalg.spsolve(linear_system.matrix, linear_system.rhs)
+
+        import meshio
+        meshio.write('test.vtu', mesh.node_coords, {'triangle':
+            mesh.cells['nodes']}, point_data={'x': x})
 
         k0 = -1
         for k, coord in enumerate(mesh.node_coords):
@@ -132,14 +134,13 @@ class TestPDEs(unittest.TestCase):
 
         # Define the problem
         class Poisson(LinearFvmProblem):
-            def __init__(self):
-                self.dirichlet = [(lambda x: 0.0, ['boundary'])]
-                return
-
             def apply(self, u):
                 return integrate(lambda x: - 1.0e-2 * n_dot_grad(u(x)), dS) \
                        + integrate(lambda x: u(x), dV) \
                        - integrate(lambda x: 1.0, dV)
+
+            def dirichlet(self, u):
+                return [(u, ['boundary'])]
 
         # Create mesh using meshzoo
         vertices, cells = meshzoo.rectangle.create_mesh(
@@ -178,14 +179,13 @@ class TestPDEs(unittest.TestCase):
 
         # Define the problem
         class Poisson(LinearFvmProblem):
-            def __init__(self):
-                self.dirichlet = [(lambda x: 0.0, [D1()])]
-                return
-
             def apply(self, u):
                 return integrate(lambda x: - n_dot_grad(u(x)), dS) \
                        + integrate(lambda x: 3.0, dGamma) \
                        - integrate(lambda x: 1.0, dV)
+
+            def dirichlet(self, u):
+                return [(u, [D1()])]
 
         # Create mesh using meshzoo
         vertices, cells = meshzoo.rectangle.create_mesh(
@@ -220,14 +220,13 @@ class TestPDEs(unittest.TestCase):
 
         # Define the problem
         class Poisson(LinearFvmProblem):
-            def __init__(self):
-                self.dirichlet = [(lambda x: 0.0, ['boundary'])]
-                return
-
             def apply(self, u):
                 a = sympy.Matrix([2, 1, 0])
                 return integrate(lambda x: - n_dot_grad(u(x)) + dot(a.T, n) * u(x), dS) - \
                        integrate(lambda x: 1.0, dV)
+
+            def dirichlet(self, u):
+                return [(u, ['boundary'])]
 
         # Create mesh using meshzoo
         vertices, cells = meshzoo.rectangle.create_mesh(

@@ -3,21 +3,15 @@ import helpers
 import pyfvm
 from pyfvm.form_language import *
 import meshzoo
-from sympy import sin, cos
-import numpy
-from numpy import pi
+from sympy import pi, sin, cos
 import unittest
 
 
 def exact_sol(x):
-    return numpy.sin(pi*x[0]) * numpy.sin(pi*x[1]) * numpy.sin(pi*x[2])
+    return sin(pi*x[0]) * sin(pi*x[1]) * sin(pi*x[2])
 
 
 class Convection(LinearFvmProblem):
-    def __init__(self):
-        self.dirichlet = [(exact_sol, ['boundary'])]
-        return
-
     def apply(self, u):
         a0 = 2
         a1 = 1
@@ -32,6 +26,11 @@ class Convection(LinearFvmProblem):
                   a2 * pi * sin(pi*x[0]) * sin(pi*x[1]) * cos(pi*x[2]),
                   dV
                   )
+
+    def dirichlet(self, u):
+        return [
+            (lambda x: u(x) - exact_sol(x), ['boundary'])
+            ]
 
 
 def get_mesh(k):

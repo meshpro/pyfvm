@@ -87,7 +87,8 @@ class DirichletKernel(object):
 
     def eval(self, vertex_ids):
         X = self.mesh.node_coords[vertex_ids].T
-        return self.val(X)
+        zero = numpy.zeros(len(vertex_ids))
+        return self.val(X, zero)
 
 
 def _discretize_edge_integral(integrand, x0, x1, edge_length, edge_ce_ratio):
@@ -280,24 +281,25 @@ def _extract_linear_components(expr, dvars):
         )
 
 
-def _discretize_expression(expr, multiplier):
+def _discretize_expression(expr, multiplier=1.0):
     expr, fks = replace_nosh_functions(expr)
     return multiplier * expr, fks
 
 
-def discretize(cls, mesh):
+def discretize(obj, mesh):
     u = sympy.Function('u')
     u.nosh = True  # TODO get rid
 
-    res = cls.apply(u)
+    res = obj.apply(u)
 
     # See <http://docs.sympy.org/dev/modules/utilities/lambdify.html>.
     array2array = [{'ImmutableMatrix': numpy.array}, 'numpy']
 
+    zero = sympy.Symbol('zero')
+
     edge_kernels = set()
     vertex_kernels = set()
     boundary_kernels = set()
-    dirichlet_kernels = set()
     for integral in res.integrals:
         if isinstance(integral.measure, form_language.ControlVolumeSurface):
             x0 = sympy.Symbol('x0')
@@ -315,7 +317,6 @@ def discretize(cls, mesh):
             # Add "zero" to all entities. This later gets translated into
             # np.zeros with the appropriate length, making sure that scalar
             # terms in the lambda expression correctly return np.arrays.
-            zero = sympy.Symbol('zero')
             coeff[0][0] += zero
             coeff[0][1] += zero
             coeff[1][0] += zero
@@ -356,7 +357,6 @@ def discretize(cls, mesh):
             # Add "zero" to all entities. This later gets translated into
             # np.zeros with the appropriate length, making sure that scalar
             # terms in the lambda expression correctly return np.arrays.
-            zero = sympy.Symbol('zero')
             coeff += zero
             affine += zero
 
@@ -393,7 +393,6 @@ def discretize(cls, mesh):
             # Add "zero" to all entities. This later gets translated into
             # np.zeros with the appropriate length, making sure that scalar
             # terms in the lambda expression correctly return np.arrays.
-            zero = sympy.Symbol('zero')
             coeff += zero
             affine += zero
 
@@ -417,20 +416,30 @@ def discretize(cls, mesh):
                     'Illegal measure type \'%s\'.' % integral.measure
                     )
 
-    for dirichlet in cls.dirichlet:
-        f, subdomains = dirichlet
-        if not isinstance(subdomains, list):
-            try:
-                subdomains = list(subdomains)
-            except TypeError:  # TypeError: 'D1' object is not iterable
-                subdomains = [subdomains]
-        dirichlet_kernels.add(
-                DirichletKernel(
-                    mesh,
-                    f,
-                    subdomains
+    dirichlet_kernels = set()
+    dirichlet = getattr(obj, 'dirichlet', None)
+    if callable(dirichlet):
+        u = sympy.Function('u')
+        x = sympy.DeferredVector('x')
+        for f, subdomains in dirichlet(u):
+            expr, vector_vars = _discretize_expression(f(x))
+            u = sympy.IndexedBase('%s' % u)
+            k0 = sympy.Symbol('k')
+            uk0 = sympy.Symbol('uk0')
+            expr = expr.subs([(u[k0], uk0)])
+            coeff, affine = extract_linear_components(expr, uk0)
+            rhs = - affine / coeff + zero
+            dirichlet_kernels.add(
+                    DirichletKernel(
+                        mesh,
+                        sympy.lambdify(
+                            (x, zero),
+                            rhs,
+                            modules=array2array
+                            ),
+                        subdomains
+                        )
                     )
-                )
 
     return linear_fvm_problem.LinearFvmProblem(
             mesh,

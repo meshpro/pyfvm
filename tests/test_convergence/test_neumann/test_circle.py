@@ -3,15 +3,14 @@ import dolfin
 import helpers
 import mshr
 import numpy
-from numpy import pi
 import pyfvm
 from pyfvm.form_language import *
-from sympy import sin, cos, sqrt
+from sympy import pi, sin, cos, sqrt
 import unittest
 
 
 def exact_sol(x):
-    return numpy.cos(pi/2 * (x[0]**2 + x[1]**2))
+    return cos(pi/2 * (x[0]**2 + x[1]**2))
 
 
 class Gamma1(Subdomain):
@@ -21,22 +20,23 @@ class Gamma1(Subdomain):
 
 
 class Neumann(LinearFvmProblem):
-    def __init__(self):
-        self.dirichlet = [(exact_sol, [Gamma1()])]
-        return
-
     def apply(self, u):
-        def rhs(x):
-            z = pi/2 * (x[0]**2 + x[1]**2)
-            return 2*pi * (sin(z) + z * cos(z))
-
         def neumann(x):
             z = x[0]**2 + x[1]**2
             return -pi * sqrt(z) * sin(pi/2 * z)
 
+        def rhs(x):
+            z = pi/2 * (x[0]**2 + x[1]**2)
+            return 2*pi * (sin(z) + z * cos(z))
+
         return integrate(lambda x: -n_dot_grad(u(x)), dS) \
             - integrate(neumann, dGamma) \
             - integrate(rhs, dV)
+
+    def dirichlet(self, u):
+        return [
+            (lambda x: u(x) - exact_sol(x), [Gamma1()])
+            ]
 
 
 def get_mesh(k):

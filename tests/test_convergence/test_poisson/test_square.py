@@ -3,24 +3,23 @@ import helpers
 import pyfvm
 from pyfvm.form_language import *
 import meshzoo
-from sympy import sin
-import numpy
-from numpy import pi
+from sympy import pi, sin
 import unittest
 
 
 def exact_sol(x):
-    return numpy.sin(pi*x[0]) * numpy.sin(pi*x[1])
+    return sin(pi*x[0]) * sin(pi*x[1])
 
 
 class Poisson(LinearFvmProblem):
-    def __init__(self):
-        self.dirichlet = [(exact_sol, ['boundary'])]
-        return
-
     def apply(self, u):
         return integrate(lambda x: -n_dot_grad(u(x)), dS) \
             - integrate(lambda x: 2*pi**2 * sin(pi*x[0]) * sin(pi*x[1]), dV)
+
+    def dirichlet(self, u):
+        return [
+            (lambda x: u(x) - exact_sol(x), ['boundary'])
+            ]
 
 
 def get_mesh(k):

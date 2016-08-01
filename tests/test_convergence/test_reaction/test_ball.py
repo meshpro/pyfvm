@@ -2,23 +2,17 @@
 import mshr
 import dolfin
 import helpers
-import numpy
-from numpy import pi
 import pyfvm
 from pyfvm.form_language import *
-from sympy import sin, cos
+from sympy import pi, sin, cos
 import unittest
 
 
 def exact_sol(x):
-    return numpy.cos(pi/2 * (x[0]**2 + x[1]**2 + x[2]**2))
+    return cos(pi/2 * (x[0]**2 + x[1]**2 + x[2]**2))
 
 
 class Reaction(LinearFvmProblem):
-    def __init__(self):
-        self.dirichlet = [(exact_sol, ['boundary'])]
-        return
-
     def apply(self, u):
         def rhs(x):
             z = pi/2 * (x[0]**2 + x[1]**2 + x[2]**2)
@@ -27,6 +21,11 @@ class Reaction(LinearFvmProblem):
         return integrate(lambda x: -n_dot_grad(u(x)), dS) \
             + integrate(lambda x: u(x), dV) \
             - integrate(rhs, dV)
+
+    def dirichlet(self, u):
+        return [
+            (lambda x: u(x) - exact_sol(x), ['boundary'])
+            ]
 
 
 def get_mesh(k):

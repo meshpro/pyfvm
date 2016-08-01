@@ -1,24 +1,19 @@
 # -*- coding: utf-8 -*-
 import helpers
-import numpy
-from numpy import pi
 import pyfvm
 from pyfvm.form_language import *
 import mshr
 import dolfin
-from sympy import sin, cos
+import numpy
+from sympy import pi, sin, cos
 import unittest
 
 
 def exact_sol(x):
-    return numpy.cos(pi/2 * (x[0]**2 + x[1]**2))
+    return cos(pi/2 * (x[0]**2 + x[1]**2))
 
 
 class Convection(LinearFvmProblem):
-    def __init__(self):
-        self.dirichlet = [(exact_sol, ['boundary'])]
-        return
-
     def apply(self, u):
         a0 = 2
         a1 = 1
@@ -32,6 +27,11 @@ class Convection(LinearFvmProblem):
 
         return integrate(lambda x: -n_dot_grad(u(x)) + dot(a.T, n)*u(x), dS) \
             - integrate(rhs, dV)
+
+    def dirichlet(self, u):
+        return [
+            (lambda x: u(x) - exact_sol(x), ['boundary'])
+            ]
 
 
 def get_mesh(k):

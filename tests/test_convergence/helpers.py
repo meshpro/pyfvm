@@ -3,6 +3,7 @@ from matplotlib import pyplot as plt
 import numpy
 import pyamg
 import pyfvm
+import sympy
 from scipy.sparse import linalg
 
 
@@ -24,6 +25,15 @@ def perform_convergence_tests(
         print(38*' ' + '(order)' + 12*' ' + '(order)')
         print(79 * '-')
 
+    # Add "zero" to all entities. This later gets translated into
+    # np.zeros with the appropriate length, making sure that scalar
+    # terms in the lambda expression correctly return np.arrays.
+    zero = sympy.Symbol('zero')
+    x = sympy.DeferredVector('x')
+    # See <http://docs.sympy.org/dev/modules/utilities/lambdify.html>.
+    array2array = [{'ImmutableMatrix': numpy.array}, 'numpy']
+    exact_eval = sympy.lambdify((x, zero), exact_sol(x), modules=array2array)
+
     for k in rng:
         mesh = get_mesh(k)
         H[k] = max(mesh.edge_lengths)
@@ -34,7 +44,8 @@ def perform_convergence_tests(
         ml = pyamg.ruge_stuben_solver(linear_system.matrix)
         x = ml.solve(linear_system.rhs, tol=1e-10)
 
-        error = x - exact_sol(mesh.node_coords.T)
+        zero = numpy.zeros(len(mesh.node_coords))
+        error = x - exact_eval(mesh.node_coords.T, zero)
 
         # import meshio
         # meshio.write(
