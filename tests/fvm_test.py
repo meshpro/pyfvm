@@ -18,13 +18,15 @@ class TestPDEs(unittest.TestCase):
 
         # Define the problem
         class Poisson(LinearFvmProblem):
-            @staticmethod
-            def apply(u):
+            def __init__(self):
+                self.dirichlet = [(lambda x: 0.0, ['boundary'])]
+                return
+
+            def apply(self, u):
                 return integrate(lambda x: - n_dot_grad(u(x)), dS) \
                        - integrate(lambda x: 1.0, dV)
-            dirichlet = [(lambda x: 0.0, ['boundary'])]
 
-        linear_system = pyfvm.discretize(Poisson, mesh)
+        linear_system = pyfvm.discretize(Poisson(), mesh)
 
         x = linalg.spsolve(linear_system.matrix, linear_system.rhs)
 
@@ -86,14 +88,16 @@ class TestPDEs(unittest.TestCase):
 
         # Define the problem
         class Poisson(LinearFvmProblem):
-            @staticmethod
-            def apply(u):
-                return integrate(lambda x: -n_dot_grad(u(x)), dS) \
-                       - integrate(lambda x: 1.0, dV)
-            dirichlet = [
+            def __init__(self):
+                self.dirichlet = [
                     (lambda x: 0.0, [Gamma0()]),
                     (lambda x: 1.0, [Gamma1()])
                     ]
+                return
+
+            def apply(self, u):
+                return integrate(lambda x: -n_dot_grad(u(x)), dS) \
+                       - integrate(lambda x: 1.0, dV)
 
         # Create mesh using meshzoo
         vertices, cells = meshzoo.rectangle.create_mesh(
@@ -103,7 +107,7 @@ class TestPDEs(unittest.TestCase):
                 )
         mesh = pyfvm.meshTri.meshTri(vertices, cells)
 
-        linear_system = pyfvm.discretize(Poisson, mesh)
+        linear_system = pyfvm.discretize(Poisson(), mesh)
 
         x = linalg.spsolve(linear_system.matrix, linear_system.rhs)
 
@@ -128,12 +132,14 @@ class TestPDEs(unittest.TestCase):
 
         # Define the problem
         class Poisson(LinearFvmProblem):
-            @staticmethod
-            def apply(u):
+            def __init__(self):
+                self.dirichlet = [(lambda x: 0.0, ['boundary'])]
+                return
+
+            def apply(self, u):
                 return integrate(lambda x: - 1.0e-2 * n_dot_grad(u(x)), dS) \
                        + integrate(lambda x: u(x), dV) \
                        - integrate(lambda x: 1.0, dV)
-            dirichlet = [(lambda x: 0.0, ['boundary'])]
 
         # Create mesh using meshzoo
         vertices, cells = meshzoo.rectangle.create_mesh(
@@ -143,7 +149,7 @@ class TestPDEs(unittest.TestCase):
                 )
         mesh = pyfvm.meshTri.meshTri(vertices, cells)
 
-        linear_system = pyfvm.discretize(Poisson, mesh)
+        linear_system = pyfvm.discretize(Poisson(), mesh)
 
         x = linalg.spsolve(linear_system.matrix, linear_system.rhs)
 
@@ -172,12 +178,14 @@ class TestPDEs(unittest.TestCase):
 
         # Define the problem
         class Poisson(LinearFvmProblem):
-            @staticmethod
-            def apply(u):
+            def __init__(self):
+                self.dirichlet = [(lambda x: 0.0, [D1()])]
+                return
+
+            def apply(self, u):
                 return integrate(lambda x: - n_dot_grad(u(x)), dS) \
                        + integrate(lambda x: 3.0, dGamma) \
                        - integrate(lambda x: 1.0, dV)
-            dirichlet = [(lambda x: 0.0, [D1()])]
 
         # Create mesh using meshzoo
         vertices, cells = meshzoo.rectangle.create_mesh(
@@ -187,7 +195,7 @@ class TestPDEs(unittest.TestCase):
                 )
         mesh = pyfvm.meshTri.meshTri(vertices, cells)
 
-        linear_system = pyfvm.discretize(Poisson, mesh)
+        linear_system = pyfvm.discretize(Poisson(), mesh)
 
         x = linalg.spsolve(linear_system.matrix, linear_system.rhs)
 

@@ -13,9 +13,12 @@ def exact_sol(x):
     return numpy.sin(pi*x[0]) * numpy.sin(pi*x[1]) * numpy.sin(pi*x[2])
 
 
-class Reaction(LinearFvmProblem):
-    @staticmethod
-    def apply(u):
+class Convection(LinearFvmProblem):
+    def __init__(self):
+        self.dirichlet = [(exact_sol, ['boundary'])]
+        return
+
+    def apply(self, u):
         a0 = 2
         a1 = 1
         a2 = 3
@@ -30,8 +33,6 @@ class Reaction(LinearFvmProblem):
                   dV
                   )
 
-    dirichlet = [(exact_sol, ['boundary'])]
-
 
 def get_mesh(k):
     n = 2**(k+1)
@@ -44,7 +45,7 @@ def get_mesh(k):
     return pyfvm.meshTetra.meshTetra(vertices, cells, mode='algebraic')
 
 
-class ConvergenceReaction3dCubeTest(unittest.TestCase):
+class ConvergenceConvection3dCubeTest(unittest.TestCase):
 
     def setUp(self):
         return
@@ -52,7 +53,7 @@ class ConvergenceReaction3dCubeTest(unittest.TestCase):
     @staticmethod
     def solve(verbose=False):
         return helpers.perform_convergence_tests(
-            Reaction,
+            Convection(),
             exact_sol,
             get_mesh,
             range(4),
@@ -74,7 +75,7 @@ if __name__ == '__main__':
     from matplotlib import pyplot as plt
 
     H, error_norm_1, error_norm_inf, order_1, order_inf = \
-        ConvergenceReaction3dCubeTest.solve(verbose=True)
+        ConvergenceConvection3dCubeTest.solve(verbose=True)
 
     helpers.plot_error_data(H, error_norm_1, error_norm_inf)
     plt.show()

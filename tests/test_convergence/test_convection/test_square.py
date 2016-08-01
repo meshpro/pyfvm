@@ -14,8 +14,11 @@ def exact_sol(x):
 
 
 class Convection(LinearFvmProblem):
-    @staticmethod
-    def apply(u):
+    def __init__(self):
+        self.dirichlet = [(exact_sol, ['boundary'])]
+        return
+
+    def apply(self, u):
         a0 = 2
         a1 = 1
         a = sympy.Matrix([a0, a1, 0])
@@ -27,8 +30,6 @@ class Convection(LinearFvmProblem):
                     a1 * pi * sin(pi*x[0]) * cos(pi*x[1]),
                 dV
                 )
-
-    dirichlet = [(exact_sol, ['boundary'])]
 
 
 def get_mesh(k):
@@ -50,7 +51,7 @@ class ConvergenceConvection2dSquareTest(unittest.TestCase):
     @staticmethod
     def solve(verbose=False):
         return helpers.perform_convergence_tests(
-            Convection,
+            Convection(),
             exact_sol,
             get_mesh,
             range(6),

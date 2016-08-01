@@ -15,16 +15,17 @@ def exact_sol(x):
 
 
 class Poisson(LinearFvmProblem):
-    @staticmethod
-    def apply(u):
+    def __init__(self):
+        self.dirichlet = [(exact_sol, ['boundary'])]
+        return
+
+    def apply(self, u):
         def rhs(x):
             z = pi/2 * (x[0]**2 + x[1]**2)
             return 2*pi * (sin(z) + z * cos(z))
 
         return integrate(lambda x: -n_dot_grad(u(x)), dS) - \
             integrate(rhs, dV)
-
-    dirichlet = [(exact_sol, ['boundary'])]
 
 
 def get_mesh(k):
@@ -46,7 +47,7 @@ class ConvergencePoisson2dCircleTest(unittest.TestCase):
     @staticmethod
     def solve(verbose=False):
         return helpers.perform_convergence_tests(
-            Poisson,
+            Poisson(),
             exact_sol,
             get_mesh,
             range(6),

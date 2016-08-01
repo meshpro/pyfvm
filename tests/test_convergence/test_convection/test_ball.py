@@ -15,8 +15,11 @@ def exact_sol(x):
 
 
 class Convection(LinearFvmProblem):
-    @staticmethod
-    def apply(u):
+    def __init__(self):
+        self.dirichlet = [(exact_sol, ['boundary'])]
+        return
+
+    def apply(self, u):
         a0 = 2
         a1 = 1
         a2 = 3
@@ -31,8 +34,6 @@ class Convection(LinearFvmProblem):
 
         return integrate(lambda x: -n_dot_grad(u(x)) + dot(a.T, n)*u(x), dS) \
             - integrate(rhs, dV)
-
-    dirichlet = [(exact_sol, ['boundary'])]
 
 
 def get_mesh(k):
@@ -54,7 +55,7 @@ class ConvergenceConvection3dBallTest(unittest.TestCase):
     @staticmethod
     def solve(verbose=False):
         return helpers.perform_convergence_tests(
-            Convection,
+            Convection(),
             exact_sol,
             get_mesh,
             range(3),
