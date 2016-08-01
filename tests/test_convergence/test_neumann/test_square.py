@@ -26,7 +26,7 @@ class Neumann(LinearFvmProblem):
 
     def dirichlet(self, u):
         return [
-            (lambda x: u(x) - exact_sol(x), [Gamma1()])
+            (lambda x: u(x) - exact_sol(x), Gamma1())
             ]
 
 

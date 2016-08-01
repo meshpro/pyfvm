@@ -33,11 +33,10 @@ class LinearFvmProblem(object):
         # Apply Dirichlet conditions.
         dirichlet_verts = []
         for dirichlet in dirichlets:
-            for subdomain in dirichlet.subdomains:
-                verts = mesh.get_vertices(subdomain)
-                dirichlet_verts.append(verts)
-                # Set the RHS.
-                self.rhs[verts] = dirichlet.eval(verts)
+            verts = mesh.get_vertices(dirichlet.subdomain)
+            dirichlet_verts.append(verts)
+            # Set the RHS.
+            self.rhs[verts] = dirichlet.eval(verts)
 
         # Now set all Dirichlet rows to 0.
         rows = numpy.concatenate(dirichlet_verts)

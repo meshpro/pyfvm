@@ -23,7 +23,7 @@ class TestPDEs(unittest.TestCase):
                        - integrate(lambda x: 1.0, dV)
 
             def dirichlet(self, u):
-                return [(u, ['boundary'])]
+                return [(u, 'boundary')]
 
         linear_system = pyfvm.discretize(Poisson(), mesh)
 
@@ -93,8 +93,8 @@ class TestPDEs(unittest.TestCase):
 
             def dirichlet(self, u):
                 return [
-                    (lambda x: u(x) - 0.0, [Gamma0()]),
-                    (lambda x: u(x) - 1.0, [Gamma1()])
+                    (lambda x: u(x) - 0.0, Gamma0()),
+                    (lambda x: u(x) - 1.0, Gamma1())
                     ]
 
         # Create mesh using meshzoo
@@ -140,7 +140,7 @@ class TestPDEs(unittest.TestCase):
                        - integrate(lambda x: 1.0, dV)
 
             def dirichlet(self, u):
-                return [(u, ['boundary'])]
+                return [(u, 'boundary')]
 
         # Create mesh using meshzoo
         vertices, cells = meshzoo.rectangle.create_mesh(
@@ -185,7 +185,7 @@ class TestPDEs(unittest.TestCase):
                        - integrate(lambda x: 1.0, dV)
 
             def dirichlet(self, u):
-                return [(u, [D1()])]
+                return [(u, D1())]
 
         # Create mesh using meshzoo
         vertices, cells = meshzoo.rectangle.create_mesh(
@@ -226,7 +226,7 @@ class TestPDEs(unittest.TestCase):
                        integrate(lambda x: 1.0, dV)
 
             def dirichlet(self, u):
-                return [(u, ['boundary'])]
+                return [(u, 'boundary')]
 
         # Create mesh using meshzoo
         vertices, cells = meshzoo.rectangle.create_mesh(

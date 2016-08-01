@@ -30,7 +30,7 @@ class Convection(LinearFvmProblem):
 
     def dirichlet(self, u):
         return [
-            (lambda x: u(x) - exact_sol(x), ['boundary'])
+            (lambda x: u(x) - exact_sol(x), 'boundary')
             ]
 
 

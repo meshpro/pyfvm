@@ -79,10 +79,10 @@ class BoundaryKernel(object):
 
 
 class DirichletKernel(object):
-    def __init__(self, mesh, val, subdomains):
+    def __init__(self, mesh, val, subdomain):
         self.mesh = mesh
         self.val = val
-        self.subdomains = subdomains
+        self.subdomain = subdomain
         return
 
     def eval(self, vertex_ids):
@@ -421,7 +421,7 @@ def discretize(obj, mesh):
     if callable(dirichlet):
         u = sympy.Function('u')
         x = sympy.DeferredVector('x')
-        for f, subdomains in dirichlet(u):
+        for f, subdomain in dirichlet(u):
             expr, vector_vars = _discretize_expression(f(x))
             u = sympy.IndexedBase('%s' % u)
             k0 = sympy.Symbol('k')
@@ -437,7 +437,7 @@ def discretize(obj, mesh):
                             rhs,
                             modules=array2array
                             ),
-                        subdomains
+                        subdomain
                         )
                     )
 
