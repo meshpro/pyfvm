@@ -34,10 +34,17 @@ def perform_convergence_tests(
         ml = pyamg.ruge_stuben_solver(linear_system.matrix)
         x = ml.solve(linear_system.rhs, tol=1e-10)
 
-        diff = x - exact_sol(mesh.node_coords.T)
+        error = x - exact_sol(mesh.node_coords.T)
 
-        error_norm_1[k] = numpy.sum(abs(mesh.control_volumes * diff))
-        error_norm_inf[k] = max(abs(diff))
+        # import meshio
+        # meshio.write(
+        #     'sol%d.vtu' % k,
+        #     mesh.node_coords, {'triangle': mesh.cells['nodes']},
+        #     point_data={'x': x, 'error': error},
+        #     )
+
+        error_norm_1[k] = numpy.sum(abs(mesh.control_volumes * error))
+        error_norm_inf[k] = max(abs(error))
 
         # numerical orders of convergence
         if k > 0:

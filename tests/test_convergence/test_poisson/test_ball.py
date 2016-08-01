@@ -10,6 +10,10 @@ from sympy import sin, cos
 import unittest
 
 
+def exact_sol(x):
+    return numpy.cos(pi/2 * (x[0]**2 + x[1]**2 + x[2]**2))
+
+
 class Poisson(LinearFvmProblem):
     @staticmethod
     def apply(u):
@@ -20,13 +24,7 @@ class Poisson(LinearFvmProblem):
         return integrate(lambda x: -n_dot_grad(u(x)), dS) - \
             integrate(rhs, dV)
 
-    dirichlet = [
-            (lambda x: 0.0, ['boundary'])
-            ]
-
-
-def exact_sol(x):
-    return numpy.cos(pi/2 * (x[0]**2 + x[1]**2 + x[2]**2))
+    dirichlet = [(exact_sol, ['boundary'])]
 
 
 def get_mesh(k):
@@ -59,7 +57,7 @@ class ConvergencePoisson3dBallTest(unittest.TestCase):
         H, error_norm_1, error_norm_inf, order_1, order_inf = self.solve()
 
         expected_order = 2
-        tol = 5.0e-2
+        tol = 1.5e-1
         self.assertGreater(order_1[-1], expected_order - tol)
         self.assertGreater(order_inf[-1], expected_order - tol)
 

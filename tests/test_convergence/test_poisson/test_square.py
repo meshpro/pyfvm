@@ -9,19 +9,17 @@ from numpy import pi
 import unittest
 
 
+def exact_sol(x):
+    return numpy.sin(pi*x[0]) * numpy.sin(pi*x[1])
+
+
 class Poisson(LinearFvmProblem):
     @staticmethod
     def apply(u):
         return integrate(lambda x: -n_dot_grad(u(x)), dS) \
             - integrate(lambda x: 2*pi**2 * sin(pi*x[0]) * sin(pi*x[1]), dV)
 
-    dirichlet = [
-            (lambda x: 0.0, ['boundary'])
-            ]
-
-
-def exact_sol(x):
-    return numpy.sin(pi*x[0]) * numpy.sin(pi*x[1])
+    dirichlet = [(exact_sol, ['boundary'])]
 
 
 def get_mesh(k):

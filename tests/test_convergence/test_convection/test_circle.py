@@ -10,7 +10,11 @@ from sympy import sin, cos
 import unittest
 
 
-class Reaction(LinearFvmProblem):
+def exact_sol(x):
+    return numpy.cos(pi/2 * (x[0]**2 + x[1]**2))
+
+
+class Convection(LinearFvmProblem):
     @staticmethod
     def apply(u):
         a0 = 2
@@ -26,13 +30,7 @@ class Reaction(LinearFvmProblem):
         return integrate(lambda x: -n_dot_grad(u(x)) + dot(a.T, n)*u(x), dS) \
             - integrate(rhs, dV)
 
-    dirichlet = [
-            (lambda x: 0.0, ['boundary'])
-            ]
-
-
-def exact_sol(x):
-    return numpy.cos(pi/2 * (x[0]**2 + x[1]**2))
+    dirichlet = [(exact_sol, ['boundary'])]
 
 
 def get_mesh(k):
@@ -46,7 +44,7 @@ def get_mesh(k):
     return pyfvm.meshTri.meshTri(coords, m.cells())
 
 
-class ConvergenceReaction2dCircleTest(unittest.TestCase):
+class ConvergenceConvection2dCircleTest(unittest.TestCase):
 
     def setUp(self):
         return
@@ -54,7 +52,7 @@ class ConvergenceReaction2dCircleTest(unittest.TestCase):
     @staticmethod
     def solve(verbose=False):
         return helpers.perform_convergence_tests(
-            Reaction,
+            Convection,
             exact_sol,
             get_mesh,
             range(7),
@@ -76,7 +74,7 @@ if __name__ == '__main__':
     from matplotlib import pyplot as plt
 
     H, error_norm_1, error_norm_inf, order_1, order_inf = \
-        ConvergenceReaction2dCircleTest.solve(verbose=True)
+        ConvergenceConvection2dCircleTest.solve(verbose=True)
 
     helpers.plot_error_data(H, error_norm_1, error_norm_inf)
     plt.show()

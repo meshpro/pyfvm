@@ -9,6 +9,10 @@ from numpy import pi
 import unittest
 
 
+def exact_sol(x):
+    return numpy.sin(pi*x[0]) * numpy.sin(pi*x[1])
+
+
 # Everything except the north boundary
 class Gamma1(Subdomain):
     def is_inside(self, x):
@@ -17,19 +21,14 @@ class Gamma1(Subdomain):
 
 
 class Neumann(LinearFvmProblem):
-    @staticmethod
-    def apply(u):
+    def __init__(self):
+        self.dirichlet = [(exact_sol, ['boundary'])]
+        return
+
+    def apply(self, u):
         return integrate(lambda x: -n_dot_grad(u(x)), dS) \
             - integrate(lambda x: -pi * sin(pi*x[0]), dGamma) \
             - integrate(lambda x: 2*pi**2 * sin(pi*x[0]) * sin(pi*x[1]), dV)
-
-    dirichlet = [
-            (lambda x: 0.0, [Gamma1()])
-            ]
-
-
-def exact_sol(x):
-    return numpy.sin(pi*x[0]) * numpy.sin(pi*x[1])
 
 
 def get_mesh(k):
@@ -51,7 +50,7 @@ class ConvergenceNeumann2dSquareTest(unittest.TestCase):
     @staticmethod
     def solve(verbose=False):
         return helpers.perform_convergence_tests(
-            Neumann,
+            Neumann(),
             exact_sol,
             get_mesh,
             range(6),

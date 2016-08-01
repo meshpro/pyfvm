@@ -10,6 +10,10 @@ from sympy import sin, cos
 import unittest
 
 
+def exact_sol(x):
+    return numpy.cos(pi/2 * (x[0]**2 + x[1]**2 + x[2]**2))
+
+
 class Convection(LinearFvmProblem):
     @staticmethod
     def apply(u):
@@ -28,13 +32,7 @@ class Convection(LinearFvmProblem):
         return integrate(lambda x: -n_dot_grad(u(x)) + dot(a.T, n)*u(x), dS) \
             - integrate(rhs, dV)
 
-    dirichlet = [
-            (lambda x: 0.0, ['boundary'])
-            ]
-
-
-def exact_sol(x):
-    return numpy.cos(pi/2 * (x[0]**2 + x[1]**2 + x[2]**2))
+    dirichlet = [(exact_sol, ['boundary'])]
 
 
 def get_mesh(k):

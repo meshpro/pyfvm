@@ -9,6 +9,10 @@ from numpy import pi
 import unittest
 
 
+def exact_sol(x):
+    return numpy.sin(pi*x[0]) * numpy.sin(pi*x[1])
+
+
 class Convection(LinearFvmProblem):
     @staticmethod
     def apply(u):
@@ -24,13 +28,7 @@ class Convection(LinearFvmProblem):
                 dV
                 )
 
-    dirichlet = [
-            (lambda x: 0.0, ['boundary'])
-            ]
-
-
-def exact_sol(x):
-    return numpy.sin(pi*x[0]) * numpy.sin(pi*x[1])
+    dirichlet = [(exact_sol, ['boundary'])]
 
 
 def get_mesh(k):
