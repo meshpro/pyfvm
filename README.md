@@ -20,42 +20,45 @@ construct FVM systems.
 
 ##### Poisson's equation
 
+For solving Poisson's equation with Dirichlet boundary conditions, simply do
 From the configuration file
 ```python
-from nfl import *
-from sympy import sin
+import pyfvm
+from pyfvm.form_language import *
+from scipy.sparse import linalg
+from sympy import sin, pi
+
 
 class Poisson(LinearFvmProblem):
-    def apply(u):
+    def apply(self, u):
         return integrate(lambda x: -n_dot_grad(u(x)), dS) \
-                - integrate(lambda x: 10 * sin(10*x[0]), dV)
-```
-one creates a Python module via
-```bash
-form-compiler def.py poisson.py
-```
-This can then used from any Python module, e.g., for solving the equation
-system with SciPy's sparse matrix capabilties:
-```python
-import poisson
+             - integrate(lambda x: 10 * sin(2*pi*x[0]), dV)
 
-import meshzoo
-import pyfvm
-from scipy.sparse import linalg
+    def dirichlet(self, u):
+        return [
+            (lambda x: u(x) - 0.0, Gamma0()),
+            (lambda x: u(x) - 1.0, Gamma1())
+            ]
 
 # Create mesh using meshzoo
-vertices, cells = meshzoo.rectangle.create_mesh(2.0, 1.0, 21, 11, zigzag=True)
+vertices, cells = meshzoo.rectangle.create_mesh(
+        0.0, 2.0,
+        0.0, 1.0,
+        401, 201,
+        zigzag=True
+        )
 mesh = pyfvm.meshTri.meshTri(vertices, cells)
 
-problem = poisson.Poisson(mesh)
+linear_system = pyfvm.discretize(Poisson(), mesh)
 
-x = linalg.spsolve(problem.matrix, problem.rhs)
+x = linalg.spsolve(linear_system.matrix, linear_system.rhs)
 
 mesh.write('out.vtu', point_data={'x': x})
 ```
 This example uses [meshzoo](https://pypi.python.org/pypi/meshzoo) for creating
-a simple mesh, but reading from a wide variety of mesh files is supported, too
-(via [meshio](https://pypi.python.org/pypi/meshio));
+a simple mesh, but anything else that provides vertices and cells works as
+well. For example, reading from a wide variety of mesh files is supported
+(via [meshio](https://pypi.python.org/pypi/meshio)):
 ```python
 mesh, _, _ = pyfvm.reader.read('pacman.e')
 ```
