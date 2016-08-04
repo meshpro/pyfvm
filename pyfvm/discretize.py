@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 #
 import numpy
-import sympy
 from .helpers import \
         extract_linear_components, \
         is_affine_linear, \
