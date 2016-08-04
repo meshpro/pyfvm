@@ -4,28 +4,6 @@ import numpy
 from scipy import sparse
 
 
-def _wipe_row_csr(matrix, i):
-    '''Wipes a row of a matrix in CSR format and puts 1.0 on the diagonal.
-    '''
-    assert isinstance(matrix, sparse.csr_matrix)
-
-    n = matrix.indptr[i+1] - matrix.indptr[i]
-    assert n > 0
-
-    matrix.data[matrix.indptr[i]+1:-n+1] = matrix.data[matrix.indptr[i+1]:]
-    matrix.data[matrix.indptr[i]] = 1.0
-    matrix.data = matrix.data[:-n+1]
-
-    matrix.indices[matrix.indptr[i]+1:-n+1] = \
-        matrix.indices[matrix.indptr[i+1]:]
-    matrix.indices[matrix.indptr[i]] = i
-    matrix.indices = matrix.indices[:-n+1]
-
-    matrix.indptr[i+1:] -= n-1
-
-    return
-
-
 class LinearFvmProblem(object):
     def __init__(
             self,
@@ -52,16 +30,23 @@ class LinearFvmProblem(object):
         # Transform to CSR format for efficiency
         self.matrix = self.matrix.tocsr()
 
+        # Apply Dirichlet conditions.
+        dirichlet_verts = []
         for dirichlet in dirichlets:
-            for subdomain in dirichlet.subdomains:
-                boundary_verts = mesh.get_vertices(subdomain)
+            verts = mesh.get_vertices(dirichlet.subdomain)
+            dirichlet_verts.append(verts)
+            # Set the RHS.
+            self.rhs[verts] = dirichlet.eval(verts)
 
-                for k in boundary_verts:
-                    _wipe_row_csr(self.matrix, k)
-
-                # overwrite rhs
-                for k in mesh.get_vertices(subdomain):
-                    self.rhs[k] = dirichlet.eval(k)
+        # Now set all Dirichlet rows to 0.
+        rows = numpy.concatenate(dirichlet_verts)
+        # delete rows
+        for i in rows:
+            self.matrix.data[self.matrix.indptr[i]:self.matrix.indptr[i+1]] = 0.0
+        # Set the diagonal
+        d = self.matrix.diagonal()
+        d[rows] = 1.0
+        self.matrix.setdiag(d)
 
         return
 
@@ -74,25 +59,45 @@ def _get_VIJ(
     V = []
     I = []
     J = []
-    if compute_rhs:
-        rhs = numpy.zeros(len(mesh.node_coords))
-    else:
-        rhs = None
+    rhs_V = []
+    rhs_I = []
+
     for edge_kernel in edge_kernels:
         for subdomain in edge_kernel.subdomains:
-            for k, edge_id in enumerate(mesh.get_edges(subdomain)):
-                v0, v1 = mesh.edges['nodes'][edge_id]
-                vals_matrix, vals_rhs = edge_kernel.eval(k)
-                V += [
-                    vals_matrix[0][0], vals_matrix[0][1],
-                    vals_matrix[1][0], vals_matrix[1][1]
-                    ]
-                I += [v0, v0, v1, v1]
-                J += [v0, v1, v0, v1]
+            edges = mesh.get_edges(subdomain)
+            edge_nodes = mesh.edges['nodes'][edges]
 
-                if compute_rhs:
-                    rhs[v0] -= vals_rhs[0]
-                    rhs[v1] -= vals_rhs[1]
+            v_matrix, v_rhs = edge_kernel.eval(edges)
+
+            # if dot() is used in the expression, the shape of of v_matrix will
+            # be (2, 2, 1, k) instead of (2, 2, k).
+            if len(v_matrix.shape) == 4:
+                assert v_matrix.shape[2] == 1
+                V.append(v_matrix[0, 0, 0, :])
+                V.append(v_matrix[0, 1, 0, :])
+                V.append(v_matrix[1, 0, 0, :])
+                V.append(v_matrix[1, 1, 0, :])
+            else:
+                V.append(v_matrix[0, 0, :])
+                V.append(v_matrix[0, 1, :])
+                V.append(v_matrix[1, 0, :])
+                V.append(v_matrix[1, 1, :])
+
+            I.append(edge_nodes[:, 0])
+            I.append(edge_nodes[:, 0])
+            I.append(edge_nodes[:, 1])
+            I.append(edge_nodes[:, 1])
+
+            J.append(edge_nodes[:, 0])
+            J.append(edge_nodes[:, 1])
+            J.append(edge_nodes[:, 0])
+            J.append(edge_nodes[:, 1])
+
+            if compute_rhs:
+                rhs_V.append(v_rhs[0])
+                rhs_V.append(v_rhs[1])
+                rhs_I.append(edge_nodes[:, 0])
+                rhs_I.append(edge_nodes[:, 1])
 
             # # TODO fix those
             # for k in mesh.get_half_edges(subdomain):
@@ -104,24 +109,44 @@ def _get_VIJ(
 
     for vertex_kernel in vertex_kernels:
         for subdomain in vertex_kernel.subdomains:
-            for k in mesh.get_vertices(subdomain):
-                val_matrix, val_rhs = vertex_kernel.eval(k)
-                V += [val_matrix]
-                I += [k]
-                J += [k]
+            verts = mesh.get_vertices(subdomain)
+            vals_matrix, vals_rhs = vertex_kernel.eval(verts)
 
-                if compute_rhs:
-                    rhs[k] -= val_rhs
+            V.append(vals_matrix)
+            I.append(verts)
+            J.append(verts)
+
+            if compute_rhs:
+                rhs_V.append(vals_rhs)
+                rhs_I.append(verts)
 
     for boundary_kernel in boundary_kernels:
         for subdomain in boundary_kernel.subdomains:
-            for k in mesh.get_vertices(subdomain):
-                val_matrix, val_rhs = boundary_kernel.eval(k)
-                V += [val_matrix]
-                I += [k]
-                J += [k]
+            verts = mesh.get_vertices(subdomain)
+            vals_matrix, vals_rhs = boundary_kernel.eval(verts)
 
-                if compute_rhs:
-                    rhs[k] -= val_rhs
+            V.append(vals_matrix)
+            I.append(verts)
+            J.append(verts)
+
+            if compute_rhs:
+                rhs_V.append(vals_rhs)
+                rhs_I.append(verts)
+
+    # Finally, make V, I, J into 1D-arrays.
+    V = numpy.concatenate(V)
+    I = numpy.concatenate(I)
+    J = numpy.concatenate(J)
+
+    # Assemble rhs
+    if compute_rhs:
+        rhs = numpy.zeros(len(mesh.node_coords))
+        numpy.subtract.at(
+                rhs,
+                numpy.concatenate(rhs_I),
+                numpy.concatenate(rhs_V)
+                )
+    else:
+        rhs = None
 
     return V, I, J, rhs

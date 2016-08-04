@@ -1,8 +1,8 @@
-autopep8
 sphinxcontrib-bibtex
 matplotlib
 meshio
 meshzoo
 numpy
+pyamg
 scipy
 sympy

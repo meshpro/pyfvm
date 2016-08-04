@@ -6,14 +6,14 @@ from scipy.sparse import linalg
 
 
 class DC(LinearFvmProblem):
-    @staticmethod
-    def apply(u):
+    def apply(self, u):
         a = sympy.Matrix([2, 1, 0])
         return \
-            integrate(lambda x: -n_dot_grad(u(x)) + dot(n, a) * u(x), dS) - \
+            integrate(lambda x: -n_dot_grad(u(x)) + dot(a.T, n) * u(x), dS) - \
             integrate(lambda x: 1.0, dV)
 
-    dirichlet = [(lambda x: 0.0, ['Boundary'])]
+    def dirichlet(self, u):
+        return [(u, 'boundary')]
 
 
 vertices, cells = meshzoo.rectangle.create_mesh(
@@ -24,7 +24,7 @@ vertices, cells = meshzoo.rectangle.create_mesh(
         )
 mesh = pyfvm.meshTri.meshTri(vertices, cells)
 
-linear_system = pyfvm.discretize(DC, mesh)
+linear_system = pyfvm.discretize(DC(), mesh)
 
 x = linalg.spsolve(linear_system.matrix, linear_system.rhs)
 

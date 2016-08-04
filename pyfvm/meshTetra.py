@@ -1,16 +1,13 @@
 # -*- coding: utf-8 -*-
 #
 import numpy
-from pyfvm.base import _base_mesh
-import os
-import matplotlib as mpl
-from mpl_toolkits.mplot3d import Axes3D
-if 'DISPLAY' not in os.environ:
-    # headless mode, for remote executions (and travis)
-    mpl.use('Agg')
-from matplotlib import pyplot as plt
+from pyfvm.base import _base_mesh, _row_dot
 
 __all__ = ['meshTetra']
+
+
+def _my_dot(a, b):
+    return numpy.einsum('ijk, ijk->ij', a, b)
 
 
 class meshTetra(_base_mesh):
@@ -18,586 +15,392 @@ class meshTetra(_base_mesh):
 
     .. inheritance-diagram:: meshTetra
     '''
-    def __init__(self, node_coords, cells):
+    def __init__(self, node_coords, cells, mode='algebraic'):
         '''Initialization.
         '''
+        # Make sure to only to include those vertices which are part of a cell
+        uvertices, uidx = numpy.unique(cells, return_inverse=True)
+        cells = uidx.reshape(cells.shape)
+        node_coords = node_coords[uvertices]
+
         super(meshTetra, self).__init__(node_coords, cells)
 
-        num_cells = len(cells)
-        self.cells = numpy.empty(
-                num_cells,
-                dtype=numpy.dtype([('nodes', (int, 4))])
-                )
-        self.cells['nodes'] = cells
+        self.cells = {
+            'nodes': cells
+            }
 
         self.create_adjacent_entities()
-        self.create_cell_volumes()
-        self.create_cell_circumcenters()
-        self.create_control_volumes()
+        self.create_cell_circumcenters_and_volumes()
+        self.compute_edge_lengths()
+
+        num_edges = len(self.edges['nodes'])
+        self.ce_ratios = numpy.zeros(num_edges, dtype=float)
+        if mode == 'geometric':
+            vals = self.compute_ce_ratios_geometric()
+            numpy.add.at(
+                    self.ce_ratios,
+                    self.faces['edges'][self.cells['faces']],
+                    vals
+                    )
+        elif mode == 'algebraic':
+            vals = self.compute_ce_ratios_algebraic()
+            numpy.add.at(
+                    self.ce_ratios,
+                    self.cells['edges'],
+                    vals
+                    )
+            self.circumcenter_face_distances = None
+        else:
+            raise ValueError('Illegal mode \'%s\'.' % mode)
+
+        self.compute_control_volumes()
+
+        self.mark_default_subdomains()
         return
 
-    def create_cell_volumes(self):
-        '''Computes the volumes of the tetrahedra in the mesh.
-        '''
-        from vtk import vtkTetra
-        num_cells = len(self.cells['nodes'])
-        self.cell_volumes = numpy.empty(num_cells, dtype=float)
-        for cell_id, cell in enumerate(self.cells):
-            # edge0 = node0 - node1
-            # edge1 = node1 - node2
-            # edge2 = node2 - node3
-            # edge3 = node3 - node0
+    def mark_default_subdomains(self):
+        self.subdomains = {}
+        self.subdomains['everywhere'] = {
+                'vertices': range(len(self.node_coords)),
+                'edges': range(len(self.edges['nodes'])),
+                'faces': range(len(self.faces['nodes']))
+                }
 
-            # alpha = numpy.vdot(edge0, numpy.cross(edge1, edge2))
-            # norm_prod = \
-            #     numpy.linalg.norm(edge0) * \
-            #     numpy.linalg.norm(edge1) * \
-            #     numpy.linalg.norm(edge2)
-            # if abs(alpha) / norm_prod < 1.0e-5:
-            #     # Edges probably conplanar. Take a different set.
-            #     alpha = numpy.vdot(edge0, numpy.cross(edge1, edge3))
-            #     norm_prod = \
-            #         numpy.linalg.norm(edge0) * \
-            #         numpy.linalg.norm(edge1) * \
-            #         numpy.linalg.norm(edge3)
+        # Get vertices on the boundary faces
+        boundary_faces = numpy.where(self.is_boundary_face)[0]
+        boundary_vertices = numpy.unique(
+                self.faces['nodes'][boundary_faces].flatten()
+                )
+        boundary_edges = numpy.unique(
+                self.faces['edges'][boundary_faces].flatten()
+                )
 
-            # self.cell_volumes[cell_id] = abs(alpha) / 6.0
+        self.subdomains['boundary'] = {
+                'vertices': boundary_vertices,
+                'edges': boundary_edges,
+                'faces': boundary_faces
+                }
 
-            x = self.node_coords[cell['nodes']]
-            self.cell_volumes[cell_id] = \
-                abs(vtkTetra.ComputeVolume(x[0], x[1], x[2], x[3]))
         return
 
     def create_adjacent_entities(self):
-        '''Setup edge-node, edge-cell, edge-face, face-node, and face-cell
+        '''Set up edge-node, edge-cell, edge-face, face-node, and face-cell
         relations.
         '''
-        num_cells = len(self.cells['nodes'])
+        self.cells['nodes'].sort(axis=1)
 
-        # Get upper bound for number of edges; trim later.
-        max_num_edges = 6 * num_cells
-        dt = numpy.dtype([('nodes', (int, 2)),
-                          ('faces', numpy.object),
-                          ('cells', numpy.object)
-                          ])
-        # To create an array of empty lists, do what's described at
-        # http://mail.scipy.org/pipermail/numpy-discussion/2009-November/046566.html
-        self.edges = numpy.empty(max_num_edges, dt)
-        filler = numpy.frompyfunc(lambda x: list(), 1, 1)
-        self.edges['faces'] = filler(self.edges['faces'])
-        self.edges['cells'] = filler(self.edges['cells'])
+        self.create_cell_face_relationships()
+        self.create_face_edge_relationships()
 
-        # Extend the self.cells array by the keywords 'edges' and 'faces'.
-        cells = self.cells['nodes']
-        dt = numpy.dtype([('nodes', (int, 4)),
-                          ('edges', (int, 6)),
-                          ('faces', (int, 4))
-                          ])
-        self.cells = numpy.empty(len(cells), dtype=dt)
-        self.cells['nodes'] = cells
-
-        # The (sorted) dictionary node_edges keeps track of how nodes and edges
-        # are connected.
-        # If  node_edges[(3,4)] == 17  is true, then the nodes (3,4) are
-        # connected  by edge 17.
-        registered_edges = {}
-        new_edge_gid = 0
-        # Create edges.
-        import itertools
-        for cell_id, cell in enumerate(self.cells):
-            # We're treating simplices so loop over all combinations of
-            # local nodes.
-            # Make sure cellNodes are sorted.
-            self.cells['nodes'][cell_id] = numpy.sort(cell['nodes'])
-            for k, indices in enumerate(itertools.combinations(cell['nodes'],
-                                        2)
-                                        ):
-                if indices in registered_edges:
-                    # edge already assigned
-                    edge_gid = registered_edges[indices]
-                    self.edges['cells'][edge_gid].append(cell_id)
-                    self.cells['edges'][cell_id][k] = edge_gid
-                else:
-                    # add edge
-                    self.edges['nodes'][new_edge_gid] = indices
-                    self.edges['cells'][new_edge_gid].append(cell_id)
-                    self.cells['edges'][cell_id][k] = new_edge_gid
-                    registered_edges[indices] = new_edge_gid
-                    new_edge_gid += 1
-
-        # trim edges
-        self.edges = self.edges[:new_edge_gid]
-
-        # Create faces.
-        max_num_faces = 4 * num_cells
-        dt = numpy.dtype([('nodes', (int, 3)),
-                          ('edges', (int, 3)),
-                          ('cells', numpy.object)
-                          ])
-        self.faces = numpy.empty(max_num_faces, dt)
-        self.faces['cells'] = filler(self.faces['cells'])
-
-        # Loop over all elements.
-        new_face_gid = 0
-        registered_faces = {}
-        for cell_id, cell in enumerate(self.cells):
-            # Make sure cellNodes are sorted.
-            self.cells['nodes'][cell_id] = numpy.sort(cell['nodes'])
-            for k in range(4):
-                # Remove the k-th element. This makes sure that the k-th
-                # face is opposite of the k-th node. Useful later in
-                # in construction of face normals.
-                indices = tuple(cell['nodes'][:k]) \
-                    + tuple(cell['nodes'][k+1:])
-                if indices in registered_faces:
-                    # Face already assigned, just register it with the
-                    # current cell.
-                    face_gid = registered_faces[indices]
-                    self.faces['cells'][face_gid].append(cell_id)
-                    self.cells['faces'][cell_id][k] = face_gid
-                else:
-                    # Add face.
-                    # Make sure that facesNodes[k] and facesEdge[k] are
-                    # coordinated in such a way that facesNodes[k][i]
-                    # and facesEdge[k][i] are opposite in face k.
-                    self.faces['nodes'][new_face_gid] = indices
-                    # Register edges.
-                    for kk in range(len(indices)):
-                        # Note that node_tuple is also sorted, and thus
-                        # is a key in the edges dictionary.
-                        node_tuple = indices[:kk] + indices[kk+1:]
-                        edge_id = registered_edges[node_tuple]
-                        self.edges['faces'][edge_id].append(new_face_gid)
-                        self.faces['edges'][new_face_gid][kk] = edge_id
-                    # Register cells.
-                    self.faces['cells'][new_face_gid].append(cell_id)
-                    self.cells['faces'][cell_id][k] = new_face_gid
-                    # Finalize.
-                    registered_faces[indices] = new_face_gid
-                    new_face_gid += 1
-        # trim faces
-        self.faces = self.faces[:new_face_gid]
         return
 
-    def create_cell_circumcenters(self):
+    def create_cell_face_relationships(self):
+        # All possible faces
+        a = numpy.vstack([
+            self.cells['nodes'][:, [0, 1, 2]],
+            self.cells['nodes'][:, [0, 1, 3]],
+            self.cells['nodes'][:, [0, 2, 3]],
+            self.cells['nodes'][:, [1, 2, 3]]
+            ])
+        other = numpy.vstack([
+            self.cells['nodes'][:, [3]],
+            self.cells['nodes'][:, [2]],
+            self.cells['nodes'][:, [1]],
+            self.cells['nodes'][:, [0]]
+            ])
+
+        # Find the unique faces
+        b = numpy.ascontiguousarray(a).view(
+                numpy.dtype((numpy.void, a.dtype.itemsize * a.shape[1]))
+                )
+        _, idx, inv, cts = numpy.unique(
+                b,
+                return_index=True,
+                return_inverse=True,
+                return_counts=True
+                )
+        face_nodes = a[idx]
+
+        self.is_boundary_face = (cts == 1)
+
+        self.faces = {
+            'nodes': face_nodes
+            }
+
+        # cell->faces relationship
+        num_cells = len(self.cells['nodes'])
+        cells_faces = inv.reshape([4, num_cells]).T
+        self.cells['faces'] = cells_faces
+
+        # Store the opposing nodes too
+        self.cells['opposing vertex'] = other.reshape([4, num_cells]).T
+
+        # save for create_edge_cells
+        self._inv_faces = inv
+
+        return
+
+    def create_face_edge_relationships(self):
+        a = numpy.vstack([
+            self.faces['nodes'][:, [0, 1]],
+            self.faces['nodes'][:, [0, 2]],
+            self.faces['nodes'][:, [1, 2]]
+            ])
+
+        # Find the unique edges
+        b = numpy.ascontiguousarray(a).view(
+                numpy.dtype((numpy.void, a.dtype.itemsize * a.shape[1]))
+                )
+        _, idx, inv = numpy.unique(
+                b,
+                return_index=True,
+                return_inverse=True
+                )
+        edge_nodes = a[idx]
+
+        self.edges = {
+            'nodes': edge_nodes
+            }
+
+        # face->edge relationship
+        num_faces = len(self.faces['nodes'])
+        face_edges = inv.reshape([3, num_faces]).T
+        self.faces['edges'] = face_edges
+
+        return
+
+    def create_cell_circumcenters_and_volumes(self):
         '''Computes the center of the circumsphere of each cell.
         '''
-        from vtk import vtkTetra
-        num_cells = len(self.cells['nodes'])
-        self.cell_circumcenters = numpy.empty(
-                num_cells,
-                dtype=numpy.dtype((float, 3))
-                )
-        for cell_id, cell in enumerate(self.cells):
-            # Explicitly cast indices to 'int' here as the array node_coords
-            # might only accept those. (This is the case with tetgen arrays,
-            # for example.)
-            x = self.node_coords[cell['nodes']]
-            vtkTetra.Circumsphere(x[0], x[1], x[2], x[3],
-                                  self.cell_circumcenters[cell_id])
-            # # http://www.cgafaq.info/wiki/Tetrahedron_Circumsphere
-            # x = self.node_coords[cell['nodes']]
-            # b = x[1] - x[0]
-            # c = x[2] - x[0]
-            # d = x[3] - x[0]
+        cell_coords = self.node_coords[self.cells['nodes']]
 
-            # omega = (2.0 * numpy.dot(b, numpy.cross(c, d)))
+        a = cell_coords[:, 1, :] - cell_coords[:, 0, :]
+        b = cell_coords[:, 2, :] - cell_coords[:, 0, :]
+        c = cell_coords[:, 3, :] - cell_coords[:, 0, :]
 
-            # if abs(omega) < 1.0e-10:
-            #    raise ZeroDivisionError('Tetrahedron is degenerate.')
-            # self.cell_circumcenters[cell_id] = x[0] + (
-            #         numpy.dot(b, b) * numpy.cross(c, d) +
-            #         numpy.dot(c, c) * numpy.cross(d, b) +
-            #         numpy.dot(d, d) * numpy.cross(b, c)
-            #         ) / omega
+        omega = _row_dot(a, numpy.cross(b, c))
+
+        self.cell_circumcenters = cell_coords[:, 0, :] + (
+                numpy.cross(b, c) * _row_dot(a, a)[:, None] +
+                numpy.cross(c, a) * _row_dot(b, b)[:, None] +
+                numpy.cross(a, b) * _row_dot(c, c)[:, None]
+                ) / (2.0 * omega[:, None])
+
+        # https://en.wikipedia.org/wiki/Tetrahedron#Volume
+        self.cell_volumes = abs(omega) / 6.0
         return
 
-    def _get_face_circumcenter(self, face_id):
-        '''Computes the center of the circumcircle of a given face.
+    def compute_ce_ratios_algebraic(self):
+        # Precompute edges.
+        edges = \
+            self.node_coords[self.edges['nodes'][:, 1]] - \
+            self.node_coords[self.edges['nodes'][:, 0]]
 
-        :params face_id: Face ID for which to compute circumcenter.
-        :type face_id: int
-        :returns circumcenter: Circumcenter of the face with given face ID.
-        :type circumcenter: numpy.ndarray((float,3))
-        '''
-        from vtk import vtkTriangle
+        # create cells -> edges
+        num_cells = len(self.cells['nodes'])
+        cells_edges = numpy.empty((num_cells, 6), dtype=int)
+        for cell_id, face_ids in enumerate(self.cells['faces']):
+            edges_set = set(self.faces['edges'][face_ids].flatten())
+            cells_edges[cell_id] = list(edges_set)
 
-        x = self.node_coords[self.faces['nodes'][face_id]]
-        # Project triangle to 2D.
-        v = numpy.empty(3, dtype=numpy.dtype((float, 2)))
-        vtkTriangle.ProjectTo2D(x[0], x[1], x[2],
-                                v[0], v[1], v[2])
-        # Get the circumcenter in 2D.
-        cc_2d = numpy.empty(2, dtype=float)
-        vtkTriangle.Circumcircle(v[0], v[1], v[2], cc_2d)
-        # Project back to 3D by using barycentric coordinates.
-        bcoords = numpy.empty(3, dtype=float)
-        vtkTriangle.BarycentricCoords(cc_2d, v[0], v[1], v[2], bcoords)
-        return bcoords[0] * x[0] + bcoords[1] * x[1] + bcoords[2] * x[2]
+        self.cells['edges'] = cells_edges
 
-        # a = x[0] - x[1]
-        # b = x[1] - x[2]
-        # c = x[2] - x[0]
-        # w = numpy.cross(a, b)
-        # omega = 2.0 * numpy.dot(w, w)
-        # if abs(omega) < 1.0e-10:
-        #     raise ZeroDivisionError(
-        #             'The nodes don''t seem to form a proper triangle.'
-        #             )
-        # alpha = -numpy.dot(b, b) * numpy.dot(a, c) / omega
-        # beta = -numpy.dot(c, c) * numpy.dot(b, a) / omega
-        # gamma = -numpy.dot(a, a) * numpy.dot(c, b) / omega
-        # m = alpha * x[0] + beta * x[1] + gamma * x[2]
+        # Build the equation system:
+        # The equation
+        #
+        # |simplex| ||u||^2 = \sum_i \alpha_i <u,e_i> <e_i,u>
+        #
+        # has to hold for all vectors u in the plane spanned by the edges,
+        # particularly by the edges themselves.
+        cells_edges = edges[self.cells['edges']]
+        # <http://stackoverflow.com/a/38110345/353337>
+        A = numpy.einsum('ijk,ilk->ijl', cells_edges, cells_edges)
+        A = A**2
 
-        # # Alternative implementation from
-        # # https://www.ics.uci.edu/~eppstein/junkyard/circumcenter.html
-        # a = x[1] - x[0]
-        # b = x[2] - x[0]
-        # alpha = numpy.dot(a, a)
-        # beta = numpy.dot(b, b)
-        # w = numpy.cross(a, b)
-        # omega = 2.0 * numpy.dot(w, w)
-        # m = numpy.empty(3)
-        # m[0] = x[0][0] + (
-        #         (alpha * b[1] - beta * a[1]) * w[2] -
-        #         (alpha * b[2] - beta * a[2]) * w[1]
-        #         ) / omega
-        # m[1] = x[0][1] + (
-        #         (alpha * b[2] - beta * a[2]) * w[0] -
-        #         (alpha * b[0] - beta * a[0]) * w[2]
-        #         ) / omega
-        # m[2] = x[0][2] + (
-        #         (alpha * b[0] - beta * a[0]) * w[1] -
-        #         (alpha * b[1] - beta * a[1]) * w[0]
-        #         ) / omega
-        # return
+        # Compute the RHS  cell_volume * <edge, edge>.
+        # The dot product <edge, edge> is also on the diagonals of A (before
+        # squaring), but simply computing it again is cheaper than extracting
+        # it from A.
+        edge_dot_edge = _row_dot(edges, edges)
+        rhs = edge_dot_edge[self.cells['edges']] * self.cell_volumes[..., None]
 
-    def create_control_volumes(self):
+        # Solve all k-by-k systems at once ("broadcast"). (`k` is the number of
+        # edges per simplex here.)
+        # If the matrix A is (close to) singular if and only if the cell is
+        # (close to being) degenerate. Hence, it has volume 0, and so all the
+        # edge coefficients are 0, too. Hence, do nothing.
+        sol = numpy.linalg.solve(A, rhs)
+
+        return sol
+
+    def compute_ce_ratios_geometric(self):
+
+        v0 = self.faces['nodes'][self.cells['faces']][:, :, 0]
+        v1 = self.faces['nodes'][self.cells['faces']][:, :, 1]
+        v2 = self.faces['nodes'][self.cells['faces']][:, :, 2]
+        v_op = self.cells['opposing vertex']
+
+        x0 = self.node_coords[v0] - self.node_coords[v_op]
+        x1 = self.node_coords[v1] - self.node_coords[v_op]
+        x2 = self.node_coords[v2] - self.node_coords[v_op]
+
+        e0_cross_e1 = numpy.cross(x2 - x0, x1 - x0)
+        face_areas = numpy.sqrt(_my_dot(e0_cross_e1, e0_cross_e1))
+
+        x0_cross_x1 = numpy.cross(x0, x1)
+        x1_cross_x2 = numpy.cross(x1, x2)
+        x2_cross_x0 = numpy.cross(x2, x0)
+        x0_dot_x0 = _my_dot(x0, x0)
+        x1_dot_x1 = _my_dot(x1, x1)
+        x2_dot_x2 = _my_dot(x2, x2)
+
+        a = (
+            2 * _my_dot(numpy.cross(x0, x1), x2)**2 -
+            _my_dot(
+                x0_cross_x1 + x1_cross_x2 + x2_cross_x0,
+                x0_cross_x1 * x2_dot_x2[..., None] +
+                x1_cross_x2 * x0_dot_x0[..., None] +
+                x2_cross_x0 * x1_dot_x1[..., None]
+            )) / (12.0 * face_areas)
+
+        # Distances of the cell circumcenter to the faces.
+        # (shape: num_cells x 4)
+        d = a / self.cell_volumes[:, None]
+
+        self.circumcenter_face_distances = d
+
+        # prepare face edges
+        e = self.node_coords[self.edges['nodes'][self.faces['edges'], 1]] - \
+            self.node_coords[self.edges['nodes'][self.faces['edges'], 0]]
+
+        e0 = e[:, 0, :]
+        e1 = e[:, 1, :]
+        e2 = e[:, 2, :]
+
+        _, face_ce_ratios = self.compute_tri_areas_and_ce_ratios(e0, e1, e2)
+        fce_ratios = face_ce_ratios[self.cells['faces']]
+
+        # Multiply
+        s = 0.5 * fce_ratios * d[..., None]
+
+        return s
+
+    def compute_control_volumes(self):
         '''Compute the control volumes of all nodes in the mesh.
         '''
-        # Compute covolumes and control volumes.
-        num_nodes = len(self.node_coords)
-        self.control_volumes = numpy.zeros(num_nodes, dtype=float)
-        for edge_id in range(len(self.edges['nodes'])):
-            edge_node_ids = self.edges['nodes'][edge_id]
-            # Explicitly cast indices to 'int' here as the array node_coords
-            # might only accept those. (This is the case with tetgen arrays,
-            # for example.)
-            edge = self.node_coords[edge_node_ids[1]] \
-                - self.node_coords[edge_node_ids[0]]
-            edge_midpoint = 0.5 * (
-                    self.node_coords[edge_node_ids[0]] +
-                    self.node_coords[edge_node_ids[1]]
-                    )
+        self.control_volumes = numpy.zeros(len(self.node_coords), dtype=float)
 
-            # 0.5 * alpha / edge_length = covolume.
-            # This is chosen to avoid unnecessary calculation (such as
-            # projecting onto the normalized edge and later multiplying the
-            # aggregate by the edge length).
-            alpha = 0.0
-            for face_id in self.edges['faces'][edge_id]:
-                # Make sure that the edge orientation is such that the covolume
-                # contribution is positive if and only if the vector p[0]->p[1]
-                # is oriented like the face normal cell[0]->cell[1].
-                # We need to make sure to gauge the edge orientation using
-                # the face normal and one point *in* the face, e.g., the one
-                # corner point that is not part of the edge. This makes sure
-                # that certain nasty cases are properly dealt with, e.g., when
-                # the edge midpoint does not sit in the covolume or that the
-                # covolume orientation is clockwise while the corresponding
-                # cells are oriented counter-clockwise.
-                #
-                # Find the edge in the list of edges of this face.
-                # http://projects.scipy.org/numpy/ticket/1673
-                edge_idx = numpy.nonzero(
-                    self.faces['edges'][face_id] == edge_id
-                    )[0][0]
-                # faceNodes and faceEdges need to be coordinates such that
-                # the node faceNodes[face_id][k] and the edge
-                # faceEdges[face_id][k] are opposing in the face face_id.
-                opposing_point = \
-                    self.node_coords[self.faces['nodes'][face_id][edge_idx]]
+        #   1/3. * (0.5 * edge_length) * covolume
+        # = 1/6 * edge_length**2 * ce_ratio_edge_ratio
+        e = self.node_coords[self.edges['nodes'][:, 1]] - \
+            self.node_coords[self.edges['nodes'][:, 0]]
+        vals = _row_dot(e, e) * self.ce_ratios / 6.0
 
-                # Get the other point of one adjacent cell.
-                # This involves:
-                #   (a) Get the cell, get all its faces.
-                #   (b) Find out which local index face_id is.
-                # Then we rely on the data structure organized such that
-                # cellsNodes[i][k] is opposite of cellsEdges[i][k] in
-                # cell i.
-                cell0 = self.faces['cells'][face_id][0]
-                face0_idx = \
-                    numpy.nonzero(self.cells['faces'][cell0] == face_id)[0][0]
-                other0 = \
-                    self.node_coords[self.cells['nodes'][cell0][face0_idx]]
+        edge_nodes = self.edges['nodes']
+        numpy.add.at(self.control_volumes, edge_nodes[:, 0], vals)
+        numpy.add.at(self.control_volumes, edge_nodes[:, 1], vals)
 
-                cc = self.cell_circumcenters[self.faces['cells'][face_id]]
-                if len(cc) == 2:
-                    # Get opposing point of the other cell.
-                    cell1 = self.faces['cells'][face_id][1]
-                    face1_idx = numpy.nonzero(
-                        self.cells['faces'][cell0] == face_id
-                        )[0][0]
-                    other1 = \
-                        self.node_coords[self.cells['nodes'][cell1][face1_idx]]
-                    gauge = numpy.dot(
-                            edge,
-                            numpy.cross(
-                                other1 - other0, opposing_point - edge_midpoint
-                                ))
-                    alpha += numpy.sign(gauge) \
-                        * numpy.dot(edge, numpy.cross(cc[1] - edge_midpoint,
-                                                      cc[0] - edge_midpoint
-                                                      ))
-                elif len(cc) == 1:
-                    # Each boundary face circumcenter is computed three times.
-                    # Probably one could save a bit of CPU time by caching
-                    # those.
-                    face_cc = self._get_face_circumcenter(face_id)
-                    gauge = \
-                        numpy.dot(edge,
-                                  numpy.cross(face_cc - other0,
-                                              opposing_point - edge_midpoint
-                                              ))
-                    alpha += numpy.sign(gauge) \
-                        * numpy.dot(edge, numpy.cross(face_cc - edge_midpoint,
-                                                      cc[0] - edge_midpoint))
-                else:
-                    raise RuntimeError('A face should have either '
-                                       '1 or 2 adjacent cells.'
-                                       )
-
-            # We add the pyramid volume
-            #   p_vol = covolume * 0.5*edgelength / 3,
-            # which, given
-            #   covolume = 0.5 * alpha / edge_length
-            # is just
-            #   p_vol = 0.25 * alpha / 3.
-            self.control_volumes[edge_node_ids] += alpha / 12.0
-
-        # Sanity checks.
-        sum_cv = sum(self.control_volumes)
-        sum_cells = sum(self.cell_volumes)
-        alpha = sum_cv - sum_cells
-        if abs(alpha) > 1.0e-6:
-            msg = ('Sum of control volumes sum does not coincide with the sum '
-                   'of the cell volumes (|cv|-|cells| = %g - %g = %g.'
-                   ) % (sum_cv, sum_cells, alpha)
-            raise RuntimeError(msg)
-        if any(self.control_volumes < 0.0):
-            raise RuntimeError('Not all control volumes are positive. '
-                               'This is likely due do the triangulation not '
-                               'being Delaunay. Abort.'
-                               )
         return
 
-    def check_delaunay(self):
-        # is_delaunay = True
-        num_faces = len(self.faces['nodes'])
-        num_interior_faces = 0
-        num_delaunay_violations = 0
-        for face_id in range(num_faces):
-            # Boundary faces don't need to be checked.
-            if len(self.faces['cells'][face_id]) != 2:
-                continue
+    def num_delaunay_violations(self):
+        # Delaunay violations are present exactly on the interior faces where
+        # the sum of the signed distances between face circumcenter and
+        # tetrahedron circumcenter is negative.
+        if self.circumcenter_face_distances is None:
+            self.compute_ce_ratios_geometric()
 
-            num_interior_faces += 1
-            # Each interior edge divides the domain into to half-planes.
-            # The Delaunay condition is fulfilled if and only if
-            # the circumcenters of the adjacent cells are in "the right order",
-            # i.e., line between the nodes of the cells which do not sit
-            # on the hyperplane have the same orientation as the line
-            # between the circumcenters.
+        sums = numpy.zeros(len(self.faces['nodes']))
+        numpy.add.at(
+                sums,
+                self.cells['faces'],
+                self.circumcenter_face_distances
+                )
 
-            # The orientation of the coedge needs gauging.
-            # Do it in such as a way that the control volume contribution
-            # is positive if and only if the area of the triangle
-            # (node, other0, edge_midpoint) (in this order) is positive.
-            # Equivalently, the triangles (node, edge_midpoint, other1)
-            # or (node, other0, other1) could  be considered.
-            # other{0,1} refers to the the node opposing the edge in the
-            # adjacent cell {0,1}.
-            # Get the opposing node of the first adjacent cell.
-            cell0 = self.faces['cells'][face_id][0]
-            # This nonzero construct is an ugly replacement for the nonexisting
-            # index() method. (Compare with Python lists.)
-            face_lid = \
-                numpy.nonzero(self.cells['faces'][cell0] == face_id)[0][0]
-            # This makes use of the fact that cellsEdges and cellsNodes
-            # are coordinated such that in cell #i, the edge cellsEdges[i][k]
-            # opposes cellsNodes[i][k].
-            other0 = self.node_coords[self.cells['nodes'][cell0][face_lid]]
+        return numpy.sum(sums < 0.0)
 
-            # Get the edge midpoint.
-            node_ids = self.faces['nodes'][face_id]
-            node_coords = self.node_coords[node_ids]
-            edge_midpoint = 0.5 * (node_coords[0] + node_coords[1])
+    def show(self):
+        import matplotlib as mpl
+        from mpl_toolkits.mplot3d import Axes3D
+        import os
+        if 'DISPLAY' not in os.environ:
+            # headless mode, for remote executions (and travis)
+            mpl.use('Agg')
+        from matplotlib import pyplot as plt
 
-            # Get the circumcenters of the adjacent cells.
-            cc = self.cell_circumcenters[self.faces['cells'][face_id]]
-            # Check if cc[1]-cc[0] and the gauge point
-            # in the "same" direction.
-            if numpy.dot(edge_midpoint-other0, cc[1]-cc[0]) < 0.0:
-                num_delaunay_violations += 1
-        return num_delaunay_violations, num_interior_faces
-
-    def show_control_volume(self, node_id):
-        '''Displays a node with its surrounding control volume.
-
-        :param node_id: Node ID for which to show the control volume.
-        :type node_id: int
-        '''
         fig = plt.figure()
         ax = fig.gca(projection='3d')
         plt.axis('equal')
 
-        # get cell circumcenters
-        cell_ccs = self.cell_circumcenters
-
-        # There are not node->edge relations so manually build the list.
-        adjacent_edge_ids = []
-        for edge_id, edge in enumerate(self.edges):
-            if node_id in edge['nodes']:
-                adjacent_edge_ids.append(edge_id)
-
-        # Loop over all adjacent edges and plot the edges and their covolumes.
-        for k, edge_id in enumerate(adjacent_edge_ids):
-            # get rainbow color
-            h = float(k) / len(adjacent_edge_ids)
-            hsv_face_col = numpy.array([[[h, 1.0, 1.0]]])
-            col = mpl.colors.hsv_to_rgb(hsv_face_col)[0][0]
-
-            edge_nodes = self.node_coords[self.edges['nodes'][edge_id]]
-
-            # highlight edge
-            ax.plot(
-                edge_nodes[:, 0], edge_nodes[:, 1], edge_nodes[:, 2],
-                color=col, linewidth=3.0
-                )
-
-            # edge_midpoint = 0.5 * (edge_nodes[0] + edge_nodes[1])
-
-            # Plot covolume.
-            # face_col = '0.7'
-            edge_col = 'k'
-            for k, face_id in enumerate(self.edges['faces'][edge_id]):
-                ccs = cell_ccs[self.faces['cells'][face_id]]
-                if len(ccs) == 2:
-                    ax.plot(ccs[:, 0], ccs[:, 1], ccs[:, 2], color=edge_col)
-                    # tri = mpl3.art3d.Poly3DCollection(
-                    #     [numpy.vstack((ccs, edge_midpoint))]
-                    #     )
-                    # tri.set_color(face_col)
-                    # ax.add_collection3d(tri)
-                elif len(ccs) == 1:
-                    face_cc = self._get_face_circumcenter(face_id)
-                    # tri = mpl3.art3d.Poly3DCollection(
-                    #     [numpy.vstack((ccs[0], face_cc, edge_midpoint))]
-                    #     )
-                    # tri.set_color(face_col)
-                    # ax.add_collection3d(tri)
-                    ax.plot(
-                        [ccs[0][0], face_cc[0]],
-                        [ccs[0][1], face_cc[1]],
-                        [ccs[0][2], face_cc[2]],
-                        color=edge_col
-                        )
-                else:
-                    raise RuntimeError('???')
+        for edge_nodes in self.edges['nodes']:
+            x = self.node_coords[edge_nodes]
+            ax.plot(x[:, 0], x[:, 1], x[:, 2], 'k')
         return
 
     def show_edge(self, edge_id):
-        '''Displays edge with covolume.
+        '''Displays edge with ce_ratio.
 
-        :param edge_id: Edge ID for which to show the covolume.
+        :param edge_id: Edge ID for which to show the ce_ratio.
         :type edge_id: int
         '''
+        import os
+        import matplotlib as mpl
+        from mpl_toolkits.mplot3d import Axes3D
+        if 'DISPLAY' not in os.environ:
+            # headless mode, for remote executions (and travis)
+            mpl.use('Agg')
+        from matplotlib import pyplot as plt
+
         fig = plt.figure()
         ax = fig.gca(projection='3d')
         plt.axis('equal')
 
-        edge_nodes = self.node_coords[self.edges['nodes'][edge_id]]
+        # find all faces with this edge
+        adj_face_ids = numpy.where(
+            (self.faces['edges'] == edge_id).any(axis=1)
+            )[0]
+        # find all cells with the faces
+        # <http://stackoverflow.com/a/38481969/353337>
+        adj_cell_ids = numpy.where(numpy.in1d(
+            self.cells['faces'], adj_face_ids
+            ).reshape(self.cells['faces'].shape).any(axis=1)
+            )[0]
 
-        # plot all adjacent cells
+        # plot all those adjacent cells; first collect all edges
+        adj_edge_ids = numpy.unique([
+            adj_edge_id
+            for adj_cell_id in adj_cell_ids
+            for face_id in self.cells['faces'][adj_cell_id]
+            for adj_edge_id in self.faces['edges'][face_id]
+            ])
         col = 'k'
-        for cell_id in self.edges['cells'][edge_id]:
-            for edge in self.cells['edges'][cell_id]:
-                x = self.node_coords[self.edges['nodes'][edge]]
-                ax.plot(x[:, 0], x[:, 1], x[:, 2], col)
+        for adj_edge_id in adj_edge_ids:
+            x = self.node_coords[self.edges['nodes'][adj_edge_id]]
+            ax.plot(x[:, 0], x[:, 1], x[:, 2], col)
 
-        # make clear which is the edge
-        ax.plot(edge_nodes[:, 0], edge_nodes[:, 1], edge_nodes[:, 2],
-                color=col, linewidth=3.0)
+        # make clear which is edge_id
+        x = self.node_coords[self.edges['nodes'][edge_id]]
+        ax.plot(x[:, 0], x[:, 1], x[:, 2], color=col, linewidth=3.0)
 
-        # get cell circumcenters
-        cell_ccs = self.cell_circumcenters
+        # connect the face circumcenters with the corresponding cell
+        # circumcenters
+        for cell_id in adj_cell_ids:
+            cc = self.cell_circumcenters[cell_id]
+            for face_id in self.cells['faces'][cell_id]:
+                if edge_id in self.faces['edges'][face_id]:
+                    # draw the connection
+                    #   tet circumcenter---face circumcenter
+                    X = self.node_coords[self.faces['nodes'][[face_id]]]
+                    fcc = self.compute_triangle_circumcenters(X)
+                    ax.plot(
+                        [cc[0], fcc[0, 0]],
+                        [cc[1], fcc[0, 1]],
+                        [cc[2], fcc[0, 2]],
+                        'b-'
+                        )
+                    # draw the face circumcenter
+                    ax.plot(fcc[:, 0], fcc[:, 1], fcc[:, 2], 'go')
 
-        edge_midpoint = 0.5 * (edge_nodes[0] + edge_nodes[1])
-
-        # plot faces in matching colors
-        num_local_faces = len(self.edges['faces'][edge_id])
-        for k, face_id in enumerate(self.edges['faces'][edge_id]):
-            # get rainbow color
-            h = float(k) / num_local_faces
-            hsv_face_col = numpy.array([[[h, 1.0, 1.0]]])
-            col = mpl.colors.hsv_to_rgb(hsv_face_col)[0][0]
-
-            # paint the face
-            import mpl_toolkits.mplot3d as mpl3
-            face_nodes = self.node_coords[self.faces['nodes'][face_id]]
-            tri = mpl3.art3d.Poly3DCollection([face_nodes])
-            tri.set_color(mpl.colors.rgb2hex(col))
-            # tri.set_alpha(0.5)
-            ax.add_collection3d(tri)
-
-            # mark face circumcenters
-            face_cc = self._get_face_circumcenter(face_id)
-            ax.plot([face_cc[0]], [face_cc[1]], [face_cc[2]],
-                    marker='o', color=col)
-
-        # plot covolume
-        face_col = '0.7'
-        col = 'k'
-        for k, face_id in enumerate(self.edges['faces'][edge_id]):
-            ccs = cell_ccs[self.faces['cells'][face_id]]
-            if len(ccs) == 2:
-                tri = mpl3.art3d.Poly3DCollection([
-                    numpy.vstack((ccs, edge_midpoint))
-                    ])
-                tri.set_color(face_col)
-                ax.add_collection3d(tri)
-                ax.plot(ccs[:, 0], ccs[:, 1], ccs[:, 2], color=col)
-            elif len(ccs) == 1:
-                tri = mpl3.art3d.Poly3DCollection(
-                    [numpy.vstack((ccs[0], face_cc, edge_midpoint))]
-                    )
-                tri.set_color(face_col)
-                ax.add_collection3d(tri)
-                ax.plot([ccs[0][0], face_cc[0]],
-                        [ccs[0][1], face_cc[1]],
-                        [ccs[0][2], face_cc[2]],
-                        color=col)
-            else:
-                raise RuntimeError('???')
-
-        # ax.plot([edge_midpoint[0]],
-        #         [edge_midpoint[1]],
-        #         [edge_midpoint[2]],
-        #         'ro'
-        #         )
-
-        # highlight cells
-        highlight_cells = []  # [3]
-        col = 'r'
-        for k in highlight_cells:
-            cell_id = self.edges['cells'][edge_id][k]
-            ax.plot([cell_ccs[cell_id, 0]],
-                    [cell_ccs[cell_id, 1]],
-                    [cell_ccs[cell_id, 2]],
-                    color=col,
-                    marker='o'
-                    )
-            for edge in self.cells['edges'][cell_id]:
-                x = self.node_coords[self.edges['nodes'][edge]]
-                ax.plot(x[:, 0], x[:, 1], x[:, 2], col, linestyle='dashed')
+        # draw the cell circumcenters
+        cc = self.cell_circumcenters[adj_cell_ids]
+        ax.plot(cc[:, 0], cc[:, 1], cc[:, 2], 'ro')
         return

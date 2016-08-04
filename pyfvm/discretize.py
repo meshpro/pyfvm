@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
 #
 import numpy
-import sympy
 from .helpers import \
         extract_linear_components, \
         is_affine_linear, \
         replace_nosh_functions
 from . import form_language
-from .form_language import n, neg_n, Expression
+from .form_language import n
 import linear_fvm_problem
 import logging
 import sympy
@@ -22,22 +21,23 @@ class EdgeKernel(object):
         self.subdomains = ['everywhere']
         return
 
-    def eval(self, k):
-        x0 = self.mesh.node_coords[self.mesh.edges['nodes'][k][0]]
-        x1 = self.mesh.node_coords[self.mesh.edges['nodes'][k][1]]
-        edge_covolume = self.mesh.covolumes[k]
-        edge_length = self.mesh.edge_lengths[k]
-        val = self.coeff(x0, x1, edge_covolume, edge_length)
-        if hasattr(val[0][0], '__len__'):
-            assert len(val[0][0]) == 1
-            val = [
-                [val[0][0][0], val[0][1][0]],
-                [val[1][0][0], val[1][1][0]]
-                ]
-            print(val)
+    def eval(self, edge_ids):
+        X = self.mesh.node_coords[self.mesh.edges['nodes'][edge_ids]]
+        x0 = X[:, 0, :].T
+        x1 = X[:, 1, :].T
+        zero = numpy.zeros(len(edge_ids))
+        edge_ce_ratio = self.mesh.ce_ratios[edge_ids]
+        edge_length = self.mesh.edge_lengths[edge_ids]
+        val = numpy.array(self.coeff(x0, x1, edge_ce_ratio, edge_length, zero))
+        # if hasattr(val[0][0], '__len__'):
+        #     assert len(val[0][0]) == 1
+        #     val = [
+        #         [val[0][0][0], val[0][1][0]],
+        #         [val[1][0][0], val[1][1][0]]
+        #         ]
         return (
             val,
-            self.affine(x0, x1, edge_covolume, edge_length)
+            numpy.array(self.affine(x0, x1, edge_ce_ratio, edge_length, zero))
             )
 
 
@@ -49,12 +49,13 @@ class VertexKernel(object):
         self.subdomains = ['everywhere']
         return
 
-    def eval(self, k):
-        control_volume = self.mesh.control_volumes[k]
-        x = self.mesh.node_coords[k]
+    def eval(self, vertex_ids):
+        control_volumes = self.mesh.control_volumes[vertex_ids]
+        X = self.mesh.node_coords[vertex_ids].T
+        zero = numpy.zeros(len(vertex_ids))
         return (
-            self.coeff(control_volume, x),
-            self.affine(control_volume, x)
+            self.coeff(control_volumes, X, zero),
+            self.affine(control_volumes, X, zero)
             )
 
 
@@ -66,29 +67,31 @@ class BoundaryKernel(object):
         self.subdomains = ['everywhere']
         return
 
-    def eval(self, k):
-        surface_area = self.mesh.surface_areas[k]
-        x = self.mesh.node_coords[k]
+    def eval(self, vertex_ids):
+        surface_areas = self.mesh.surface_areas[vertex_ids]
+        X = self.mesh.node_coords[vertex_ids].T
+        zero = numpy.zeros(len(vertex_ids))
         return (
-            self.coeff(surface_area, x),
-            self.affine(surface_area, x)
+            self.coeff(surface_areas, X, zero),
+            self.affine(surface_areas, X, zero)
             )
 
 
 class DirichletKernel(object):
-    def __init__(self, mesh, val, subdomains):
+    def __init__(self, mesh, val, subdomain):
         self.mesh = mesh
         self.val = val
-        self.subdomains = subdomains
+        self.subdomain = subdomain
         return
 
-    def eval(self, k):
-        x = self.mesh.node_coords[k]
-        return self.val(x)
+    def eval(self, vertex_ids):
+        X = self.mesh.node_coords[vertex_ids].T
+        zero = numpy.zeros(len(vertex_ids))
+        return self.val(X, zero)
 
 
-def _discretize_edge_integral(integrand, x0, x1, edge_length, edge_covolume):
-    discretizer = DiscretizeEdgeIntegral(x0, x1, edge_length, edge_covolume)
+def _discretize_edge_integral(integrand, x0, x1, edge_length, edge_ce_ratio):
+    discretizer = DiscretizeEdgeIntegral(x0, x1, edge_length, edge_ce_ratio)
     return discretizer.generate(integrand)
 
 
@@ -98,12 +101,12 @@ if debug:
 
 
 class DiscretizeEdgeIntegral(object):
-    def __init__(self, x0, x1, edge_length, edge_covolume):
+    def __init__(self, x0, x1, edge_length, edge_ce_ratio):
         self.arg_translate = {}
         self.x0 = x0
         self.x1 = x1
         self.edge_length = edge_length
-        self.edge_covolume = edge_covolume
+        self.edge_ce_ratio = edge_ce_ratio
         return
 
     def visit(self, node):
@@ -138,7 +141,7 @@ class DiscretizeEdgeIntegral(object):
             if hasattr(f, 'nosh'):
                 function_vars.append(f.func)
 
-        out = self.edge_covolume * self.visit(expr)
+        out = self.edge_ce_ratio * self.edge_length * self.visit(expr)
 
         vector_vars = []
         for f in function_vars:
@@ -157,7 +160,6 @@ class DiscretizeEdgeIntegral(object):
         out = out.subs(x, 0.5 * (self.x0 + self.x1))
 
         # Replace n by the normalized edge
-        n = sympy.MatrixSymbol('n', 3, 1)
         out = out.subs(n, (self.x1 - self.x0) / self.edge_length)
 
         return out, vector_vars
@@ -166,7 +168,6 @@ class DiscretizeEdgeIntegral(object):
         raise RuntimeError(
             'Should never be called. __name__:', type(node).__name__
             )
-        self.visit(node)
 
     def visit_Load(self, node):
         logging.debug('> Load >')
@@ -277,47 +278,59 @@ def _extract_linear_components(expr, dvars):
         )
 
 
-def _discretize_expression(expr, multiplier):
+def _discretize_expression(expr, multiplier=1.0):
     expr, fks = replace_nosh_functions(expr)
     return multiplier * expr, fks
 
 
-def discretize(cls, mesh):
+def discretize(obj, mesh):
     u = sympy.Function('u')
     u.nosh = True  # TODO get rid
 
-    res = cls.apply(u)
+    res = obj.apply(u)
 
     # See <http://docs.sympy.org/dev/modules/utilities/lambdify.html>.
     array2array = [{'ImmutableMatrix': numpy.array}, 'numpy']
 
+    zero = sympy.Symbol('zero')
+
     edge_kernels = set()
     vertex_kernels = set()
     boundary_kernels = set()
-    dirichlet_kernels = set()
     for integral in res.integrals:
         if isinstance(integral.measure, form_language.ControlVolumeSurface):
             x0 = sympy.Symbol('x0')
             x1 = sympy.Symbol('x1')
             edge_length = sympy.Symbol('edge_length')
-            edge_covolume = sympy.Symbol('edge_covolume')
+            edge_ce_ratio = sympy.Symbol('edge_ce_ratio')
             expr, vector_vars = _discretize_edge_integral(
                     integral.integrand,
                     x0, x1,
                     edge_length,
-                    edge_covolume
+                    edge_ce_ratio
                     )
             coeff, affine, arguments, used_vars = _collect_variables(expr, u)
+
+            # Add "zero" to all entities. This later gets translated into
+            # np.zeros with the appropriate length, making sure that scalar
+            # terms in the lambda expression correctly return np.arrays.
+            coeff[0][0] += zero
+            coeff[0][1] += zero
+            coeff[1][0] += zero
+            coeff[1][1] += zero
+            affine[0] += zero
+            affine[1] += zero
+
             edge_kernels.add(
                 EdgeKernel(
                     mesh,
                     sympy.lambdify(
-                        (x0, x1, edge_covolume, edge_length),
+                        (x0, x1, edge_ce_ratio, edge_length, zero),
                         coeff,
                         modules=array2array
                         ),
                     sympy.lambdify(
-                        (x0, x1, edge_covolume, edge_length),
+                        (x0, x1, edge_ce_ratio, edge_length, zero),
                         affine,
                         modules=array2array
                         )
@@ -337,11 +350,26 @@ def discretize(cls, mesh):
             uk0 = sympy.Symbol('uk0')
             expr = expr.subs([(u[k0], uk0)])
             coeff, affine = extract_linear_components(expr, uk0)
+
+            # Add "zero" to all entities. This later gets translated into
+            # np.zeros with the appropriate length, making sure that scalar
+            # terms in the lambda expression correctly return np.arrays.
+            coeff += zero
+            affine += zero
+
             vertex_kernels.add(
                 VertexKernel(
                     mesh,
-                    sympy.lambdify((control_volume, x), coeff),
-                    sympy.lambdify((control_volume, x), affine)
+                    sympy.lambdify(
+                        (control_volume, x, zero),
+                        coeff,
+                        modules=array2array
+                        ),
+                    sympy.lambdify(
+                        (control_volume, x, zero),
+                        affine,
+                        modules=array2array
+                        )
                     )
                 )
         elif isinstance(integral.measure, form_language.BoundarySurface):
@@ -358,11 +386,26 @@ def discretize(cls, mesh):
             uk0 = sympy.Symbol('uk0')
             expr = expr.subs([(u[k0], uk0)])
             coeff, affine = extract_linear_components(expr, uk0)
+
+            # Add "zero" to all entities. This later gets translated into
+            # np.zeros with the appropriate length, making sure that scalar
+            # terms in the lambda expression correctly return np.arrays.
+            coeff += zero
+            affine += zero
+
             boundary_kernels.add(
                 BoundaryKernel(
                     mesh,
-                    sympy.lambdify((surface_area, x), coeff),
-                    sympy.lambdify((surface_area, x), affine)
+                    sympy.lambdify(
+                        (surface_area, x, zero),
+                        coeff,
+                        modules=array2array
+                        ),
+                    sympy.lambdify(
+                        (surface_area, x, zero),
+                        affine,
+                        modules=array2array
+                        )
                     )
                 )
         else:
@@ -370,20 +413,30 @@ def discretize(cls, mesh):
                     'Illegal measure type \'%s\'.' % integral.measure
                     )
 
-    for dirichlet in cls.dirichlet:
-        f, subdomains = dirichlet
-        if not isinstance(subdomains, list):
-            try:
-                subdomains = list(subdomains)
-            except TypeError:  # TypeError: 'D1' object is not iterable
-                subdomains = [subdomains]
-        dirichlet_kernels.add(
-                DirichletKernel(
-                    mesh,
-                    f,
-                    subdomains
+    dirichlet_kernels = set()
+    dirichlet = getattr(obj, 'dirichlet', None)
+    if callable(dirichlet):
+        u = sympy.Function('u')
+        x = sympy.DeferredVector('x')
+        for f, subdomain in dirichlet(u):
+            expr, vector_vars = _discretize_expression(f(x))
+            u = sympy.IndexedBase('%s' % u)
+            k0 = sympy.Symbol('k')
+            uk0 = sympy.Symbol('uk0')
+            expr = expr.subs([(u[k0], uk0)])
+            coeff, affine = extract_linear_components(expr, uk0)
+            rhs = - affine / coeff + zero
+            dirichlet_kernels.add(
+                    DirichletKernel(
+                        mesh,
+                        sympy.lambdify(
+                            (x, zero),
+                            rhs,
+                            modules=array2array
+                            ),
+                        subdomain
+                        )
                     )
-                )
 
     return linear_fvm_problem.LinearFvmProblem(
             mesh,

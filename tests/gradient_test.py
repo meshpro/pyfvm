@@ -3,7 +3,6 @@
 import pyfvm
 
 import os
-import meshio
 import numpy
 import unittest
 
@@ -29,7 +28,7 @@ class GradientTest(unittest.TestCase):
         # Compute the gradient numerically.
         grad_u = mesh.compute_gradient(u)
 
-        tol = 1.0e-3
+        tol = 1.0e-13
         for k in range(num_nodes):
             self.assertAlmostEqual(grad_u[k][0], sol[k][0], delta=tol)
             self.assertAlmostEqual(grad_u[k][1], sol[k][1], delta=tol)
@@ -37,7 +36,7 @@ class GradientTest(unittest.TestCase):
 
     def test_pacman(self):
         filename = os.path.join(
-            os.path.dirname(os.path.realpath(__file__)), 'pacman.e'
+            os.path.dirname(os.path.realpath(__file__)), 'pacman.vtu'
             )
         mesh, _, _ = pyfvm.reader.read(filename)
         self._run_test(mesh)

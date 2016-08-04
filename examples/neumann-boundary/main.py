@@ -11,13 +11,13 @@ class D1(Subdomain):
 
 
 class Poisson(LinearFvmProblem):
-    @staticmethod
-    def apply(u):
+    def apply(self, u):
         return integrate(lambda x: -n_dot_grad(u(x)), dS) \
                 + integrate(lambda x: 3.0, dGamma) \
                 - integrate(lambda x: 1.0, dV)
 
-    dirichlet = [(lambda x: 0.0, ['D1'])]
+    def dirichlet(self, u):
+        return [(u, D1())]
 
 vertices, cells = meshzoo.rectangle.create_mesh(
         0.0, 1.0,
@@ -27,9 +27,7 @@ vertices, cells = meshzoo.rectangle.create_mesh(
         )
 mesh = pyfvm.meshTri.meshTri(vertices, cells)
 
-mesh.mark_subdomains([D1()])
-
-linear_system = pyfvm.discretize(Poisson, mesh)
+linear_system = pyfvm.discretize(Poisson(), mesh)
 
 x = linalg.spsolve(linear_system.matrix, linear_system.rhs)
 
