@@ -9,7 +9,7 @@ from scipy.sparse import linalg
 class Singular(LinearFvmProblem):
     def apply(self, u):
         return integrate(lambda x: - 1.0e-2 * n_dot_grad(u(x)), dS) \
-               + integrate(lambda x: u(x), dV) \
+               + integrate(u, dV) \
                - integrate(lambda x: 1.0, dV)
 
     def dirichlet(self, u):

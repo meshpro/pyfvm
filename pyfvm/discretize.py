@@ -160,7 +160,6 @@ class DiscretizeEdgeIntegral(object):
         out = out.subs(x, 0.5 * (self.x0 + self.x1))
 
         # Replace n by the normalized edge
-        n = sympy.MatrixSymbol('n', 3, 1)
         out = out.subs(n, (self.x1 - self.x0) / self.edge_length)
 
         return out, vector_vars
@@ -169,7 +168,6 @@ class DiscretizeEdgeIntegral(object):
         raise RuntimeError(
             'Should never be called. __name__:', type(node).__name__
             )
-        self.visit(node)
 
     def visit_Load(self, node):
         logging.debug('> Load >')
