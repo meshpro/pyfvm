@@ -2,8 +2,7 @@
 #
 import numpy
 from .helpers import \
-        extract_linear_components, \
-        is_affine_linear, \
+        split_affine_linear_nonlinear, \
         replace_nosh_functions
 from . import form_language
 from .form_language import n
@@ -219,71 +218,12 @@ class DiscretizeEdgeIntegral(object):
         return ret
 
 
-def _collect_variables(expr, matrix_var):
-    # Unfortunately, it's not too easy to differentiate with respect to an
-    # IndexedBase u with indices k0, k1 respectively. For this reason, we'll
-    # simply replace u[k0] by a variable uk0, and u[k1] likewise.
-    u = sympy.IndexedBase('%s' % matrix_var)
-    k0 = sympy.Symbol('k0')
-    k1 = sympy.Symbol('k1')
-    uk0 = sympy.Symbol('uk0')
-    uk1 = sympy.Symbol('uk1')
-    expr = expr.subs([(u[k0], uk0), (u[k1], uk1)])
-    edge_coeff, edge_affine = \
-        _extract_linear_components(expr, [uk0, uk1])
-
-    arguments = set([sympy.Symbol('edge')])
-
-    # gather up all used variables
-    used_vars = set()
-    for a in [edge_coeff[0][0], edge_coeff[0][1],
-              edge_coeff[1][0], edge_coeff[1][1],
-              edge_affine[0], edge_affine[1]
-              ]:
-        used_vars.update(a.free_symbols)
-
-    return edge_coeff, edge_affine, arguments, used_vars
-
-
-def _swap(expr, a, b):
-    expr = expr.subs({a: b, b: a}, simultaneous=True)
-    return expr
-
-
-def _extract_linear_components(expr, dvars):
-    # TODO replace by helpers.extract_linear_components?
-    # Those are the variables in the expression, inserted by the edge
-    # discretizer.
-    assert is_affine_linear(expr, dvars)
-
-    # Get the coefficients of u0, u1.
-    coeff00 = sympy.diff(expr, dvars[0])
-    coeff01 = sympy.diff(expr, dvars[1])
-
-    x0 = sympy.Symbol('x0')
-    x1 = sympy.Symbol('x1')
-    # Now construct the coefficients for the other way around.
-    coeff10 = coeff01
-    coeff10 = _swap(coeff10, dvars[0], dvars[1])
-    coeff10 = _swap(coeff10, x0, x1)
-    coeff11 = coeff00
-    coeff11 = _swap(coeff11, dvars[0], dvars[1])
-    coeff11 = _swap(coeff11, x0, x1)
-
-    affine = expr.subs([(dvars[0], 0), (dvars[1], 0)])
-
-    return (
-        [[coeff00, coeff01], [coeff10, coeff11]],
-        [affine, affine]
-        )
-
-
 def _discretize_expression(expr, multiplier=1.0):
     expr, fks = replace_nosh_functions(expr)
     return multiplier * expr, fks
 
 
-def discretize(obj, mesh):
+def discretize_linear(obj, mesh):
     u = sympy.Function('u')
     u.nosh = True  # TODO get rid
 
@@ -309,17 +249,39 @@ def discretize(obj, mesh):
                     edge_length,
                     edge_ce_ratio
                     )
-            coeff, affine, arguments, used_vars = _collect_variables(expr, u)
+
+            u = sympy.IndexedBase('%s' % u)
+            k0 = sympy.Symbol('k0')
+            k1 = sympy.Symbol('k1')
+            uk0 = sympy.Symbol('uk0')
+            uk1 = sympy.Symbol('uk1')
+            expr = expr.subs([(u[k0], uk0), (u[k1], uk1)])
+            #
+            expr = sympy.simplify(expr)
+            affine0, linear0, nonlinear = \
+                split_affine_linear_nonlinear(expr, [uk0, uk1])
+            assert nonlinear == 0
+
+            # Turn edge around, do it again
+            expr_turned = expr.subs(
+                    {uk0: uk1, uk1: uk0, x0: x1, x1: x0},
+                    simultaneous=True
+                    )
+            affine1, linear1, nonlinear = \
+                split_affine_linear_nonlinear(expr_turned, [uk0, uk1])
+            assert nonlinear == 0
 
             # Add "zero" to all entities. This later gets translated into
             # np.zeros with the appropriate length, making sure that scalar
             # terms in the lambda expression correctly return np.arrays.
-            coeff[0][0] += zero
-            coeff[0][1] += zero
-            coeff[1][0] += zero
-            coeff[1][1] += zero
-            affine[0] += zero
-            affine[1] += zero
+            coeff = [
+                [linear0[0] + zero, linear0[1] + zero],
+                [linear1[0] + zero, linear1[1] + zero]
+                ]
+            affine = [
+                affine0 + zero,
+                affine1 + zero
+                ]
 
             edge_kernels.add(
                 EdgeKernel(
@@ -349,7 +311,8 @@ def discretize(obj, mesh):
             k0 = sympy.Symbol('k')
             uk0 = sympy.Symbol('uk0')
             expr = expr.subs([(u[k0], uk0)])
-            coeff, affine = extract_linear_components(expr, uk0)
+            affine, coeff, nonlinear = split_affine_linear_nonlinear(expr, uk0)
+            assert nonlinear == 0
 
             # Add "zero" to all entities. This later gets translated into
             # np.zeros with the appropriate length, making sure that scalar
@@ -385,7 +348,8 @@ def discretize(obj, mesh):
             k0 = sympy.Symbol('k')
             uk0 = sympy.Symbol('uk0')
             expr = expr.subs([(u[k0], uk0)])
-            coeff, affine = extract_linear_components(expr, uk0)
+            affine, coeff, nonlinear = split_affine_linear_nonlinear(expr, uk0)
+            assert nonlinear == 0
 
             # Add "zero" to all entities. This later gets translated into
             # np.zeros with the appropriate length, making sure that scalar
@@ -424,7 +388,8 @@ def discretize(obj, mesh):
             k0 = sympy.Symbol('k')
             uk0 = sympy.Symbol('uk0')
             expr = expr.subs([(u[k0], uk0)])
-            coeff, affine = extract_linear_components(expr, uk0)
+            affine, coeff, nonlinear = split_affine_linear_nonlinear(expr, uk0)
+            assert nonlinear == 0
             rhs = - affine / coeff + zero
             dirichlet_kernels.add(
                     DirichletKernel(

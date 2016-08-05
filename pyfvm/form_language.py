@@ -104,7 +104,7 @@ class FvmMatrix(Callable, KernelList):
         return
 
 
-class LinearFvmProblem(object):
+class FvmProblem(object):
     pass
 
 

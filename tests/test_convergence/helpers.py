@@ -38,7 +38,7 @@ def perform_convergence_tests(
         mesh = get_mesh(k)
         H[k] = max(mesh.edge_lengths)
 
-        linear_system = pyfvm.discretize(problem, mesh)
+        linear_system = pyfvm.discretize_linear(problem, mesh)
 
         # x = linalg.spsolve(linear_system.matrix, linear_system.rhs)
         ml = pyamg.ruge_stuben_solver(linear_system.matrix)

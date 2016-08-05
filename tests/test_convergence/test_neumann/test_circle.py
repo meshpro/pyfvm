@@ -19,7 +19,7 @@ class Gamma1(Subdomain):
     is_boundary_only = True
 
 
-class Neumann(LinearFvmProblem):
+class Neumann(FvmProblem):
     def apply(self, u):
         def neumann(x):
             z = x[0]**2 + x[1]**2

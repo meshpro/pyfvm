@@ -11,7 +11,7 @@ def exact_sol(x):
     return sin(pi*x[0]) * sin(pi*x[1])
 
 
-class Reaction(LinearFvmProblem):
+class Reaction(FvmProblem):
     def apply(self, u):
         return integrate(lambda x: -n_dot_grad(u(x)), dS) \
             + integrate(lambda x: u(x), dV) \

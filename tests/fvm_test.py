@@ -17,7 +17,7 @@ class TestPDEs(unittest.TestCase):
         from scipy.sparse import linalg
 
         # Define the problem
-        class Poisson(LinearFvmProblem):
+        class Poisson(FvmProblem):
             def apply(self, u):
                 return integrate(lambda x: - n_dot_grad(u(x)), dS) \
                        - integrate(lambda x: 1.0, dV)
@@ -25,7 +25,7 @@ class TestPDEs(unittest.TestCase):
             def dirichlet(self, u):
                 return [(u, 'boundary')]
 
-        linear_system = pyfvm.discretize(Poisson(), mesh)
+        linear_system = pyfvm.discretize_linear(Poisson(), mesh)
 
         x = linalg.spsolve(linear_system.matrix, linear_system.rhs)
 
@@ -86,7 +86,7 @@ class TestPDEs(unittest.TestCase):
             is_boundary_only = True
 
         # Define the problem
-        class Poisson(LinearFvmProblem):
+        class Poisson(FvmProblem):
             def apply(self, u):
                 return integrate(lambda x: -n_dot_grad(u(x)), dS) \
                        - integrate(lambda x: 1.0, dV)
@@ -105,7 +105,7 @@ class TestPDEs(unittest.TestCase):
                 )
         mesh = pyfvm.meshTri.meshTri(vertices, cells)
 
-        linear_system = pyfvm.discretize(Poisson(), mesh)
+        linear_system = pyfvm.discretize_linear(Poisson(), mesh)
 
         x = linalg.spsolve(linear_system.matrix, linear_system.rhs)
 
@@ -133,7 +133,7 @@ class TestPDEs(unittest.TestCase):
         from scipy.sparse import linalg
 
         # Define the problem
-        class Poisson(LinearFvmProblem):
+        class Poisson(FvmProblem):
             def apply(self, u):
                 return integrate(lambda x: - 1.0e-2 * n_dot_grad(u(x)), dS) \
                        + integrate(lambda x: u(x), dV) \
@@ -150,7 +150,7 @@ class TestPDEs(unittest.TestCase):
                 )
         mesh = pyfvm.meshTri.meshTri(vertices, cells)
 
-        linear_system = pyfvm.discretize(Poisson(), mesh)
+        linear_system = pyfvm.discretize_linear(Poisson(), mesh)
 
         x = linalg.spsolve(linear_system.matrix, linear_system.rhs)
 
@@ -178,7 +178,7 @@ class TestPDEs(unittest.TestCase):
             is_boundary_only = True
 
         # Define the problem
-        class Poisson(LinearFvmProblem):
+        class Poisson(FvmProblem):
             def apply(self, u):
                 return integrate(lambda x: - n_dot_grad(u(x)), dS) \
                        + integrate(lambda x: 3.0, dGamma) \
@@ -195,7 +195,7 @@ class TestPDEs(unittest.TestCase):
                 )
         mesh = pyfvm.meshTri.meshTri(vertices, cells)
 
-        linear_system = pyfvm.discretize(Poisson(), mesh)
+        linear_system = pyfvm.discretize_linear(Poisson(), mesh)
 
         x = linalg.spsolve(linear_system.matrix, linear_system.rhs)
 
@@ -219,7 +219,7 @@ class TestPDEs(unittest.TestCase):
         from scipy.sparse import linalg
 
         # Define the problem
-        class Poisson(LinearFvmProblem):
+        class Poisson(FvmProblem):
             def apply(self, u):
                 a = sympy.Matrix([2, 1, 0])
                 return integrate(lambda x: - n_dot_grad(u(x)) + dot(a.T, n) * u(x), dS) - \
@@ -236,7 +236,7 @@ class TestPDEs(unittest.TestCase):
                 )
         mesh = pyfvm.meshTri.meshTri(vertices, cells)
 
-        linear_system = pyfvm.discretize(Poisson(), mesh)
+        linear_system = pyfvm.discretize_linear(Poisson(), mesh)
 
         x = linalg.spsolve(linear_system.matrix, linear_system.rhs)
 

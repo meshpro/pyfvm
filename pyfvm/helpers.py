@@ -3,23 +3,34 @@
 import sympy
 
 
-def is_affine_linear(expr, variables):
-    for var in variables:
-        if not sympy.Eq(sympy.diff(expr, var, var), 0):
-            return False
-    return True
-
-
-def extract_linear_components(expr, u0):
-    assert(is_affine_linear(expr, [u0]))
-    # Get coefficient of u0
-    coeff = sympy.diff(expr, u0)
-    # Get affine part
+def split_affine_linear_nonlinear(expr, variables):
     if isinstance(expr, float):
-        affine = expr
-    else:
-        affine = expr.subs(u0, 0)
-    return coeff, affine
+        return expr, 0, 0
+
+    input_is_list = True
+    if not isinstance(variables, list):
+        input_is_list = False
+        variables = [variables]
+
+    # See <https://github.com/sympy/sympy/issues/11475> on why we need expand()
+    # here.
+    affine = expr.expand()
+    linear = []
+    for var in variables:
+        linear.append(sympy.diff(expr, var).coeff(var, 0))
+        affine = affine.coeff(var, 0)
+
+    # The rest is nonlinear
+    nonlinear = expr - affine
+    for var, coeff in zip(variables, linear):
+        nonlinear -= var * coeff
+    nonlinear = sympy.simplify(nonlinear)
+
+    if not input_is_list:
+        assert len(linear) == 1
+        linear = linear[0]
+
+    return affine, linear, nonlinear
 
 
 def replace_nosh_functions(expr):

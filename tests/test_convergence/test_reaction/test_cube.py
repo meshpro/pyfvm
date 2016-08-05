@@ -11,7 +11,7 @@ def exact_sol(x):
     return sin(pi*x[0]) * sin(pi*x[1]) * sin(pi*x[2])
 
 
-class Reaction(LinearFvmProblem):
+class Reaction(FvmProblem):
     def apply(self, u):
         def rhs(x):
             return (3*pi**2 + 1) * sin(pi*x[0]) * sin(pi*x[1]) * sin(pi*x[2])

@@ -17,7 +17,7 @@ class Gamma1(Subdomain):
     is_boundary_only = True
 
 
-class Poisson(LinearFvmProblem):
+class Poisson(FvmProblem):
     def apply(self, u):
         return integrate(lambda x: -n_dot_grad(u(x)), dS) \
              - integrate(lambda x: 10 * sin(2*pi*x[0]), dV)
@@ -27,7 +27,6 @@ class Poisson(LinearFvmProblem):
             (lambda x: u(x) - 0.0, Gamma0()),
             (lambda x: u(x) - 1.0, Gamma1())
             ]
-
 
 
 # # Read the mesh from file
@@ -59,7 +58,7 @@ coords = m.coordinates()
 coords = numpy.c_[coords, numpy.zeros(len(coords))]
 mesh = pyfvm.meshTri.meshTri(coords, m.cells())
 
-linear_system = pyfvm.discretize(Poisson(), mesh)
+linear_system = pyfvm.discretize_linear(Poisson(), mesh)
 
 ml = pyamg.ruge_stuben_solver(linear_system.matrix)
 x = ml.solve(linear_system.rhs, tol=1e-10)

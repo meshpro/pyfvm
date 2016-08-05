@@ -18,7 +18,7 @@ class Gamma1(Subdomain):
     is_boundary_only = True
 
 
-class Neumann(LinearFvmProblem):
+class Neumann(FvmProblem):
     def apply(self, u):
         return integrate(lambda x: -n_dot_grad(u(x)), dS) \
             - integrate(lambda x: -pi * sin(pi*x[0]), dGamma) \

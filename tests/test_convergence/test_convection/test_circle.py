@@ -13,7 +13,7 @@ def exact_sol(x):
     return cos(pi/2 * (x[0]**2 + x[1]**2))
 
 
-class Convection(LinearFvmProblem):
+class Convection(FvmProblem):
     def apply(self, u):
         a0 = 2
         a1 = 1

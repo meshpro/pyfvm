@@ -11,7 +11,7 @@ def exact_sol(x):
     return sin(pi*x[0]) * sin(pi*x[1]) * sin(pi*x[2])
 
 
-class Convection(LinearFvmProblem):
+class Convection(FvmProblem):
     def apply(self, u):
         a0 = 2
         a1 = 1

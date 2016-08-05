@@ -11,7 +11,7 @@ def exact_sol(x):
     return sin(pi*x[0]) * sin(pi*x[1]) * sin(pi*x[2])
 
 
-class Poisson(LinearFvmProblem):
+class Poisson(FvmProblem):
     def apply(self, u):
         return integrate(lambda x: -n_dot_grad(u(x)), dS) - \
             integrate(

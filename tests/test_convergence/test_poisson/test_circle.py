@@ -13,7 +13,7 @@ def exact_sol(x):
     return cos(pi/2 * (x[0]**2 + x[1]**2))
 
 
-class Poisson(LinearFvmProblem):
+class Poisson(FvmProblem):
     def apply(self, u):
         def rhs(x):
             z = pi/2 * (x[0]**2 + x[1]**2)
