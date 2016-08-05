@@ -7,7 +7,6 @@ from .helpers import \
 from . import form_language
 from .form_language import n
 import linear_fvm_problem
-import logging
 import sympy
 from sympy.matrices.expressions.matexpr import MatrixExpr, MatrixSymbol
 
@@ -94,11 +93,6 @@ def _discretize_edge_integral(integrand, x0, x1, edge_length, edge_ce_ratio):
     return discretizer.generate(integrand)
 
 
-debug = False
-if debug:
-    logging.basicConfig(level=logging.DEBUG)
-
-
 class DiscretizeEdgeIntegral(object):
     def __init__(self, x0, x1, edge_length, edge_ce_ratio):
         self.arg_translate = {}
@@ -169,7 +163,7 @@ class DiscretizeEdgeIntegral(object):
             )
 
     def visit_Load(self, node):
-        logging.debug('> Load >')
+        return
 
     def visit_Call(self, node):
         '''Handles calls for operators A(u) and pointwise functions sin(u).
@@ -178,7 +172,6 @@ class DiscretizeEdgeIntegral(object):
             ident = node.func.__name__
         except AttributeError:
             ident = repr(node)
-        logging.debug('> Call %s' % ident)
         # Handle special functions
         if ident == 'dot':
             assert(len(node.args) == 2)
@@ -199,13 +192,11 @@ class DiscretizeEdgeIntegral(object):
             assert(len(node.args) == 1)
             arg = self.visit(node.args[0])
             out = node.func(arg)
-        logging.debug('  Call >')
         return out
 
     def visit_ChainOp(self, node, operator):
         '''Handles binary operations (e.g., +, -, *,...).
         '''
-        logging.debug('> BinOp %s' % operator)
         # collect the pointwise code for left and right
         args = []
         for n in node.args:
