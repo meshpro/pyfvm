@@ -31,28 +31,3 @@ def split_affine_linear_nonlinear(expr, variables):
         linear = linear[0]
 
     return affine, linear, nonlinear
-
-
-def replace_nosh_functions(expr):
-    fks = []
-    if isinstance(expr, float) or isinstance(expr, int):
-        pass
-    else:
-        function_vars = []
-        for f in expr.atoms(sympy.Function):
-            if hasattr(f, 'nosh'):
-                function_vars.append(f)
-
-        for function_var in function_vars:
-            # Replace all occurences of u(x) by u[k] (the value at the control
-            # volume center)
-            f = sympy.IndexedBase('%s' % function_var.func)
-            k = sympy.Symbol('k')
-            try:
-                expr = expr.subs(function_var, f[k])
-            except AttributeError:
-                # 'int' object has no attribute 'subs'
-                pass
-            fks.append(f[k])
-
-    return expr, fks

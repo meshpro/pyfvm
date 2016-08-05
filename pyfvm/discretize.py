@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 import numpy
-from .helpers import \
-        split_affine_linear_nonlinear, \
-        replace_nosh_functions
+from .helpers import split_affine_linear_nonlinear
 from . import form_language
 from .form_language import n
 import linear_fvm_problem
@@ -209,11 +207,6 @@ class DiscretizeEdgeIntegral(object):
         return ret
 
 
-def _discretize_expression(expr, multiplier=1.0):
-    expr, fks = replace_nosh_functions(expr)
-    return multiplier * expr, fks
-
-
 def discretize_linear(obj, mesh):
     u = sympy.Function('u')
     u.nosh = True  # TODO get rid
@@ -241,12 +234,12 @@ def discretize_linear(obj, mesh):
                     edge_ce_ratio
                     )
 
-            u = sympy.IndexedBase('%s' % u)
+            u_idx = sympy.IndexedBase('%s' % u)
             k0 = sympy.Symbol('k0')
             k1 = sympy.Symbol('k1')
             uk0 = sympy.Symbol('uk0')
             uk1 = sympy.Symbol('uk1')
-            expr = expr.subs([(u[k0], uk0), (u[k1], uk1)])
+            expr = expr.subs([(u_idx[k0], uk0), (u_idx[k1], uk1)])
             #
             expr = sympy.simplify(expr)
             affine0, linear0, nonlinear = \
@@ -297,11 +290,12 @@ def discretize_linear(obj, mesh):
             x = sympy.DeferredVector('x')
             control_volume = sympy.Symbol('control_volume')
             fx = integral.integrand(x)
-            expr, vector_vars = _discretize_expression(fx, control_volume)
-            u = sympy.IndexedBase('%s' % u)
-            k0 = sympy.Symbol('k')
             uk0 = sympy.Symbol('uk0')
-            expr = expr.subs([(u[k0], uk0)])
+            try:
+                expr = fx.subs(u(x), uk0)
+            except AttributeError:  # 'float' object has no
+                expr = fx
+            expr *= control_volume
             affine, coeff, nonlinear = split_affine_linear_nonlinear(expr, uk0)
             assert nonlinear == 0
 
@@ -334,11 +328,14 @@ def discretize_linear(obj, mesh):
             x = sympy.DeferredVector('x')
             surface_area = sympy.Symbol('surface_area')
             fx = integral.integrand(x)
-            expr, vector_vars = _discretize_expression(fx, surface_area)
-            u = sympy.IndexedBase('%s' % u)
-            k0 = sympy.Symbol('k')
+
             uk0 = sympy.Symbol('uk0')
-            expr = expr.subs([(u[k0], uk0)])
+            try:
+                expr = fx.subs(u(x), uk0)
+            except AttributeError:  # 'float' object has no
+                expr = fx
+            expr *= surface_area
+
             affine, coeff, nonlinear = split_affine_linear_nonlinear(expr, uk0)
             assert nonlinear == 0
 
@@ -374,11 +371,12 @@ def discretize_linear(obj, mesh):
         u = sympy.Function('u')
         x = sympy.DeferredVector('x')
         for f, subdomain in dirichlet(u):
-            expr, vector_vars = _discretize_expression(f(x))
-            u = sympy.IndexedBase('%s' % u)
-            k0 = sympy.Symbol('k')
             uk0 = sympy.Symbol('uk0')
-            expr = expr.subs([(u[k0], uk0)])
+            try:
+                expr = f(x).subs(u(x), uk0)
+            except AttributeError:  # 'float' object has no
+                expr = fx
+
             affine, coeff, nonlinear = split_affine_linear_nonlinear(expr, uk0)
             assert nonlinear == 0
             rhs = - affine / coeff + zero
