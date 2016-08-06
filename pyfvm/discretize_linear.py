@@ -26,8 +26,9 @@ def split(expr, variables):
     print('affine ', affine)
     linear = []
     for var in variables:
+        print(var)
         linear.append(sympy.diff(expr, var).coeff(var, 0))
-        affine = affine.coeff(var, 0)
+        affine = affine.coeff(var, n=0)
         print('affine ', affine)
 
     # The rest is nonlinear
