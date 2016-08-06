@@ -10,9 +10,9 @@ from sympy.matrices.expressions.matexpr import MatrixExpr, MatrixSymbol
 
 
 class EdgeKernel(object):
-    def __init__(self, mesh, coeff, affine):
+    def __init__(self, mesh, linear, affine):
         self.mesh = mesh
-        self.coeff = coeff
+        self.linear = linear
         self.affine = affine
         self.subdomains = ['everywhere']
         return
@@ -21,20 +21,29 @@ class EdgeKernel(object):
         X = self.mesh.node_coords[self.mesh.edges['nodes'][edge_ids]]
         x0 = X[:, 0, :].T
         x1 = X[:, 1, :].T
-        zero = numpy.zeros(len(edge_ids))
         edge_ce_ratio = self.mesh.ce_ratios[edge_ids]
         edge_length = self.mesh.edge_lengths[edge_ids]
-        val = numpy.array(self.coeff(x0, x1, edge_ce_ratio, edge_length, zero))
-        return (
-            val,
-            numpy.array(self.affine(x0, x1, edge_ce_ratio, edge_length, zero))
-            )
+        val = self.linear(x0, x1, edge_ce_ratio, edge_length)
+        rhs = self.affine(x0, x1, edge_ce_ratio, edge_length)
+
+        # Add "zero" to all entities. This later gets translated into
+        # np.zeros with the appropriate length, making sure that scalar
+        # terms in the lambda expression correctly return np.arrays.
+        zero = numpy.zeros(len(edge_ids))
+        val[0][0] += zero
+        val[0][1] += zero
+        val[1][0] += zero
+        val[1][1] += zero
+        rhs[0] += zero
+        rhs[1] += zero
+
+        return (numpy.array(val), numpy.array(rhs))
 
 
 class VertexKernel(object):
-    def __init__(self, mesh, coeff, affine):
+    def __init__(self, mesh, linear, affine):
         self.mesh = mesh
-        self.coeff = coeff
+        self.linear = linear
         self.affine = affine
         self.subdomains = ['everywhere']
         return
@@ -42,10 +51,14 @@ class VertexKernel(object):
     def eval(self, vertex_ids):
         control_volumes = self.mesh.control_volumes[vertex_ids]
         X = self.mesh.node_coords[vertex_ids].T
+
+        # Add "zero" to all entities. This later gets translated into
+        # np.zeros with the appropriate length, making sure that scalar
+        # terms in the lambda expression correctly return np.arrays.
         zero = numpy.zeros(len(vertex_ids))
         return (
-            self.coeff(control_volumes, X, zero),
-            self.affine(control_volumes, X, zero)
+            self.linear(control_volumes, X) + zero,
+            self.affine(control_volumes, X) + zero
             )
 
 
@@ -62,8 +75,8 @@ class BoundaryKernel(object):
         X = self.mesh.node_coords[vertex_ids].T
         zero = numpy.zeros(len(vertex_ids))
         return (
-            self.coeff(surface_areas, X, zero),
-            self.affine(surface_areas, X, zero)
+            self.coeff(surface_areas, X) + zero,
+            self.affine(surface_areas, X) + zero
             )
 
 
@@ -77,7 +90,7 @@ class DirichletKernel(object):
     def eval(self, vertex_ids):
         X = self.mesh.node_coords[vertex_ids].T
         zero = numpy.zeros(len(vertex_ids))
-        return self.val(X, zero)
+        return self.val(X) + zero
 
 
 def _discretize_edge_integral(integrand, x0, x1, edge_length, edge_ce_ratio):
@@ -210,8 +223,6 @@ def discretize_linear(obj, mesh):
     # See <http://docs.sympy.org/dev/modules/utilities/lambdify.html>.
     array2array = [{'ImmutableMatrix': numpy.array}, 'numpy']
 
-    zero = sympy.Symbol('zero')
-
     edge_kernels = set()
     vertex_kernels = set()
     boundary_kernels = set()
@@ -249,28 +260,19 @@ def discretize_linear(obj, mesh):
                 split_affine_linear_nonlinear(expr_turned, [uk0, uk1])
             assert nonlinear == 0
 
-            # Add "zero" to all entities. This later gets translated into
-            # np.zeros with the appropriate length, making sure that scalar
-            # terms in the lambda expression correctly return np.arrays.
-            coeff = [
-                [linear0[0] + zero, linear0[1] + zero],
-                [linear1[0] + zero, linear1[1] + zero]
-                ]
-            affine = [
-                affine0 + zero,
-                affine1 + zero
-                ]
+            linear = [[linear0[0], linear0[1]], [linear1[0], linear1[1]]]
+            affine = [affine0, affine1]
 
             edge_kernels.add(
                 EdgeKernel(
                     mesh,
                     sympy.lambdify(
-                        (x0, x1, edge_ce_ratio, edge_length, zero),
-                        coeff,
+                        (x0, x1, edge_ce_ratio, edge_length),
+                        linear,
                         modules=array2array
                         ),
                     sympy.lambdify(
-                        (x0, x1, edge_ce_ratio, edge_length, zero),
+                        (x0, x1, edge_ce_ratio, edge_length),
                         affine,
                         modules=array2array
                         )
@@ -290,25 +292,20 @@ def discretize_linear(obj, mesh):
                 expr = fx
             expr *= control_volume
 
-            affine, coeff, nonlinear = split_affine_linear_nonlinear(expr, uk0)
+            affine, linear, nonlinear = \
+                split_affine_linear_nonlinear(expr, uk0)
             assert nonlinear == 0
-
-            # Add "zero" to all entities. This later gets translated into
-            # np.zeros with the appropriate length, making sure that scalar
-            # terms in the lambda expression correctly return np.arrays.
-            coeff += zero
-            affine += zero
 
             vertex_kernels.add(
                 VertexKernel(
                     mesh,
                     sympy.lambdify(
-                        (control_volume, x, zero),
-                        coeff,
+                        (control_volume, x),
+                        linear,
                         modules=array2array
                         ),
                     sympy.lambdify(
-                        (control_volume, x, zero),
+                        (control_volume, x),
                         affine,
                         modules=array2array
                         )
@@ -331,22 +328,16 @@ def discretize_linear(obj, mesh):
             affine, coeff, nonlinear = split_affine_linear_nonlinear(expr, uk0)
             assert nonlinear == 0
 
-            # Add "zero" to all entities. This later gets translated into
-            # np.zeros with the appropriate length, making sure that scalar
-            # terms in the lambda expression correctly return np.arrays.
-            coeff += zero
-            affine += zero
-
             boundary_kernels.add(
                 BoundaryKernel(
                     mesh,
                     sympy.lambdify(
-                        (surface_area, x, zero),
+                        (surface_area, x),
                         coeff,
                         modules=array2array
                         ),
                     sympy.lambdify(
-                        (surface_area, x, zero),
+                        (surface_area, x),
                         affine,
                         modules=array2array
                         )
@@ -372,15 +363,11 @@ def discretize_linear(obj, mesh):
             affine, coeff, nonlinear = split_affine_linear_nonlinear(expr, uk0)
             assert nonlinear == 0
 
-            rhs = - affine / coeff + zero
+            rhs = - affine / coeff
             dirichlet_kernels.add(
                     DirichletKernel(
                         mesh,
-                        sympy.lambdify(
-                            (x, zero),
-                            rhs,
-                            modules=array2array
-                            ),
+                        sympy.lambdify((x), rhs, modules=array2array),
                         subdomain
                         )
                     )
