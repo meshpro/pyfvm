@@ -89,9 +89,12 @@ class DirichletKernel(object):
         return self.val(X) + zero
 
 
-def _discretize_edge_integral(integrand, x0, x1, edge_length, edge_ce_ratio):
+def _discretize_edge_integral(
+        integrand, x0, x1, edge_length, edge_ce_ratio,
+        index_functions
+        ):
     discretizer = DiscretizeEdgeIntegral(x0, x1, edge_length, edge_ce_ratio)
-    return discretizer.generate(integrand)
+    return discretizer.generate(integrand, index_functions)
 
 
 class DiscretizeEdgeIntegral(object):
@@ -124,31 +127,25 @@ class DiscretizeEdgeIntegral(object):
 
         raise RuntimeError('Unknown node type \"', type(node), '\".')
 
-    def generate(self, node):
+    def generate(self, node, index_functions=[]):
         '''Entrance point to this class.
         '''
         x = sympy.MatrixSymbol('x', 3, 1)
         expr = node(x)
-        # Collect all function variables.
-        function_vars = []
-        for f in expr.atoms(sympy.Function):
-            if hasattr(f, 'nosh'):
-                function_vars.append(f.func)
 
         out = self.edge_ce_ratio * self.edge_length * self.visit(expr)
 
-        vector_vars = []
-        for f in function_vars:
+        index_vars = []
+        for f in index_functions:
             # Replace f(x0) by f[k0], f(x1) by f[k1].
-            k0 = sympy.Symbol('k0')
-            k1 = sympy.Symbol('k1')
-            f_vec = sympy.IndexedBase('%s' % f)
-            out = out.subs(f(self.x0), f_vec[k0])
-            out = out.subs(f(self.x1), f_vec[k1])
+            fk0 = sympy.Symbol('%sk0' % f)
+            fk1 = sympy.Symbol('%sk1' % f)
+            out = out.subs(f(self.x0), fk0)
+            out = out.subs(f(self.x1), fk1)
             # Replace f(x) by 0.5*(f[k0] + f[k1]) (the edge midpoint)
-            out = out.subs(f(x), 0.5 * (f_vec[k0] + f_vec[k1]))
+            out = out.subs(f(x), 0.5 * (fk0 + fk1))
 
-            vector_vars.append(f_vec)
+            index_vars.append([fk0, fk1])
 
         # Replace x by 0.5*(x0 + x1) (the edge midpoint)
         out = out.subs(x, 0.5 * (self.x0 + self.x1))
@@ -156,7 +153,7 @@ class DiscretizeEdgeIntegral(object):
         # Replace n by the normalized edge
         out = out.subs(n, (self.x1 - self.x0) / self.edge_length)
 
-        return out, vector_vars
+        return out, index_vars
 
     def generic_visit(self, node):
         raise RuntimeError(
@@ -212,8 +209,6 @@ class DiscretizeEdgeIntegral(object):
 
 def discretize_linear(obj, mesh):
     u = sympy.Function('u')
-    u.nosh = True  # TODO get rid
-
     res = obj.apply(u)
 
     # See <http://docs.sympy.org/dev/modules/utilities/lambdify.html>.
@@ -224,25 +219,20 @@ def discretize_linear(obj, mesh):
     boundary_kernels = set()
     for integral in res.integrals:
         if isinstance(integral.measure, form_language.ControlVolumeSurface):
+            # discretization
             x0 = sympy.Symbol('x0')
             x1 = sympy.Symbol('x1')
-            edge_length = sympy.Symbol('edge_length')
-            edge_ce_ratio = sympy.Symbol('edge_ce_ratio')
-            expr, vector_vars = _discretize_edge_integral(
-                    integral.integrand,
-                    x0, x1,
-                    edge_length,
-                    edge_ce_ratio
-                    )
-
-            u_idx = sympy.IndexedBase('%s' % u)
-            k0 = sympy.Symbol('k0')
-            k1 = sympy.Symbol('k1')
-            uk0 = sympy.Symbol('uk0')
-            uk1 = sympy.Symbol('uk1')
-            expr = expr.subs([(u_idx[k0], uk0), (u_idx[k1], uk1)])
-            #
+            el = sympy.Symbol('edge_length')
+            er = sympy.Symbol('edge_ce_ratio')
+            expr, index_vars = _discretize_edge_integral(
+                        integral.integrand, x0, x1, el, er, [u]
+                        )
             expr = sympy.simplify(expr)
+
+            # really?
+            uk0 = index_vars[0][0]
+            uk1 = index_vars[0][1]
+
             affine0, linear0, nonlinear = split(expr, [uk0, uk1])
             assert nonlinear == 0
 
@@ -257,21 +247,11 @@ def discretize_linear(obj, mesh):
             linear = [[linear0[0], linear0[1]], [linear1[0], linear1[1]]]
             affine = [affine0, affine1]
 
-            edge_kernels.add(
-                EdgeKernel(
-                    mesh,
-                    sympy.lambdify(
-                        (x0, x1, edge_ce_ratio, edge_length),
-                        linear,
-                        modules=a2a
-                        ),
-                    sympy.lambdify(
-                        (x0, x1, edge_ce_ratio, edge_length),
-                        affine,
-                        modules=a2a
-                        )
-                    )
-                )
+            l_eval = sympy.lambdify((x0, x1, er, el), linear, modules=a2a)
+            a_eval = sympy.lambdify((x0, x1, er, el), affine, modules=a2a)
+
+            edge_kernels.add(EdgeKernel(mesh, l_eval, a_eval))
+
         elif isinstance(integral.measure, form_language.ControlVolume):
             x = sympy.DeferredVector('x')
             fx = integral.integrand(x)
