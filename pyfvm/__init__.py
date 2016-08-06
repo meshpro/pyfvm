@@ -5,7 +5,7 @@ from . import meshTri
 from . import meshTetra
 from . import reader
 
-from .discretize import *
+from .discretize_linear import *
 
 __all__ = [
     'linear_fvm_problem',
