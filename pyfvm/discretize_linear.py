@@ -233,6 +233,7 @@ def discretize_linear(obj, mesh):
             uk1 = index_vars[0][1]
 
             affine0, linear0, nonlinear = split(expr, [uk0, uk1])
+            print(nonlinear)
             assert nonlinear == 0
 
             # Turn edge around

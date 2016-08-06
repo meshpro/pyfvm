@@ -29,7 +29,7 @@ from scipy.sparse import linalg
 from sympy import sin, pi
 
 
-class Poisson(LinearFvmProblem):
+class Poisson(FvmProblem):
     def apply(self, u):
         return integrate(lambda x: -n_dot_grad(u(x)), dS) \
              - integrate(lambda x: 10 * sin(2*pi*x[0]), dV)
@@ -49,7 +49,7 @@ vertices, cells = meshzoo.rectangle.create_mesh(
         )
 mesh = pyfvm.meshTri.meshTri(vertices, cells)
 
-linear_system = pyfvm.discretize(Poisson(), mesh)
+linear_system = pyfvm.discretize_linear(Poisson(), mesh)
 
 x = linalg.spsolve(linear_system.matrix, linear_system.rhs)
 
