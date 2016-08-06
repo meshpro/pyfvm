@@ -229,14 +229,13 @@ def discretize_linear(obj, mesh):
                         )
             expr = sympy.simplify(expr)
 
-            # really?
             uk0 = index_vars[0][0]
             uk1 = index_vars[0][1]
 
             affine0, linear0, nonlinear = split(expr, [uk0, uk1])
             assert nonlinear == 0
 
-            # Turn edge around, do it again
+            # Turn edge around
             expr_turned = expr.subs(
                     {uk0: uk1, uk1: uk0, x0: x1, x1: x0},
                     simultaneous=True
