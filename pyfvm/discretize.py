@@ -25,12 +25,6 @@ class EdgeKernel(object):
         edge_ce_ratio = self.mesh.ce_ratios[edge_ids]
         edge_length = self.mesh.edge_lengths[edge_ids]
         val = numpy.array(self.coeff(x0, x1, edge_ce_ratio, edge_length, zero))
-        # if hasattr(val[0][0], '__len__'):
-        #     assert len(val[0][0]) == 1
-        #     val = [
-        #         [val[0][0][0], val[0][1][0]],
-        #         [val[1][0][0], val[1][1][0]]
-        #         ]
         return (
             val,
             numpy.array(self.affine(x0, x1, edge_ce_ratio, edge_length, zero))
@@ -283,19 +277,19 @@ def discretize_linear(obj, mesh):
                     )
                 )
         elif isinstance(integral.measure, form_language.ControlVolume):
-            # Unfortunately, it's not too easy to differentiate with respect to
-            # an IndexedBase u with index k. For this reason, we'll simply
-            # replace u[k] by a variable uk0.
             # x = sympy.MatrixSymbol('x', 3, 1)
             x = sympy.DeferredVector('x')
-            control_volume = sympy.Symbol('control_volume')
             fx = integral.integrand(x)
+
+            control_volume = sympy.Symbol('control_volume')
+
             uk0 = sympy.Symbol('uk0')
             try:
                 expr = fx.subs(u(x), uk0)
             except AttributeError:  # 'float' object has no
                 expr = fx
             expr *= control_volume
+
             affine, coeff, nonlinear = split_affine_linear_nonlinear(expr, uk0)
             assert nonlinear == 0
 
@@ -321,13 +315,11 @@ def discretize_linear(obj, mesh):
                     )
                 )
         elif isinstance(integral.measure, form_language.BoundarySurface):
-            # Unfortunately, it's not too easy to differentiate with respect to
-            # an IndexedBase u with index k. For this reason, we'll simply
-            # replace u[k] by a variable uk0.
             # x = sympy.MatrixSymbol('x', 3, 1)
             x = sympy.DeferredVector('x')
-            surface_area = sympy.Symbol('surface_area')
             fx = integral.integrand(x)
+
+            surface_area = sympy.Symbol('surface_area')
 
             uk0 = sympy.Symbol('uk0')
             try:
@@ -379,6 +371,7 @@ def discretize_linear(obj, mesh):
 
             affine, coeff, nonlinear = split_affine_linear_nonlinear(expr, uk0)
             assert nonlinear == 0
+
             rhs = - affine / coeff + zero
             dirichlet_kernels.add(
                     DirichletKernel(
