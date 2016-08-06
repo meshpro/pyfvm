@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 import numpy
-from .helpers import split_affine_linear_nonlinear
+from .helpers import split_affine_linear_nonlinear as split
 from . import form_language
 from .form_language import n
 import linear_fvm_problem
@@ -51,10 +51,6 @@ class VertexKernel(object):
     def eval(self, vertex_ids):
         control_volumes = self.mesh.control_volumes[vertex_ids]
         X = self.mesh.node_coords[vertex_ids].T
-
-        # Add "zero" to all entities. This later gets translated into
-        # np.zeros with the appropriate length, making sure that scalar
-        # terms in the lambda expression correctly return np.arrays.
         zero = numpy.zeros(len(vertex_ids))
         return (
             self.linear(control_volumes, X) + zero,
@@ -179,22 +175,22 @@ class DiscretizeEdgeIntegral(object):
             ident = repr(node)
         # Handle special functions
         if ident == 'dot':
-            assert(len(node.args) == 2)
-            assert(isinstance(node.args[0], MatrixExpr))
-            assert(isinstance(node.args[1], MatrixExpr))
+            assert len(node.args) == 2
+            assert isinstance(node.args[0], MatrixExpr)
+            assert isinstance(node.args[1], MatrixExpr)
             arg0 = self.visit(node.args[0])
             arg1 = self.visit(node.args[1])
             out = node.func(arg0, arg1)
         elif ident == 'n_dot_grad':
-            assert(len(node.args) == 1)
+            assert len(node.args) == 1
             fx = node.args[0]
             f = fx.func
-            assert(len(fx.args) == 1)
-            assert(isinstance(fx.args[0], MatrixSymbol))
+            assert len(fx.args) == 1
+            assert isinstance(fx.args[0], MatrixSymbol)
             out = (f(self.x1) - f(self.x0)) / self.edge_length
         else:
             # Default function handling: Assume one argument, e.g., A(x).
-            assert(len(node.args) == 1)
+            assert len(node.args) == 1
             arg = self.visit(node.args[0])
             out = node.func(arg)
         return out
@@ -221,7 +217,7 @@ def discretize_linear(obj, mesh):
     res = obj.apply(u)
 
     # See <http://docs.sympy.org/dev/modules/utilities/lambdify.html>.
-    array2array = [{'ImmutableMatrix': numpy.array}, 'numpy']
+    a2a = [{'ImmutableMatrix': numpy.array}, 'numpy']
 
     edge_kernels = set()
     vertex_kernels = set()
@@ -247,8 +243,7 @@ def discretize_linear(obj, mesh):
             expr = expr.subs([(u_idx[k0], uk0), (u_idx[k1], uk1)])
             #
             expr = sympy.simplify(expr)
-            affine0, linear0, nonlinear = \
-                split_affine_linear_nonlinear(expr, [uk0, uk1])
+            affine0, linear0, nonlinear = split(expr, [uk0, uk1])
             assert nonlinear == 0
 
             # Turn edge around, do it again
@@ -256,8 +251,7 @@ def discretize_linear(obj, mesh):
                     {uk0: uk1, uk1: uk0, x0: x1, x1: x0},
                     simultaneous=True
                     )
-            affine1, linear1, nonlinear = \
-                split_affine_linear_nonlinear(expr_turned, [uk0, uk1])
+            affine1, linear1, nonlinear = split(expr_turned, [uk0, uk1])
             assert nonlinear == 0
 
             linear = [[linear0[0], linear0[1]], [linear1[0], linear1[1]]]
@@ -269,80 +263,57 @@ def discretize_linear(obj, mesh):
                     sympy.lambdify(
                         (x0, x1, edge_ce_ratio, edge_length),
                         linear,
-                        modules=array2array
+                        modules=a2a
                         ),
                     sympy.lambdify(
                         (x0, x1, edge_ce_ratio, edge_length),
                         affine,
-                        modules=array2array
+                        modules=a2a
                         )
                     )
                 )
         elif isinstance(integral.measure, form_language.ControlVolume):
-            # x = sympy.MatrixSymbol('x', 3, 1)
             x = sympy.DeferredVector('x')
             fx = integral.integrand(x)
 
-            control_volume = sympy.Symbol('control_volume')
-
+            # discretization
             uk0 = sympy.Symbol('uk0')
             try:
                 expr = fx.subs(u(x), uk0)
             except AttributeError:  # 'float' object has no
                 expr = fx
+            control_volume = sympy.Symbol('control_volume')
             expr *= control_volume
 
-            affine, linear, nonlinear = \
-                split_affine_linear_nonlinear(expr, uk0)
+            affine, linear, nonlinear = split(expr, uk0)
             assert nonlinear == 0
 
-            vertex_kernels.add(
-                VertexKernel(
-                    mesh,
-                    sympy.lambdify(
-                        (control_volume, x),
-                        linear,
-                        modules=array2array
-                        ),
-                    sympy.lambdify(
-                        (control_volume, x),
-                        affine,
-                        modules=array2array
-                        )
-                    )
-                )
+            l_eval = sympy.lambdify((control_volume, x), linear, modules=a2a)
+            a_eval = sympy.lambdify((control_volume, x), affine, modules=a2a)
+
+            vertex_kernels.add(VertexKernel(mesh, l_eval, a_eval))
+
         elif isinstance(integral.measure, form_language.BoundarySurface):
-            # x = sympy.MatrixSymbol('x', 3, 1)
             x = sympy.DeferredVector('x')
             fx = integral.integrand(x)
 
-            surface_area = sympy.Symbol('surface_area')
-
+            # discretization
             uk0 = sympy.Symbol('uk0')
             try:
                 expr = fx.subs(u(x), uk0)
             except AttributeError:  # 'float' object has no
                 expr = fx
+            surface_area = sympy.Symbol('surface_area')
             expr *= surface_area
 
-            affine, coeff, nonlinear = split_affine_linear_nonlinear(expr, uk0)
+            affine, linear, nonlinear = split(expr, uk0)
             assert nonlinear == 0
 
-            boundary_kernels.add(
-                BoundaryKernel(
-                    mesh,
-                    sympy.lambdify(
-                        (surface_area, x),
-                        coeff,
-                        modules=array2array
-                        ),
-                    sympy.lambdify(
-                        (surface_area, x),
-                        affine,
-                        modules=array2array
-                        )
-                    )
-                )
+            l_eval = sympy.lambdify((surface_area, x), linear, modules=a2a)
+            a_eval = sympy.lambdify((surface_area, x), affine, modules=a2a)
+
+            boundary_kernels.add(BoundaryKernel(mesh, l_eval, a_eval))
+
         else:
             raise RuntimeError(
                     'Illegal measure type \'%s\'.' % integral.measure
@@ -360,17 +331,13 @@ def discretize_linear(obj, mesh):
             except AttributeError:  # 'float' object has no
                 expr = fx
 
-            affine, coeff, nonlinear = split_affine_linear_nonlinear(expr, uk0)
+            affine, coeff, nonlinear = split(expr, uk0)
             assert nonlinear == 0
 
             rhs = - affine / coeff
-            dirichlet_kernels.add(
-                    DirichletKernel(
-                        mesh,
-                        sympy.lambdify((x), rhs, modules=array2array),
-                        subdomain
-                        )
-                    )
+            rhs_eval = sympy.lambdify((x), rhs, modules=a2a)
+
+            dirichlet_kernels.add(DirichletKernel(mesh, rhs_eval, subdomain))
 
     return linear_fvm_problem.LinearFvmProblem(
             mesh,
