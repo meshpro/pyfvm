@@ -232,7 +232,11 @@ def discretize_linear(obj, mesh):
             uk0 = index_vars[0][0]
             uk1 = index_vars[0][1]
 
+            print(expr)
+            print(uk0, uk1)
             affine0, linear0, nonlinear = split(expr, [uk0, uk1])
+            print(affine0)
+            print(linear0)
             print(nonlinear)
             assert nonlinear == 0
 
