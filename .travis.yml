@@ -40,6 +40,6 @@ script:
 
 after_success:
   - ls -al
-  - coverage combine
+  - cat .coverage
   - coverage xml
   - bash <(curl -s https://codecov.io/bash)
