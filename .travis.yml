@@ -39,4 +39,7 @@ script:
   - nosetests --with-coverage --cover-package=pyfvm
 
 after_success:
+  - ls -al
+  - coverage combine
+  - coverage xml
   - bash <(curl -s https://codecov.io/bash)
