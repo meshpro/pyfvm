@@ -197,8 +197,8 @@ class DiscretizeEdgeIntegral(object):
         '''
         # collect the pointwise code for left and right
         args = []
-        for n in node.args:
-            ret = self.visit(n)
+        for arg in node.args:
+            ret = self.visit(arg)
             args.append(ret)
         # plug it together
         ret = operator(args[0], args[1])
