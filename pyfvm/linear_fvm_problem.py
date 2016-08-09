@@ -31,21 +31,18 @@ class LinearFvmProblem(object):
         self.matrix = self.matrix.tocsr()
 
         # Apply Dirichlet conditions.
-        dirichlet_verts = []
+        d = self.matrix.diagonal()
         for dirichlet in dirichlets:
             verts = mesh.get_vertices(dirichlet.subdomain)
-            dirichlet_verts.append(verts)
-            # Set the RHS.
-            self.rhs[verts] = dirichlet.eval(verts)
+            # Set all Dirichlet rows to 0.
+            for i in verts:
+                self.matrix.data[self.matrix.indptr[i]:self.matrix.indptr[i+1]] = 0.0
 
-        # Now set all Dirichlet rows to 0.
-        rows = numpy.concatenate(dirichlet_verts)
-        # delete rows
-        for i in rows:
-            self.matrix.data[self.matrix.indptr[i]:self.matrix.indptr[i+1]] = 0.0
-        # Set the diagonal
-        d = self.matrix.diagonal()
-        d[rows] = 1.0
+            # Set the diagonal and RHS.
+            coeff, rhs = dirichlet.eval(verts)
+            d[verts] = coeff
+            self.rhs[verts] = rhs
+
         self.matrix.setdiag(d)
 
         return

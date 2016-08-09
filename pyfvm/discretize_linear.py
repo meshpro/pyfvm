@@ -2,7 +2,6 @@
 #
 import numpy
 from . import form_language
-from .form_language import n
 import linear_fvm_problem
 import sympy
 from sympy.matrices.expressions.matexpr import MatrixExpr, MatrixSymbol
@@ -23,13 +22,10 @@ def split(expr, variables):
     # here.
     expr = expr.expand()
     affine = expr
-    print('affine ', affine)
     linear = []
     for var in variables:
-        print(var)
         linear.append(sympy.diff(expr, var).coeff(var, 0))
         affine = affine.coeff(var, n=0)
-        print('affine ', affine)
 
     # The rest is nonlinear
     nonlinear = expr - affine
@@ -112,16 +108,20 @@ class BoundaryKernel(object):
 
 
 class DirichletKernel(object):
-    def __init__(self, mesh, val, subdomain):
+    def __init__(self, mesh, coeff, rhs, subdomain):
         self.mesh = mesh
-        self.val = val
+        self.coeff = coeff
+        self.rhs = rhs
         self.subdomain = subdomain
         return
 
     def eval(self, vertex_ids):
         X = self.mesh.node_coords[vertex_ids].T
         zero = numpy.zeros(len(vertex_ids))
-        return self.val(X) + zero
+        return (
+            self.coeff(X) + zero,
+            self.rhs(X) + zero
+            )
 
 
 def _discretize_edge_integral(
@@ -186,7 +186,7 @@ class DiscretizeEdgeIntegral(object):
         out = out.subs(x, 0.5 * (self.x0 + self.x1))
 
         # Replace n by the normalized edge
-        out = out.subs(n, (self.x1 - self.x0) / self.edge_length)
+        out = out.subs(form_language.n, (self.x1 - self.x0) / self.edge_length)
 
         return out, index_vars
 
@@ -267,12 +267,7 @@ def discretize_linear(obj, mesh):
             uk0 = index_vars[0][0]
             uk1 = index_vars[0][1]
 
-            print(expr)
-            print(uk0, uk1)
             affine0, linear0, nonlinear = split(expr, [uk0, uk1])
-            print(affine0)
-            print(linear0)
-            print(nonlinear)
             assert nonlinear == 0
 
             # Turn edge around
@@ -353,10 +348,12 @@ def discretize_linear(obj, mesh):
             affine, coeff, nonlinear = split(expr, uk0)
             assert nonlinear == 0
 
-            rhs = - affine / coeff
-            rhs_eval = sympy.lambdify((x), rhs, modules=a2a)
+            coeff_eval = sympy.lambdify((x), coeff, modules=a2a)
+            rhs_eval = sympy.lambdify((x), -affine, modules=a2a)
 
-            dirichlet_kernels.add(DirichletKernel(mesh, rhs_eval, subdomain))
+            dirichlet_kernels.add(
+                DirichletKernel(mesh, coeff_eval, rhs_eval, subdomain)
+                )
 
     return linear_fvm_problem.LinearFvmProblem(
             mesh,
