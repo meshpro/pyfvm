@@ -40,7 +40,7 @@ def split(expr, variables):
     return affine, linear, nonlinear
 
 
-class EdgeKernel(object):
+class EdgeLinearKernel(object):
     def __init__(self, mesh, linear, affine):
         self.mesh = mesh
         self.linear = linear
@@ -71,7 +71,7 @@ class EdgeKernel(object):
         return (numpy.array(val), numpy.array(rhs))
 
 
-class VertexKernel(object):
+class VertexLinearKernel(object):
     def __init__(self, mesh, linear, affine):
         self.mesh = mesh
         self.linear = linear
@@ -89,7 +89,7 @@ class VertexKernel(object):
             )
 
 
-class BoundaryKernel(object):
+class BoundaryLinearKernel(object):
     def __init__(self, mesh, coeff, affine):
         self.mesh = mesh
         self.coeff = coeff
@@ -107,7 +107,7 @@ class BoundaryKernel(object):
             )
 
 
-class DirichletKernel(object):
+class DirichletLinearKernel(object):
     def __init__(self, mesh, coeff, rhs, subdomain):
         self.mesh = mesh
         self.coeff = coeff
@@ -284,7 +284,7 @@ def discretize_linear(obj, mesh):
             l_eval = sympy.lambdify((x0, x1, er, el), linear, modules=a2a)
             a_eval = sympy.lambdify((x0, x1, er, el), affine, modules=a2a)
 
-            edge_kernels.add(EdgeKernel(mesh, l_eval, a_eval))
+            edge_kernels.add(EdgeLinearKernel(mesh, l_eval, a_eval))
 
         elif isinstance(integral.measure, form_language.ControlVolume):
             x = sympy.DeferredVector('x')
@@ -305,7 +305,7 @@ def discretize_linear(obj, mesh):
             l_eval = sympy.lambdify((control_volume, x), linear, modules=a2a)
             a_eval = sympy.lambdify((control_volume, x), affine, modules=a2a)
 
-            vertex_kernels.add(VertexKernel(mesh, l_eval, a_eval))
+            vertex_kernels.add(VertexLinearKernel(mesh, l_eval, a_eval))
 
         elif isinstance(integral.measure, form_language.BoundarySurface):
             x = sympy.DeferredVector('x')
@@ -326,7 +326,7 @@ def discretize_linear(obj, mesh):
             l_eval = sympy.lambdify((surface_area, x), linear, modules=a2a)
             a_eval = sympy.lambdify((surface_area, x), affine, modules=a2a)
 
-            boundary_kernels.add(BoundaryKernel(mesh, l_eval, a_eval))
+            boundary_kernels.add(BoundaryLinearKernel(mesh, l_eval, a_eval))
 
         else:
             raise RuntimeError(
@@ -352,7 +352,7 @@ def discretize_linear(obj, mesh):
             rhs_eval = sympy.lambdify((x), -affine, modules=a2a)
 
             dirichlet_kernels.add(
-                DirichletKernel(mesh, coeff_eval, rhs_eval, subdomain)
+                DirichletLinearKernel(mesh, coeff_eval, rhs_eval, subdomain)
                 )
 
     return linear_fvm_problem.LinearFvmProblem(
