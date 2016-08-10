@@ -26,12 +26,7 @@ class Bratu(FvmProblem):
 #         25, 25, 25
 #         )
 # mesh = pyfvm.meshTetra.meshTetra(vertices, cells)
-vertices, cells = meshzoo.rectangle.create_mesh(
-        0.0, 2.0,
-        0.0, 1.0,
-        101, 51,
-        zigzag=True
-        )
+vertices, cells = meshzoo.rectangle.create_mesh(0.0, 2.0, 0.0, 1.0, 101, 51)
 mesh = pyfvm.meshTri.meshTri(vertices, cells)
 
 f, jacobian = pyfvm.discretize(Bratu(), mesh)

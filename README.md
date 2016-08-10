@@ -39,12 +39,7 @@ class Poisson(FvmProblem):
             ]
 
 # Create mesh using meshzoo
-vertices, cells = meshzoo.rectangle.create_mesh(
-        0.0, 2.0,
-        0.0, 1.0,
-        401, 201,
-        zigzag=True
-        )
+vertices, cells = meshzoo.rectangle.create_mesh(0.0, 2.0, 0.0, 1.0, 401, 201)
 mesh = pyfvm.meshTri.meshTri(vertices, cells)
 
 linear_system = pyfvm.discretize_linear(Poisson(), mesh)
@@ -92,12 +87,7 @@ class Bratu(FvmProblem):
             (u, 'boundary')
             ]
 
-vertices, cells = meshzoo.rectangle.create_mesh(
-        0.0, 2.0,
-        0.0, 1.0,
-        101, 51,
-        zigzag=True
-        )
+vertices, cells = meshzoo.rectangle.create_mesh(0.0, 2.0, 0.0, 1.0, 101, 51)
 mesh = pyfvm.meshTri.meshTri(vertices, cells)
 
 f, jacobian = pyfvm.discretize(Bratu(), mesh)
