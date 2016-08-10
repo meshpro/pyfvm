@@ -3,6 +3,7 @@ import meshzoo
 import pyfvm
 from pyfvm.form_language import *
 import numpy
+import scipy.optimize
 from sympy import exp
 
 
@@ -28,7 +29,7 @@ class Bratu(FvmProblem):
 vertices, cells = meshzoo.rectangle.create_mesh(
         0.0, 2.0,
         0.0, 1.0,
-        401, 201,
+        101, 51,
         zigzag=True
         )
 mesh = pyfvm.meshTri.meshTri(vertices, cells)
@@ -36,6 +37,7 @@ mesh = pyfvm.meshTri.meshTri(vertices, cells)
 f, jacobian = pyfvm.discretize(Bratu(), mesh)
 
 u0 = numpy.zeros(len(vertices))
-u = pyfvm.newton(f.eval, jacobian.get_matrix, u0)
+# u = pyfvm.newton(f.eval, jacobian.get_matrix, u0)
+u = scipy.optimize.newton_krylov(f.eval, u0)
 
 mesh.write('out.vtu', point_data={'u': u})

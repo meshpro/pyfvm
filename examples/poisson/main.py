@@ -61,8 +61,8 @@ mesh = pyfvm.meshTri.meshTri(coords, m.cells())
 linear_system = pyfvm.discretize_linear(Poisson(), mesh)
 
 ml = pyamg.ruge_stuben_solver(linear_system.matrix)
-x = ml.solve(linear_system.rhs, tol=1e-10)
+u = ml.solve(linear_system.rhs, tol=1e-10)
 # from scipy.sparse import linalg
-# x = linalg.spsolve(linear_system.matrix, linear_system.rhs)
+# u = linalg.spsolve(linear_system.matrix, linear_system.rhs)
 
-mesh.write('out.vtu', point_data={'x': x})
+mesh.write('out.vtu', point_data={'u': u})
