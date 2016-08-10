@@ -13,7 +13,7 @@ class TestPDEs(unittest.TestCase):
     def setUp(self):
         return
 
-    def poisson(self, mesh, alpha, beta):
+    def poisson(self, mesh, alpha, beta, gamma):
         from scipy.sparse import linalg
 
         # Define the problem
@@ -27,20 +27,16 @@ class TestPDEs(unittest.TestCase):
 
         linear_system = pyfvm.discretize_linear(Poisson(), mesh)
 
-        x = linalg.spsolve(linear_system.matrix, linear_system.rhs)
+        u = linalg.spsolve(linear_system.matrix, linear_system.rhs)
 
-        k0 = -1
-        for k, coord in enumerate(mesh.node_coords):
-            # print(coord - [0.5, 0.5, 0.0])
-            if numpy.linalg.norm(coord - [0.5, 0.5, 0.0]) < 1.0e-5:
-                k0 = k
-                break
+        norm1 = numpy.sum(mesh.control_volumes * abs(u))
+        self.assertAlmostEqual(norm1, alpha, delta=1.0e-7)
 
-        self.assertNotEqual(k0, -1)
-        self.assertAlmostEqual(x[k0], alpha, delta=1.0e-7)
+        norm2 = numpy.sqrt(numpy.sum(mesh.control_volumes * abs(u)**2))
+        self.assertAlmostEqual(norm2, beta, delta=1.0e-7)
 
-        x_dot_x = numpy.dot(x, mesh.control_volumes * x)
-        self.assertAlmostEqual(x_dot_x, beta, delta=1.0e-7)
+        norm_inf = numpy.max(abs(u))
+        self.assertAlmostEqual(norm_inf, gamma, delta=1.0e-7)
 
         return
 
@@ -54,8 +50,9 @@ class TestPDEs(unittest.TestCase):
         mesh = pyfvm.meshTri.meshTri(vertices, cells)
         self.poisson(
                 mesh,
-                0.0735267092334,
-                0.001695424171463697
+                0.03486068399064314,
+                0.041175528793977852,
+                0.073526709233390164
                 )
         return
 
@@ -68,8 +65,9 @@ class TestPDEs(unittest.TestCase):
         mesh = pyfvm.meshTetra.meshTetra(vertices, cells)
         self.poisson(
                 mesh,
-                0.0,
-                0.00061344097536402699
+                0.019193629907227189,
+                0.02476774061887816,
+                0.055797992672053209
                 )
         return
 
@@ -107,24 +105,16 @@ class TestPDEs(unittest.TestCase):
 
         linear_system = pyfvm.discretize_linear(Poisson(), mesh)
 
-        x = linalg.spsolve(linear_system.matrix, linear_system.rhs)
+        u = linalg.spsolve(linear_system.matrix, linear_system.rhs)
 
-        import meshio
-        meshio.write('test.vtu', mesh.node_coords, {'triangle':
-            mesh.cells['nodes']}, point_data={'x': x})
+        norm1 = numpy.sum(mesh.control_volumes * abs(u))
+        self.assertAlmostEqual(norm1, 0.55175078324384885, delta=1.0e-7)
 
-        k0 = -1
-        for k, coord in enumerate(mesh.node_coords):
-            # print(coord - [0.5, 0.5, 0.0])
-            if numpy.linalg.norm(coord - [0.5, 0.5, 0.0]) < 1.0e-5:
-                k0 = k
-                break
+        norm2 = numpy.sqrt(numpy.sum(mesh.control_volumes * abs(u)**2))
+        self.assertAlmostEqual(norm2, 0.65484293487538081, delta=1.0e-7)
 
-        self.assertNotEqual(k0, -1)
-        self.assertAlmostEqual(x[k0], 0.59455184740329481, delta=1.0e-7)
-
-        x_dot_x = numpy.dot(x, mesh.control_volumes * x)
-        self.assertAlmostEqual(x_dot_x, 0.42881926935620163, delta=1.0e-7)
+        norm_inf = numpy.max(abs(u))
+        self.assertAlmostEqual(norm_inf, 1.0, delta=1.0e-7)
 
         return
 
@@ -152,20 +142,16 @@ class TestPDEs(unittest.TestCase):
 
         linear_system = pyfvm.discretize_linear(Poisson(), mesh)
 
-        x = linalg.spsolve(linear_system.matrix, linear_system.rhs)
+        u = linalg.spsolve(linear_system.matrix, linear_system.rhs)
 
-        k0 = -1
-        for k, coord in enumerate(mesh.node_coords):
-            # print(coord - [0.5, 0.5, 0.0])
-            if numpy.linalg.norm(coord - [0.5, 0.5, 0.0]) < 1.0e-5:
-                k0 = k
-                break
+        norm1 = numpy.sum(mesh.control_volumes * abs(u))
+        self.assertAlmostEqual(norm1, 0.64033452662531842, delta=1.0e-7)
 
-        self.assertNotEqual(k0, -1)
-        self.assertAlmostEqual(x[k0], 0.97335485230869123, delta=1.0e-7)
+        norm2 = numpy.sqrt(numpy.sum(mesh.control_volumes * abs(u)**2))
+        self.assertAlmostEqual(norm2, 0.70515698156948536, delta=1.0e-7)
 
-        x_dot_x = numpy.dot(x, mesh.control_volumes * x)
-        self.assertAlmostEqual(x_dot_x, 0.49724636865618776, delta=1.0e-7)
+        norm_inf = numpy.max(abs(u))
+        self.assertAlmostEqual(norm_inf, 0.97335485230869012, delta=1.0e-7)
 
         return
 
@@ -197,20 +183,16 @@ class TestPDEs(unittest.TestCase):
 
         linear_system = pyfvm.discretize_linear(Poisson(), mesh)
 
-        x = linalg.spsolve(linear_system.matrix, linear_system.rhs)
+        u = linalg.spsolve(linear_system.matrix, linear_system.rhs)
 
-        k0 = -1
-        for k, coord in enumerate(mesh.node_coords):
-            # print(coord - [0.5, 0.5, 0.0])
-            if numpy.linalg.norm(coord - [0.5, 0.5, 0.0]) < 1.0e-5:
-                k0 = k
-                break
+        norm1 = numpy.sum(mesh.control_volumes * abs(u))
+        self.assertAlmostEqual(norm1, 1.4064456286297495, delta=1.0e-7)
 
-        self.assertNotEqual(k0, -1)
-        self.assertAlmostEqual(x[k0], -1.3249459366260112, delta=1.0e-7)
+        norm2 = numpy.sqrt(numpy.sum(mesh.control_volumes * abs(u)**2))
+        self.assertAlmostEqual(norm2, 1.7844944704531931, delta=1.0e-7)
 
-        x_dot_x = numpy.dot(x, mesh.control_volumes * x)
-        self.assertAlmostEqual(x_dot_x, 3.1844205150779601, delta=1.0e-7)
+        norm_inf = numpy.max(abs(u))
+        self.assertAlmostEqual(norm_inf, 3.7887143197122652, delta=1.0e-7)
 
         return
 
@@ -238,19 +220,16 @@ class TestPDEs(unittest.TestCase):
 
         linear_system = pyfvm.discretize_linear(Poisson(), mesh)
 
-        x = linalg.spsolve(linear_system.matrix, linear_system.rhs)
+        u = linalg.spsolve(linear_system.matrix, linear_system.rhs)
 
-        k0 = -1
-        for k, coord in enumerate(mesh.node_coords):
-            if numpy.linalg.norm(coord - [0.5, 0.5, 0.0]) < 1.0e-5:
-                k0 = k
-                break
+        norm1 = numpy.sum(mesh.control_volumes * abs(u))
+        self.assertAlmostEqual(norm1, 0.033893251703668408, delta=1.0e-7)
 
-        self.assertNotEqual(k0, -1)
-        self.assertAlmostEqual(x[k0], 0.07041709172659899, delta=1.0e-7)
+        norm2 = numpy.sqrt(numpy.sum(mesh.control_volumes * abs(u)**2))
+        self.assertAlmostEqual(norm2, 0.040095425713737309, delta=1.0e-7)
 
-        x_dot_x = numpy.dot(x, mesh.control_volumes * x)
-        self.assertAlmostEqual(x_dot_x, 0.0016076431631658172, delta=1.0e-7)
+        norm_inf = numpy.max(abs(u))
+        self.assertAlmostEqual(norm_inf, 0.071790294919364853, delta=1.0e-7)
 
         return
 
@@ -279,17 +258,14 @@ class TestPDEs(unittest.TestCase):
         u0 = numpy.zeros(len(vertices))
         u = pyfvm.newton(f.eval, jacobian.get_matrix, u0, verbose=False)
 
-        k0 = -1
-        for k, coord in enumerate(mesh.node_coords):
-            if numpy.linalg.norm(coord - [0.5, 0.5, 0.0]) < 1.0e-5:
-                k0 = k
-                break
+        norm1 = numpy.sum(mesh.control_volumes * abs(u))
+        self.assertAlmostEqual(norm1, 0.077809948662596773, delta=1.0e-7)
 
-        self.assertNotEqual(k0, -1)
-        self.assertAlmostEqual(u[k0], 0.16660466836481022, delta=1.0e-7)
+        norm2 = numpy.sqrt(numpy.sum(mesh.control_volumes * abs(u)**2))
+        self.assertAlmostEqual(norm2, 0.092270491605142432, delta=1.0e-7)
 
-        u_dot_u = numpy.dot(u, mesh.control_volumes * u)
-        self.assertAlmostEqual(u_dot_u, 0.0085138436210546592, delta=1.0e-7)
+        norm_inf = numpy.max(abs(u))
+        self.assertAlmostEqual(norm_inf, 0.16660466836481022, delta=1.0e-7)
 
         return
 
