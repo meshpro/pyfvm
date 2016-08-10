@@ -254,6 +254,45 @@ class TestPDEs(unittest.TestCase):
 
         return
 
+    def test_bratu(self):
+        import meshzoo
+        from sympy import exp
+
+        class Bratu(FvmProblem):
+            def apply(self, u):
+                return integrate(lambda x: - n_dot_grad(u(x)), dS) \
+                       - integrate(lambda x: 2.0 * exp(u(x)), dV)
+
+            def dirichlet(self, u):
+                return [(u, 'boundary')]
+
+        # Create mesh using meshzoo
+        vertices, cells = meshzoo.rectangle.create_mesh(
+                0.0, 1.0, 0.0, 1.0,
+                21, 21,
+                zigzag=True
+                )
+        mesh = pyfvm.meshTri.meshTri(vertices, cells)
+
+        f, jacobian = pyfvm.discretize(Bratu(), mesh)
+
+        u0 = numpy.zeros(len(vertices))
+        u = pyfvm.newton(f.eval, jacobian.get_matrix, u0, verbose=False)
+
+        k0 = -1
+        for k, coord in enumerate(mesh.node_coords):
+            if numpy.linalg.norm(coord - [0.5, 0.5, 0.0]) < 1.0e-5:
+                k0 = k
+                break
+
+        self.assertNotEqual(k0, -1)
+        self.assertAlmostEqual(u[k0], 0.16660466836481022, delta=1.0e-7)
+
+        u_dot_u = numpy.dot(u, mesh.control_volumes * u)
+        self.assertAlmostEqual(u_dot_u, 0.0085138436210546592, delta=1.0e-7)
+
+        return
+
 
 if __name__ == '__main__':
     unittest.main()

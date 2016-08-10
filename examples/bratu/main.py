@@ -33,9 +33,9 @@ vertices, cells = meshzoo.rectangle.create_mesh(
         )
 mesh = pyfvm.meshTri.meshTri(vertices, cells)
 
-residual, jacobian = pyfvm.discretize(Bratu(), mesh)
+f, jacobian = pyfvm.discretize(Bratu(), mesh)
 
 u0 = numpy.zeros(len(vertices))
-u = pyfvm.newton(mesh, residual, jacobian, u0)
+u = pyfvm.newton(f.eval, jacobian.get_matrix, u0)
 
 mesh.write('out.vtu', point_data={'u': u})
