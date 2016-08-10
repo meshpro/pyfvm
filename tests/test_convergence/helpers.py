@@ -1,14 +1,12 @@
 # -*- coding: utf-8 -*-
 from matplotlib import pyplot as plt
 import numpy
-import pyamg
 import pyfvm
 import sympy
-from scipy.sparse import linalg
 
 
 def perform_convergence_tests(
-        problem, exact_sol, get_mesh, rng, verbose=False
+        problem, exact_sol, get_mesh, solver, rng, verbose=False
         ):
     n = len(rng)
     H = numpy.empty(n)
@@ -40,12 +38,10 @@ def perform_convergence_tests(
 
         linear_system = pyfvm.discretize_linear(problem, mesh)
 
-        # x = linalg.spsolve(linear_system.matrix, linear_system.rhs)
-        ml = pyamg.ruge_stuben_solver(linear_system.matrix)
-        x = ml.solve(linear_system.rhs, tol=1e-10)
+        u = solver(linear_system)
 
         zero = numpy.zeros(len(mesh.node_coords))
-        error = x - exact_eval(mesh.node_coords.T, zero)
+        error = u - exact_eval(mesh.node_coords.T, zero)
 
         # import meshio
         # meshio.write(

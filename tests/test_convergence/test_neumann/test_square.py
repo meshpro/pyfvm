@@ -3,6 +3,7 @@ import helpers
 import pyfvm
 from pyfvm.form_language import *
 import meshzoo
+import pyamg
 from sympy import sin, cos, pi
 import unittest
 
@@ -48,10 +49,16 @@ class ConvergenceNeumann2dSquareTest(unittest.TestCase):
 
     @staticmethod
     def solve(verbose=False):
+        def solver(linear_system):
+            ml = pyamg.ruge_stuben_solver(linear_system.matrix)
+            u = ml.solve(linear_system.rhs, tol=1e-10)
+            return u
+
         return helpers.perform_convergence_tests(
             Neumann(),
             exact_sol,
             get_mesh,
+            solver,
             range(6),
             verbose=verbose
             )

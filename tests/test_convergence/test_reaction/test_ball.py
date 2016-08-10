@@ -2,6 +2,7 @@
 import mshr
 import dolfin
 import helpers
+import pyamg
 import pyfvm
 from pyfvm.form_language import *
 from sympy import pi, sin, cos
@@ -46,10 +47,16 @@ class ConvergenceReaction3dBallTest(unittest.TestCase):
 
     @staticmethod
     def solve(verbose=False):
+        def solver(linear_system):
+            ml = pyamg.ruge_stuben_solver(linear_system.matrix)
+            u = ml.solve(linear_system.rhs, tol=1e-10)
+            return u
+
         return helpers.perform_convergence_tests(
             Reaction(),
             exact_sol,
             get_mesh,
+            solver,
             range(3),
             verbose=verbose
             )

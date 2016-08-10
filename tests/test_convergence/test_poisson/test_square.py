@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import helpers
+import pyamg
 import pyfvm
 from pyfvm.form_language import *
 import meshzoo
@@ -40,10 +41,17 @@ class ConvergencePoisson2dSquareTest(unittest.TestCase):
 
     @staticmethod
     def solve(verbose=False):
+        def solver(linear_system):
+            # u = linalg.spsolve(linear_system.matrix, linear_system.rhs)
+            ml = pyamg.ruge_stuben_solver(linear_system.matrix)
+            u = ml.solve(linear_system.rhs, tol=1e-10)
+            return u
+
         return helpers.perform_convergence_tests(
             Poisson(),
             exact_sol,
             get_mesh,
+            solver,
             range(6),
             verbose=verbose
             )
