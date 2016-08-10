@@ -6,7 +6,7 @@ import sympy
 
 
 def perform_convergence_tests(
-        problem, exact_sol, get_mesh, solver, rng, verbose=False
+        discrete_solver, exact_sol, get_mesh, rng, verbose=False
         ):
     n = len(rng)
     H = numpy.empty(n)
@@ -36,9 +36,7 @@ def perform_convergence_tests(
         mesh = get_mesh(k)
         H[k] = max(mesh.edge_lengths)
 
-        linear_system = pyfvm.discretize_linear(problem, mesh)
-
-        u = solver(linear_system)
+        u = discrete_solver(mesh)
 
         zero = numpy.zeros(len(mesh.node_coords))
         error = u - exact_eval(mesh.node_coords.T, zero)

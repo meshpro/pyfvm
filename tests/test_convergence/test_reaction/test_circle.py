@@ -48,16 +48,16 @@ class ConvergenceReaction2dCircleTest(unittest.TestCase):
 
     @staticmethod
     def solve(verbose=False):
-        def solver(linear_system):
+        def solver(mesh):
+            linear_system = pyfvm.discretize_linear(Reaction(), mesh)
             ml = pyamg.ruge_stuben_solver(linear_system.matrix)
             u = ml.solve(linear_system.rhs, tol=1e-10)
             return u
 
         return helpers.perform_convergence_tests(
-            Reaction(),
+            solver,
             exact_sol,
             get_mesh,
-            solver,
             range(7),
             verbose=verbose
             )
