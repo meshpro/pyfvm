@@ -4,6 +4,7 @@ import numpy
 from . import form_language
 from .discretize_linear import _discretize_edge_integral
 import fvm_problem
+import jacobian
 import sympy
 
 
@@ -21,10 +22,10 @@ class EdgeKernel(object):
         x1 = X[:, 1, :].T
         edge_ce_ratio = self.mesh.ce_ratios[edge_ids]
         edge_length = self.mesh.edge_lengths[edge_ids]
-        return self.val(
-            u[edge_nodes[0]], u[edge_nodes[1]],
+        return numpy.array(self.val(
+            u[edge_nodes[:, 0]], u[edge_nodes[:, 1]],
             x0, x1, edge_ce_ratio, edge_length
-            )
+            ))
 
 
 class VertexKernel(object):
@@ -61,8 +62,10 @@ class DirichletKernel(object):
         return
 
     def eval(self, u, vertex_ids):
+        assert len(u) == len(vertex_ids)
         X = self.mesh.node_coords[vertex_ids].T
-        return self.val(u, X)
+        out = self.val(u, X)
+        return out
 
 
 def discretize(obj, mesh):
@@ -75,6 +78,10 @@ def discretize(obj, mesh):
     edge_kernels = set()
     vertex_kernels = set()
     boundary_kernels = set()
+
+    jacobian_edge_kernels = set()
+    jacobian_vertex_kernels = set()
+    jacobian_boundary_kernels = set()
     for integral in res.integrals:
         if isinstance(integral.measure, form_language.ControlVolumeSurface):
             # discretization
@@ -98,8 +105,16 @@ def discretize(obj, mesh):
             val = sympy.lambdify(
                 (uk0, uk1, x0, x1, er, el), [expr, expr_turned], modules=a2a
                 )
-
             edge_kernels.add(EdgeKernel(mesh, val))
+
+            # Linearization
+            expr_lin0 = [sympy.diff(expr, var) for var in [uk0, uk1]]
+            expr_lin1 = [sympy.diff(expr_turned, var) for var in [uk0, uk1]]
+            val_lin = sympy.lambdify(
+                (uk0, uk1, x0, x1, er, el), [expr_lin0, expr_lin1], modules=a2a
+                )
+
+            jacobian_edge_kernels.add(EdgeKernel(mesh, val_lin))
 
         elif isinstance(integral.measure, form_language.ControlVolume):
             x = sympy.DeferredVector('x')
@@ -118,6 +133,13 @@ def discretize(obj, mesh):
 
             vertex_kernels.add(VertexKernel(mesh, val))
 
+            # Linearization
+            expr_lin = sympy.diff(expr, uk0)
+            val_lin = sympy.lambdify(
+                (uk0, control_volume, x), expr_lin, modules=a2a
+                )
+            jacobian_vertex_kernels.add(VertexKernel(mesh, val_lin))
+
         elif isinstance(integral.measure, form_language.BoundarySurface):
             x = sympy.DeferredVector('x')
             fx = integral.integrand(x)
@@ -135,12 +157,20 @@ def discretize(obj, mesh):
 
             boundary_kernels.add(BoundaryKernel(mesh, val))
 
+            # Linearization
+            expr_lin = sympy.diff(expr, uk0)
+            val_lin = sympy.lambdify(
+                (uk0, surface_area, x), expr_lin, modules=a2a
+                )
+            jacobian_boundary_kernels.add(BoundaryKernel(mesh, val_lin))
+
         else:
             raise RuntimeError(
                     'Illegal measure type \'%s\'.' % integral.measure
                     )
 
     dirichlet_kernels = set()
+    jacobian_dirichlet_kernels = set()
     dirichlet = getattr(obj, 'dirichlet', None)
     if callable(dirichlet):
         u = sympy.Function('u')
@@ -156,7 +186,24 @@ def discretize(obj, mesh):
 
             dirichlet_kernels.add(DirichletKernel(mesh, val, subdomain))
 
-    return fvm_problem.FvmProblem(
+            # Linearization
+            expr_lin = sympy.diff(expr, uk0)
+            val_lin = sympy.lambdify((uk0, x), expr_lin, modules=a2a)
+            jacobian_dirichlet_kernels.add(
+                    DirichletKernel(mesh, val_lin, subdomain)
+                    )
+
+    residual = fvm_problem.FvmProblem(
             mesh,
             edge_kernels, vertex_kernels, boundary_kernels, dirichlet_kernels
             )
+
+    jac = jacobian.Jacobian(
+            mesh,
+            jacobian_edge_kernels,
+            jacobian_vertex_kernels,
+            jacobian_boundary_kernels,
+            jacobian_dirichlet_kernels
+            )
+
+    return residual, jac

@@ -8,6 +8,7 @@ from . import reader
 
 from .discretize_linear import *
 from .discretize import *
+from .nonlinear_methods import *
 
 __all__ = [
     'fvm_problem',

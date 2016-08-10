@@ -2,6 +2,7 @@
 import meshzoo
 import pyfvm
 from pyfvm.form_language import *
+import numpy
 from sympy import exp
 
 
@@ -32,4 +33,9 @@ vertices, cells = meshzoo.rectangle.create_mesh(
         )
 mesh = pyfvm.meshTri.meshTri(vertices, cells)
 
-eval_obj = pyfvm.discretize(Bratu(), mesh)
+residual, jacobian = pyfvm.discretize(Bratu(), mesh)
+
+u0 = numpy.zeros(len(vertices))
+u = pyfvm.newton(mesh, residual, jacobian, u0)
+
+mesh.write('out.vtu', point_data={'u': u})

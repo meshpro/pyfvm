@@ -17,32 +17,32 @@ class FvmProblem(object):
         self.dirichlets = dirichlets
         return
 
-    def eval(self, x):
+    def eval(self, u):
 
-        out = numpy.zeros_like(x)
+        out = numpy.zeros_like(u)
 
         for edge_kernel in self.edge_kernels:
             for subdomain in edge_kernel.subdomains:
-                edges = mesh.get_edges(subdomain)
-                edge_nodes = mesh.edges['nodes'][edges]
+                edges = self.mesh.get_edges(subdomain)
+                edge_nodes = self.mesh.edges['nodes'][edges].T
                 numpy.add.at(
                         out,
                         edge_nodes,
-                        edge_kernel.eval(x, edges)
+                        edge_kernel.eval(u, edges)
                         )
 
         for vertex_kernel in self.vertex_kernels:
             for subdomain in vertex_kernel.subdomains:
-                verts = mesh.get_vertices(subdomain)
-                out[verts] += vertex_kernel.eval(x, verts)
+                verts = self.mesh.get_vertices(subdomain)
+                out[verts] += vertex_kernel.eval(u, verts)
 
         for boundary_kernel in self.boundary_kernels:
             for subdomain in boundary_kernel.subdomains:
-                verts = mesh.get_vertices(subdomain)
-                out[verts] += boundary_kernel.eval(x, verts)
+                verts = self.mesh.get_vertices(subdomain)
+                out[verts] += boundary_kernel.eval(u, verts)
 
-        for dirichlet in dirichlets:
-            verts = mesh.get_vertices(dirichlet.subdomain)
-            out[verts] = dirichlet.eval(x, verts)
+        for dirichlet in self.dirichlets:
+            verts = self.mesh.get_vertices(dirichlet.subdomain)
+            out[verts] = dirichlet.eval(u[verts], verts)
 
-        return
+        return out
