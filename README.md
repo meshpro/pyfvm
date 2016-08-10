@@ -23,8 +23,8 @@ Dirichlet boundary conditions, simply do
 ```python
 import pyfvm
 from pyfvm.form_language import *
+import meshzoo
 from scipy.sparse import linalg
-from sympy import sin, pi
 
 
 class Poisson(FvmProblem):
@@ -33,10 +33,7 @@ class Poisson(FvmProblem):
              - integrate(lambda x: 1.0, dV)
 
     def dirichlet(self, u):
-        return [
-            (lambda x: u(x) - 0.0, Gamma0()),
-            (lambda x: u(x) - 1.0, Gamma1())
-            ]
+        return [(lambda x: u(x) - 0.0, 'boundary')]
 
 # Create mesh using meshzoo
 vertices, cells = meshzoo.rectangle.create_mesh(0.0, 2.0, 0.0, 1.0, 401, 201)
@@ -69,10 +66,9 @@ More examples are contained in the [examples directory](examples/).
 Nonlinear systems are treated almost equally; only the discretization and
 obviously the solver call is different. For Bratu's problem:
 ```python
-# -*- coding: utf-8 -*-
-import meshzoo
 import pyfvm
 from pyfvm.form_language import *
+import meshzoo
 import numpy
 from sympy import exp
 
@@ -133,7 +129,7 @@ To create a new release
 
 2. publish to PyPi and GitHub:
     ```
-    $ make publish
+    make publish
     ```
 
 ### License
