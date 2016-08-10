@@ -83,9 +83,7 @@ class Bratu(FvmProblem):
              - integrate(lambda x: 2.0 * exp(u(x)), dV)
 
     def dirichlet(self, u):
-        return [
-            (u, 'boundary')
-            ]
+        return [(u, 'boundary')]
 
 vertices, cells = meshzoo.rectangle.create_mesh(0.0, 2.0, 0.0, 1.0, 101, 51)
 mesh = pyfvm.meshTri.meshTri(vertices, cells)

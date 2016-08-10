@@ -13,9 +13,7 @@ class Bratu(FvmProblem):
              - integrate(lambda x: 2.0 * exp(u(x)), dV)
 
     def dirichlet(self, u):
-        return [
-            (u, 'boundary')
-            ]
+        return [(u, 'boundary')]
 
 # # Read the mesh from file
 # mesh, _, _ = pyfvm.reader.read('circle.vtu')
