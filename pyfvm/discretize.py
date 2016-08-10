@@ -22,10 +22,11 @@ class EdgeKernel(object):
         x1 = X[:, 1, :].T
         edge_ce_ratio = self.mesh.ce_ratios[edge_ids]
         edge_length = self.mesh.edge_lengths[edge_ids]
+        zero = numpy.zeros((2, len(edge_ids)))
         return numpy.array(self.val(
             u[edge_nodes[:, 0]], u[edge_nodes[:, 1]],
             x0, x1, edge_ce_ratio, edge_length
-            ))
+            )) + zero
 
 
 class VertexKernel(object):
@@ -38,7 +39,8 @@ class VertexKernel(object):
     def eval(self, u, vertex_ids):
         control_volumes = self.mesh.control_volumes[vertex_ids]
         X = self.mesh.node_coords[vertex_ids].T
-        return self.val(u, control_volumes, X)
+        zero = numpy.zeros(len(vertex_ids))
+        return self.val(u, control_volumes, X) + zero
 
 
 class BoundaryKernel(object):
@@ -51,7 +53,8 @@ class BoundaryKernel(object):
     def eval(self, u, vertex_ids):
         surface_areas = self.mesh.surface_areas[vertex_ids]
         X = self.mesh.node_coords[vertex_ids].T
-        return self.val(u, x, surface_areas, X)
+        zero = numpy.zeros(len(vertex_ids))
+        return self.val(u, x, surface_areas, X) + zero
 
 
 class DirichletKernel(object):
@@ -64,8 +67,8 @@ class DirichletKernel(object):
     def eval(self, u, vertex_ids):
         assert len(u) == len(vertex_ids)
         X = self.mesh.node_coords[vertex_ids].T
-        out = self.val(u, X)
-        return out
+        zero = numpy.zeros(len(vertex_ids))
+        return self.val(u, X) + zero
 
 
 def discretize(obj, mesh):
