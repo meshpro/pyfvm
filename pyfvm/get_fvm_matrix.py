@@ -4,17 +4,10 @@ import numpy
 from scipy import sparse
 
 
-class FvmMatrix(object):
-    def __init__(
-            self,
+def get_fvm_matrix(
             mesh,
             edge_kernels, vertex_kernels, boundary_kernels, dirichlets
             ):
-        self.mesh = mesh
-        self.edge_kernels = edge_kernels
-        self.vertex_kernels = vertex_kernels
-        self.boundary_kernels = boundary_kernels
-        self.dirichlets = dirichlets
 
         V, I, J = _get_VIJ(
                 mesh,
@@ -25,24 +18,24 @@ class FvmMatrix(object):
 
         # One unknown per vertex
         n = len(mesh.node_coords)
-        self.matrix = sparse.coo_matrix((V, (I, J)), shape=(n, n))
+        matrix = sparse.coo_matrix((V, (I, J)), shape=(n, n))
         # Transform to CSR format for efficiency
-        self.matrix = self.matrix.tocsr()
+        matrix = matrix.tocsr()
 
         # Apply Dirichlet conditions.
-        d = self.matrix.diagonal()
+        d = matrix.diagonal()
         for dirichlet in dirichlets:
             verts = mesh.get_vertices(dirichlet.subdomain)
             # Set all Dirichlet rows to 0.
             for i in verts:
-                self.matrix.data[self.matrix.indptr[i]:self.matrix.indptr[i+1]] = 0.0
+                matrix.data[matrix.indptr[i]:matrix.indptr[i+1]] = 0.0
 
             # Set the diagonal and RHS.
             d[verts] = dirichlet.eval(mesh, verts)
 
-        self.matrix.setdiag(d)
+        matrix.setdiag(d)
 
-        return
+        return matrix
 
 
 def _get_VIJ(

@@ -8,8 +8,6 @@ import numpy
 
 class EnergyEdgeKernel(object):
     def __init__(self):
-        mu = 0.1
-        self.magnetic_field = mu * numpy.array([0.0, 0.0, 1.0])
         self.subdomains = ['everywhere']
         return
 
@@ -21,13 +19,7 @@ class EnergyEdgeKernel(object):
         edge = x1 - x0
         edge_ce_ratio = mesh.ce_ratios[edge_ids]
 
-        # project the magnetic potential on the edge at the midpoint
-        magnetic_potential = \
-            0.5 * numpy.cross(self.magnetic_field, edge_midpoint.T).T
-
-        # The dot product <magnetic_potential, edge>, executed for many points
-        # at once; cf. <http://stackoverflow.com/a/26168677/353337>.
-        beta = numpy.einsum('ij, ij->i', magnetic_potential.T, edge.T)
+        beta = 1.0
 
         return numpy.array([
             [edge_ce_ratio, -edge_ce_ratio * numpy.exp(1j * beta)],
@@ -37,11 +29,11 @@ class EnergyEdgeKernel(object):
 vertices, cells = meshzoo.rectangle.create_mesh(0.0, 2.0, 0.0, 1.0, 101, 51)
 mesh = pyfvm.meshTri.meshTri(vertices, cells)
 
-matrix = pyfvm.FvmMatrix(mesh, [EnergyEdgeKernel()], [], [], [])
+matrix = pyfvm.get_fvm_matrix(mesh, [EnergyEdgeKernel()], [], [], [])
 rhs = mesh.control_volumes.copy()
 
 # Smoothed aggregation.
-sa = pyamg.smoothed_aggregation_solver(matrix.matrix, smooth='energy')
+sa = pyamg.smoothed_aggregation_solver(matrix, smooth='energy')
 u = sa.solve(rhs, tol=1e-10)
 
 # Cannot write complex data ot VTU; split real and imaginary parts first.
