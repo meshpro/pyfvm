@@ -29,5 +29,5 @@ sa = pyamg.smoothed_aggregation_solver(matrix, smooth='energy')
 u = sa.solve(rhs, tol=1e-10)
 
 # Cannot write complex data ot VTU; split real and imaginary parts first.
-u2 = numpy.dstack((u.real, u.imag))[0]
-mesh.write('out.vtu', point_data={'u': u2})
+# <http://stackoverflow.com/a/38902227/353337>
+mesh.write('out.vtu', point_data={'u': u.view('(2,)float')})

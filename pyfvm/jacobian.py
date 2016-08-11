@@ -54,8 +54,6 @@ def _get_VIJ(
     V = []
     I = []
     J = []
-    rhs_V = []
-    rhs_I = []
 
     for edge_kernel in edge_kernels:
         for subdomain in edge_kernel.subdomains:
@@ -87,7 +85,6 @@ def _get_VIJ(
             J.append(edge_nodes[:, 1])
             J.append(edge_nodes[:, 0])
             J.append(edge_nodes[:, 1])
-
 
     for vertex_kernel in vertex_kernels:
         for subdomain in vertex_kernel.subdomains:

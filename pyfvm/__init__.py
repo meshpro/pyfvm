@@ -9,7 +9,7 @@ from . import reader
 from .discretize_linear import *
 from .discretize import *
 from .nonlinear_methods import *
-from .get_fvm_matrix import get_fvm_matrix
+from .fvm_matrix import *
 
 __all__ = [
     'fvm_problem',

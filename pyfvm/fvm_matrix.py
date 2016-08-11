@@ -3,6 +3,14 @@
 import numpy
 from scipy import sparse
 
+from . import form_language
+
+
+class EdgeMatrixKernel(form_language.KernelList):
+    def __init__(self):
+        super(EdgeMatrixKernel, self).__init__([], [self])
+        return
+
 
 def get_fvm_matrix(
             mesh,

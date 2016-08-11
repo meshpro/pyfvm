@@ -41,19 +41,18 @@ def split(expr, variables):
 
 
 class EdgeLinearKernel(object):
-    def __init__(self, mesh, linear, affine):
-        self.mesh = mesh
+    def __init__(self, linear, affine):
         self.linear = linear
         self.affine = affine
         self.subdomains = ['everywhere']
         return
 
-    def eval(self, edge_ids):
-        X = self.mesh.node_coords[self.mesh.edges['nodes'][edge_ids]]
+    def eval(self, mesh, edge_ids):
+        X = mesh.node_coords[mesh.edges['nodes'][edge_ids]]
         x0 = X[:, 0, :].T
         x1 = X[:, 1, :].T
-        edge_ce_ratio = self.mesh.ce_ratios[edge_ids]
-        edge_length = self.mesh.edge_lengths[edge_ids]
+        edge_ce_ratio = mesh.ce_ratios[edge_ids]
+        edge_length = mesh.edge_lengths[edge_ids]
         # Add "zero" to all entities. This later gets translated into
         # np.zeros with the appropriate length, making sure that scalar
         # terms in the lambda expression correctly return np.arrays.

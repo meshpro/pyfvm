@@ -36,25 +36,24 @@ class FunctionParameter(sympy.Function):
 
 class KernelList(object):
     '''A kernel is an entity that can occur in a the definition of `apply()` for
-    an operator. That's either an Integral or an FvmMatrix.
+    an operator. That's either an Integral or a Kernel.
     The purpose of organizing them into a KernelList is to make it possible to
     "add" kernels, which eventually comes down to just collecting the kernels
     into a list.
     '''
-    def __init__(self, integrals, fvm_matrices=None):
+    def __init__(self, integrals, kernels=None):
         self.integrals = integrals
-        if fvm_matrices is None:
-            fvm_matrices = []
-        self.fvm_matrices = fvm_matrices
+        self.kernels = [] if kernels is None else kernels
+        return
 
     def __add__(self, other):
         self.integrals.extend(other.integrals)
-        self.fvm_matrices.extend(other.fvm_matrices)
+        self.kernels.extend(other.kernels)
         return self
 
     def __sub__(self, other):
-        if other.fvm_matrices:
-            raise NotImplementedError('Cannot negate FvmMatrices yet.')
+        if other.kernels:
+            raise NotImplementedError('Cannot negate kernels yet.')
         # flip the sign on the integrand of all 'other' kernels
         new_integrals = [Integral(
                 lambda x: -integral.integrand(x),
@@ -68,8 +67,8 @@ class KernelList(object):
         return self
 
     def __neg__(self):
-        if self.fvm_matrices:
-            raise NotImplementedError('Cannot negate FvmMatrices yet.')
+        if self.kernels:
+            raise NotImplementedError('Cannot negate kernels yet.')
         # flip the sign on the integrand of all 'self' kernels
         new_integrals = [Integral(
                 lambda x: -integral.integrand(x),
@@ -80,8 +79,8 @@ class KernelList(object):
         return self
 
     def __mul__(self, other):
-        if self.fvm_matrices:
-            raise NotImplementedError('Cannot multiply FvmMatrices yet.')
+        if self.kernels:
+            raise NotImplementedError('Cannot multiply kernels yet.')
         assert(isinstance(other, float) or isinstance(other, int))
         # flip the sign on the integrand of all 'self' kernels
         new_integrals = [Integral(
@@ -93,15 +92,6 @@ class KernelList(object):
         return self
 
     __rmul__ = __mul__
-
-
-class FvmMatrix(Callable, KernelList):
-    # By default: No Dirichlet conditions.
-    dirichlet = []
-
-    def __init__(self, arg):
-        KernelList.__init__(self, [], [self])
-        return
 
 
 class FvmProblem(object):
