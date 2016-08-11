@@ -54,21 +54,24 @@ class EdgeLinearKernel(object):
         x1 = X[:, 1, :].T
         edge_ce_ratio = self.mesh.ce_ratios[edge_ids]
         edge_length = self.mesh.edge_lengths[edge_ids]
-        val = self.linear(x0, x1, edge_ce_ratio, edge_length)
-        rhs = self.affine(x0, x1, edge_ce_ratio, edge_length)
-
         # Add "zero" to all entities. This later gets translated into
         # np.zeros with the appropriate length, making sure that scalar
         # terms in the lambda expression correctly return np.arrays.
         zero = numpy.zeros(len(edge_ids))
+
+        val = self.linear(x0, x1, edge_ce_ratio, edge_length)
         val[0][0] += zero
         val[0][1] += zero
         val[1][0] += zero
         val[1][1] += zero
+        val = numpy.array(val)
+
+        rhs = self.affine(x0, x1, edge_ce_ratio, edge_length)
         rhs[0] += zero
         rhs[1] += zero
+        rhs = numpy.array(rhs)
 
-        return (numpy.array(val), numpy.array(rhs))
+        return (val, rhs)
 
 
 class VertexLinearKernel(object):
