@@ -164,9 +164,12 @@ class DiscretizeEdgeIntegral(object):
 
         raise RuntimeError('Unknown node type \"', type(node), '\".')
 
-    def generate(self, node, index_functions=[]):
+    def generate(self, node, index_functions=None):
         '''Entrance point to this class.
         '''
+        if index_functions is None:
+            index_functions = []
+
         x = sympy.MatrixSymbol('x', 3, 1)
         expr = node(x)
 
