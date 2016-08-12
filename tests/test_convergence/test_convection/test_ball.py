@@ -4,8 +4,8 @@ import dolfin
 import helpers
 import pyamg
 import pyfvm
-from pyfvm.form_language import *
-from sympy import pi, sin, cos
+from pyfvm.form_language import integrate, n_dot_grad, dS, dV, dot, n
+from sympy import pi, sin, cos, Matrix
 import unittest
 
 
@@ -13,12 +13,12 @@ def exact_sol(x):
     return cos(pi/2 * (x[0]**2 + x[1]**2 + x[2]**2))
 
 
-class Convection(FvmProblem):
+class Convection(object):
     def apply(self, u):
         a0 = 2
         a1 = 1
         a2 = 3
-        a = sympy.Matrix([a0, a1, a2])
+        a = Matrix([a0, a1, a2])
 
         def rhs(x):
             z = pi/2 * (x[0]**2 + x[1]**2 + x[2]**2)

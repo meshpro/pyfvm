@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 #
-import os
 import numpy
+import sympy
 import unittest
 
 import pyfvm
-from pyfvm.form_language import *
+from pyfvm.form_language import integrate, n_dot_grad, \
+        dS, dV, dGamma, Subdomain, dot, n
 
 
 class TestPDEs(unittest.TestCase):
@@ -17,7 +18,7 @@ class TestPDEs(unittest.TestCase):
         from scipy.sparse import linalg
 
         # Define the problem
-        class Poisson(FvmProblem):
+        class Poisson(object):
             def apply(self, u):
                 return integrate(lambda x: - n_dot_grad(u(x)), dS) \
                        - integrate(lambda x: 1.0, dV)
@@ -84,7 +85,7 @@ class TestPDEs(unittest.TestCase):
             is_boundary_only = True
 
         # Define the problem
-        class Poisson(FvmProblem):
+        class Poisson(object):
             def apply(self, u):
                 return integrate(lambda x: -n_dot_grad(u(x)), dS) \
                        - integrate(lambda x: 1.0, dV)
@@ -123,7 +124,7 @@ class TestPDEs(unittest.TestCase):
         from scipy.sparse import linalg
 
         # Define the problem
-        class Poisson(FvmProblem):
+        class Poisson(object):
             def apply(self, u):
                 return integrate(lambda x: - 1.0e-2 * n_dot_grad(u(x)), dS) \
                        + integrate(lambda x: u(x), dV) \
@@ -164,7 +165,7 @@ class TestPDEs(unittest.TestCase):
             is_boundary_only = True
 
         # Define the problem
-        class Poisson(FvmProblem):
+        class Poisson(object):
             def apply(self, u):
                 return integrate(lambda x: - n_dot_grad(u(x)), dS) \
                        + integrate(lambda x: 3.0, dGamma) \
@@ -201,11 +202,13 @@ class TestPDEs(unittest.TestCase):
         from scipy.sparse import linalg
 
         # Define the problem
-        class Poisson(FvmProblem):
+        class Poisson(object):
             def apply(self, u):
                 a = sympy.Matrix([2, 1, 0])
-                return integrate(lambda x: - n_dot_grad(u(x)) + dot(a.T, n) * u(x), dS) - \
-                       integrate(lambda x: 1.0, dV)
+                return integrate(
+                        lambda x: - n_dot_grad(u(x)) + dot(a.T, n) * u(x), dS
+                        ) \
+                    - integrate(lambda x: 1.0, dV)
 
             def dirichlet(self, u):
                 return [(u, 'boundary')]
@@ -237,7 +240,7 @@ class TestPDEs(unittest.TestCase):
         import meshzoo
         from sympy import exp
 
-        class Bratu(FvmProblem):
+        class Bratu(object):
             def apply(self, u):
                 return integrate(lambda x: - n_dot_grad(u(x)), dS) \
                        - integrate(lambda x: 2.0 * exp(u(x)), dV)
@@ -256,7 +259,7 @@ class TestPDEs(unittest.TestCase):
         f, jacobian = pyfvm.discretize(Bratu(), mesh)
 
         u0 = numpy.zeros(len(vertices))
-        u = pyfvm.newton(f.eval, jacobian.get_matrix, u0, verbose=False)
+        u = pyfvm.newton(f.eval, jacobian.get_linear_operator, u0, verbose=False)
 
         norm1 = numpy.sum(mesh.control_volumes * abs(u))
         self.assertAlmostEqual(norm1, 0.077809948662596773, delta=1.0e-7)

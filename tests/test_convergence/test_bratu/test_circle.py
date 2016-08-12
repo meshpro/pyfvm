@@ -4,7 +4,7 @@ import helpers
 import numpy
 import mshr
 import pyfvm
-from pyfvm.form_language import *
+from pyfvm.form_language import integrate, n_dot_grad, dS, dV
 from sympy import pi, sin, cos, exp
 import unittest
 
@@ -13,7 +13,7 @@ def exact_sol(x):
     return cos(pi/2 * (x[0]**2 + x[1]**2))
 
 
-class Bratu(FvmProblem):
+class Bratu(object):
     def apply(self, u):
         def rhs(x):
             z = pi/2 * (x[0]**2 + x[1]**2)
@@ -50,7 +50,7 @@ class ConvergenceBratu2dCircleTest(unittest.TestCase):
         def solver(mesh):
             f, jacobian = pyfvm.discretize(Bratu(), mesh)
             u0 = numpy.zeros(len(mesh.node_coords))
-            u = pyfvm.newton(f.eval, jacobian.get_matrix, u0, verbose=False)
+            u = pyfvm.newton(f.eval, jacobian.get_linear_operator, u0, verbose=False)
             return u
 
         return helpers.perform_convergence_tests(

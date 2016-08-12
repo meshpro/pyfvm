@@ -5,7 +5,7 @@ import numpy
 import mshr
 import pyamg
 import pyfvm
-from pyfvm.form_language import *
+from pyfvm.form_language import integrate, n_dot_grad, dS, dV
 from sympy import pi, sin, cos
 import unittest
 
@@ -14,7 +14,7 @@ def exact_sol(x):
     return cos(pi/2 * (x[0]**2 + x[1]**2))
 
 
-class Poisson(FvmProblem):
+class Poisson(object):
     def apply(self, u):
         def rhs(x):
             z = pi/2 * (x[0]**2 + x[1]**2)

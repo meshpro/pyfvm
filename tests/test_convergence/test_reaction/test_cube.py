@@ -2,7 +2,7 @@
 import helpers
 import pyamg
 import pyfvm
-from pyfvm.form_language import *
+from pyfvm.form_language import integrate, n_dot_grad, dS, dV
 import meshzoo
 from sympy import pi, sin
 import unittest
@@ -12,7 +12,7 @@ def exact_sol(x):
     return sin(pi*x[0]) * sin(pi*x[1]) * sin(pi*x[2])
 
 
-class Reaction(FvmProblem):
+class Reaction(object):
     def apply(self, u):
         def rhs(x):
             return (3*pi**2 + 1) * sin(pi*x[0]) * sin(pi*x[1]) * sin(pi*x[2])

@@ -2,7 +2,6 @@
 import meshzoo
 import pyamg
 import pyfvm
-from pyfvm.form_language import *
 import numpy
 
 

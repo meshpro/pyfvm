@@ -5,7 +5,8 @@ import mshr
 import numpy
 import pyamg
 import pyfvm
-from pyfvm.form_language import *
+from pyfvm.form_language import integrate, n_dot_grad, \
+        dS, dGamma, dV, Subdomain
 from sympy import pi, sin, cos, sqrt
 import unittest
 
@@ -20,7 +21,7 @@ class Gamma1(Subdomain):
     is_boundary_only = True
 
 
-class Neumann(FvmProblem):
+class Neumann(object):
     def apply(self, u):
         def neumann(x):
             z = x[0]**2 + x[1]**2

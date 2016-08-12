@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 import helpers
 import pyfvm
-from pyfvm.form_language import *
+from pyfvm.form_language import integrate, n_dot_grad, \
+        dS, dGamma, dV, Subdomain
 import meshzoo
 import pyamg
-from sympy import sin, cos, pi
+from sympy import sin, pi
 import unittest
 
 
@@ -19,7 +20,7 @@ class Gamma1(Subdomain):
     is_boundary_only = True
 
 
-class Neumann(FvmProblem):
+class Neumann(object):
     def apply(self, u):
         return integrate(lambda x: -n_dot_grad(u(x)), dS) \
             - integrate(lambda x: -pi * sin(pi*x[0]), dGamma) \

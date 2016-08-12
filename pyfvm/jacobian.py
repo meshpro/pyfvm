@@ -17,7 +17,7 @@ class Jacobian(object):
         self.dirichlets = dirichlets
         return
 
-    def get_matrix(self, u):
+    def get_linear_operator(self, u):
         V, I, J = _get_VIJ(
                 self.mesh,
                 u,

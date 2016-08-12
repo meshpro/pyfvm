@@ -2,7 +2,7 @@
 import helpers
 import numpy
 import pyfvm
-from pyfvm.form_language import *
+from pyfvm.form_language import integrate, n_dot_grad, dS, dV
 import meshzoo
 from sympy import pi, sin, exp
 import unittest
@@ -12,7 +12,7 @@ def exact_sol(x):
     return sin(pi*x[0]) * sin(pi*x[1])
 
 
-class Bratu(FvmProblem):
+class Bratu(object):
     def apply(self, u):
         return integrate(lambda x: -n_dot_grad(u(x)), dS) \
             - integrate(lambda x: 2.0 * exp(u(x)), dV) \
@@ -46,7 +46,7 @@ class ConvergenceBratu2dSquareTest(unittest.TestCase):
         def solver(mesh):
             f, jacobian = pyfvm.discretize(Bratu(), mesh)
             u0 = numpy.zeros(len(mesh.node_coords))
-            u = pyfvm.newton(f.eval, jacobian.get_matrix, u0, verbose=False)
+            u = pyfvm.newton(f.eval, jacobian.get_linear_operator, u0, verbose=False)
             return u
 
         return helpers.perform_convergence_tests(

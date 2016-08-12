@@ -87,7 +87,7 @@ mesh = pyfvm.meshTri.meshTri(vertices, cells)
 f, jacobian = pyfvm.discretize(Bratu(), mesh)
 
 u0 = numpy.zeros(len(vertices))
-u = pyfvm.newton(f.eval, jacobian.get_matrix, u0)
+u = pyfvm.newton(f.eval, jacobian.get_linear_operator, u0)
 
 mesh.write('out.vtu', point_data={'u': u})
 ```

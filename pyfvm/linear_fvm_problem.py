@@ -12,8 +12,7 @@ def get_linear_fvm_problem(
                 mesh,
                 edge_kernels,
                 vertex_kernels,
-                boundary_kernels,
-                compute_rhs=True
+                boundary_kernels
                 )
 
         # One unknown per vertex
@@ -42,8 +41,7 @@ def get_linear_fvm_problem(
 
 def _get_VIJ(
         mesh,
-        edge_kernels, vertex_kernels, boundary_kernels,
-        compute_rhs=False
+        edge_kernels, vertex_kernels, boundary_kernels
         ):
     V = []
     I = []
@@ -82,11 +80,10 @@ def _get_VIJ(
             J.append(edge_nodes[:, 0])
             J.append(edge_nodes[:, 1])
 
-            if compute_rhs:
-                rhs_V.append(v_rhs[0])
-                rhs_V.append(v_rhs[1])
-                rhs_I.append(edge_nodes[:, 0])
-                rhs_I.append(edge_nodes[:, 1])
+            rhs_V.append(v_rhs[0])
+            rhs_V.append(v_rhs[1])
+            rhs_I.append(edge_nodes[:, 0])
+            rhs_I.append(edge_nodes[:, 1])
 
             # # TODO fix those
             # for k in mesh.get_half_edges(subdomain):
@@ -105,9 +102,8 @@ def _get_VIJ(
             I.append(verts)
             J.append(verts)
 
-            if compute_rhs:
-                rhs_V.append(vals_rhs)
-                rhs_I.append(verts)
+            rhs_V.append(vals_rhs)
+            rhs_I.append(verts)
 
     for boundary_kernel in boundary_kernels:
         for subdomain in boundary_kernel.subdomains:
@@ -118,9 +114,8 @@ def _get_VIJ(
             I.append(verts)
             J.append(verts)
 
-            if compute_rhs:
-                rhs_V.append(vals_rhs)
-                rhs_I.append(verts)
+            rhs_V.append(vals_rhs)
+            rhs_I.append(verts)
 
     # Finally, make V, I, J into 1D-arrays.
     V = numpy.concatenate(V)
@@ -128,14 +123,11 @@ def _get_VIJ(
     J = numpy.concatenate(J)
 
     # Assemble rhs
-    if compute_rhs:
-        rhs = numpy.zeros(len(mesh.node_coords))
-        numpy.subtract.at(
-                rhs,
-                numpy.concatenate(rhs_I),
-                numpy.concatenate(rhs_V)
-                )
-    else:
-        rhs = None
+    rhs = numpy.zeros(len(mesh.node_coords))
+    numpy.subtract.at(
+            rhs,
+            numpy.concatenate(rhs_I),
+            numpy.concatenate(rhs_V)
+            )
 
     return V, I, J, rhs
