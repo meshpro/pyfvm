@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import meshzoo
 import pyfvm
-# from pyfvm.form_language import integrate, dV
 import numpy
 from krypy.linsys import LinearSystem, Gmres
 import krypy
@@ -12,6 +11,8 @@ g = 1.0
 
 
 class Energy(pyfvm.EdgeMatrixKernel):
+    '''Specification of the kinetic energy operator.
+    '''
     def __init__(self):
         super(Energy, self).__init__()
 
@@ -40,16 +41,20 @@ class Energy(pyfvm.EdgeMatrixKernel):
             [-edge_ce_ratio * numpy.exp(-1j * beta), edge_ce_ratio]
             ])
 
-
-# class GinzburgLandau(object):
-#     def apply(self, psi):
-#         return Energy() \
-#             + integrate(lambda x: psi(x) * (V + g * abs(psi(x)))**2, dV)
-
 vertices, cells = meshzoo.rectangle.create_mesh(0.0, 1.0, 0.0, 1.0, 31, 31)
 mesh = pyfvm.meshTri.meshTri(vertices, cells)
 
+# Equivalently, one could have written
+#
+# from pyfvm.form_language import integrate, dV
+# class GinzburgLandau(object):
+#     def apply(self, psi):
+#         return Energy() \
+#             + integrate(lambda x: psi(x) * (V + g * abs(psi(x))**2), dV)
 # f, _ = pyfvm.discretize(GinzburgLandau(), mesh)
+#
+# The Jacobian still has to be specified manually because of its special
+# structure.
 
 keo = pyfvm.get_fvm_matrix(mesh, [Energy()], [], [], [])
 
@@ -60,18 +65,6 @@ def f(psi):
 
 
 def jacobian(psi):
-    '''Implements a LinearOperator object that defines the matrix-vector
-    multiplication scheme for the Jacobian operator as in
-
-    .. math::
-        A \\phi + B \\phi^*
-
-    with
-
-    .. math::
-        A &= K + I (V + g \\cdot 2|\\psi|^2),\\\\
-        B &= g \\cdot  diag( \\psi^2 ).
-    '''
     def _apply_jacobian(phi):
         cv = mesh.control_volumes.reshape(phi.shape)
         y = keo * phi \
@@ -97,7 +90,6 @@ def jacobian_solver(psi0, rhs):
              A=jac,
              b=rhs,
              self_adjoint=True,
-             # !!!
              ip_B=lambda a, b: numpy.dot(a.T.conj(), b).real
              )
     out = Gmres(linear_system, maxiter=1000, tol=1.0e-10)
