@@ -2,11 +2,11 @@
 #
 import meshzoo
 import pyfvm
-from pyfvm.form_language import *
+from pyfvm.form_language import integrate, n_dot_grad, dS, dV
 from scipy.sparse import linalg
 
 
-class Singular(FvmProblem):
+class Singular(object):
     def apply(self, u):
         return integrate(lambda x: - 1.0e-2 * n_dot_grad(u(x)), dS) \
                + integrate(u, dV) \
@@ -15,17 +15,11 @@ class Singular(FvmProblem):
     def dirichlet(self, u):
         return [(u, 'boundary')]
 
-# Create mesh using meshzoo
-vertices, cells = meshzoo.rectangle.create_mesh(
-        0.0, 1.0,
-        0.0, 1.0,
-        51, 51,
-        zigzag=True
-        )
+vertices, cells = meshzoo.rectangle.create_mesh(0.0, 1.0, 0.0, 1.0, 51, 51)
 mesh = pyfvm.meshTri.meshTri(vertices, cells)
 
-linear_system = pyfvm.discretize_linear(Singular(), mesh)
+matrix, rhs = pyfvm.discretize_linear(Singular(), mesh)
 
-x = linalg.spsolve(linear_system.matrix, linear_system.rhs)
+u = linalg.spsolve(matrix, rhs)
 
-mesh.write('out.vtu', point_data={'x': x})
+mesh.write('out.vtu', point_data={'u': u})

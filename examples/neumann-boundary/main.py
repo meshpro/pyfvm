@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import pyfvm
-from pyfvm.form_language import *
+from pyfvm.form_language import Subdomain, integrate, n_dot_grad, \
+        dS, dV, dGamma
 import meshzoo
 from scipy.sparse import linalg
 
@@ -10,7 +11,7 @@ class D1(Subdomain):
     is_boundary_only = True
 
 
-class Poisson(LinearFvmProblem):
+class Poisson(object):
     def apply(self, u):
         return integrate(lambda x: -n_dot_grad(u(x)), dS) \
                 + integrate(lambda x: 3.0, dGamma) \
@@ -19,16 +20,11 @@ class Poisson(LinearFvmProblem):
     def dirichlet(self, u):
         return [(u, D1())]
 
-vertices, cells = meshzoo.rectangle.create_mesh(
-        0.0, 1.0,
-        0.0, 1.0,
-        51, 51,
-        zigzag=True
-        )
+vertices, cells = meshzoo.rectangle.create_mesh(0.0, 1.0, 0.0, 1.0, 51, 51)
 mesh = pyfvm.meshTri.meshTri(vertices, cells)
 
-linear_system = pyfvm.discretize(Poisson(), mesh)
+matrix, rhs = pyfvm.discretize_linear(Poisson(), mesh)
 
-x = linalg.spsolve(linear_system.matrix, linear_system.rhs)
+u = linalg.spsolve(matrix, rhs)
 
-mesh.write('out.vtu', point_data={'x': x})
+mesh.write('out.vtu', point_data={'u': u})
