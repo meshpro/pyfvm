@@ -49,8 +49,14 @@ class ConvergenceBratu3dCubeTest(unittest.TestCase):
     def solve(verbose=False):
         def solver(mesh):
             f, jacobian = pyfvm.discretize(Bratu(), mesh)
+
+            def jacobian_solver(u0, rhs):
+                from scipy.sparse import linalg
+                jac = jacobian.get_linear_operator(u0)
+                return linalg.spsolve(jac, rhs)
+
             u0 = numpy.zeros(len(mesh.node_coords))
-            u = pyfvm.newton(f.eval, jacobian.get_linear_operator, u0, verbose=False)
+            u = pyfvm.newton(f.eval, jacobian_solver, u0, verbose=False)
             return u
 
         return helpers.perform_convergence_tests(

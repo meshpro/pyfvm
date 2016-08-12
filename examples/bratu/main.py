@@ -19,8 +19,14 @@ mesh = pyfvm.meshTri.meshTri(vertices, cells)
 
 f, jacobian = pyfvm.discretize(Bratu(), mesh)
 
+
+def jacobian_solver(u0, rhs):
+    from scipy.sparse import linalg
+    jac = jacobian.get_linear_operator(u0)
+    return linalg.spsolve(jac, rhs)
+
 u0 = numpy.zeros(len(vertices))
-u = pyfvm.newton(f.eval, jacobian.get_linear_operator, u0)
+u = pyfvm.newton(f.eval, jacobian_solver, u0)
 # import scipy.optimize
 # u = scipy.optimize.newton_krylov(f.eval, u0)
 

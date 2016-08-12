@@ -258,8 +258,13 @@ class TestPDEs(unittest.TestCase):
 
         f, jacobian = pyfvm.discretize(Bratu(), mesh)
 
+        def jacobian_solver(u0, rhs):
+            from scipy.sparse import linalg
+            jac = jacobian.get_linear_operator(u0)
+            return linalg.spsolve(jac, rhs)
+
         u0 = numpy.zeros(len(vertices))
-        u = pyfvm.newton(f.eval, jacobian.get_linear_operator, u0, verbose=False)
+        u = pyfvm.newton(f.eval, jacobian_solver, u0, verbose=False)
 
         norm1 = numpy.sum(mesh.control_volumes * abs(u))
         self.assertAlmostEqual(norm1, 0.077809948662596773, delta=1.0e-7)
