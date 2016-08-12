@@ -182,7 +182,6 @@ class _base_mesh(object):
         subdomain_edges = numpy.unique(subdomain_edges)
         subdomain_split_edges = numpy.unique(subdomain_split_edges)
 
-        name = subdomain.__class__
         self.subdomains[subdomain] = {
                 'vertices': subdomain_vertices,
                 'edges': subdomain_edges,
