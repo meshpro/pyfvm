@@ -19,7 +19,7 @@ class TestIo(unittest.TestCase):
                 zigzag=True
                 )
         mesh = pyfvm.meshTri.meshTri(vertices, cells)
-        # mesh, _, _ = pyfvm.reader.read('pacman.vtu')
+        # mesh, _, _, _ = pyfvm.reader.read('pacman.vtu')
 
         self.assertEqual(mesh.num_delaunay_violations(), 0)
 
@@ -31,7 +31,7 @@ class TestIo(unittest.TestCase):
         _, fname = tempfile.mkstemp(suffix='.vtu')
         mesh.write(fname)
 
-        mesh2, _, _ = pyfvm.reader.read(fname)
+        mesh2, _, _, _ = pyfvm.reader.read(fname)
 
         for k in range(len(mesh.cells['nodes'])):
             self.assertEqual(
@@ -56,7 +56,7 @@ class TestIo(unittest.TestCase):
 
         mesh.write('test.vtu')
 
-        mesh2, _, _ = pyfvm.reader.read('test.vtu')
+        mesh2, _, _, _ = pyfvm.reader.read('test.vtu')
 
         for k in range(len(mesh.cells['nodes'])):
             self.assertEqual(

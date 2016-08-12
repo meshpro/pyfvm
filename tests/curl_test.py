@@ -39,7 +39,7 @@ class CurlTest(unittest.TestCase):
         filename = os.path.join(
             os.path.dirname(os.path.realpath(__file__)), 'pacman.vtu'
             )
-        mesh, _, _ = pyfvm.reader.read(filename)
+        mesh, _, _, _ = pyfvm.reader.read(filename)
         self._run_test(mesh)
         return
 

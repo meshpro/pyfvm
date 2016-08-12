@@ -426,7 +426,7 @@ class TestVolumes(unittest.TestCase):
         filename = os.path.join(
             os.path.dirname(os.path.realpath(__file__)), 'tetrahedron.vtu'
             )
-        mesh, _, _ = pyfvm.reader.read(filename)
+        mesh, _, _, _ = pyfvm.reader.read(filename)
         # mesh.show_edge(54)
         self._run_test(
                 mesh,
@@ -441,7 +441,7 @@ class TestVolumes(unittest.TestCase):
         filename = os.path.join(
                 os.path.dirname(os.path.realpath(__file__)), 'pacman.vtu'
                 )
-        mesh, _, _ = pyfvm.reader.read(filename)
+        mesh, _, _, _ = pyfvm.reader.read(filename)
         self._run_test(
                 mesh,
                 73.64573933105898,
@@ -484,7 +484,7 @@ class TestVolumes(unittest.TestCase):
     def test_sphere(self):
         filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                 'sphere.vtu')
-        mesh, _, _ = pyfvm.reader.read(filename)
+        mesh, _, _, _ = pyfvm.reader.read(filename)
         self._run_test(
                 mesh,
                 12.273645818711595,
@@ -528,7 +528,7 @@ class TestVolumes(unittest.TestCase):
     def test_toy(self):
         filename = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                 'toy.vtu')
-        mesh, _, _ = pyfvm.reader.read(filename)
+        mesh, _, _, _ = pyfvm.reader.read(filename)
         self._run_test(
                 mesh,
                 9.3875504672601107,
