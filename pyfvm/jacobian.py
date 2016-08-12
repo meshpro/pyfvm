@@ -39,7 +39,7 @@ class Jacobian(object):
                 matrix.data[matrix.indptr[i]:matrix.indptr[i+1]] = 0.0
 
             # Set the diagonal.
-            d[verts] = dirichlet.eval(u[verts], verts)
+            d[verts] = dirichlet.eval(u[verts], self.mesh, verts)
 
         matrix.setdiag(d)
 
@@ -60,7 +60,7 @@ def _get_VIJ(
             edges = mesh.get_edges(subdomain)
             edge_nodes = mesh.edges['nodes'][edges]
 
-            v_matrix = edge_kernel.eval(u, edges)
+            v_matrix = edge_kernel.eval(u, mesh, edges)
 
             # if dot() is used in the expression, the shape of of v_matrix will
             # be (2, 2, 1, k) instead of (2, 2, k).
@@ -89,7 +89,7 @@ def _get_VIJ(
     for vertex_kernel in vertex_kernels:
         for subdomain in vertex_kernel.subdomains:
             verts = mesh.get_vertices(subdomain)
-            vals_matrix = vertex_kernel.eval(u, verts)
+            vals_matrix = vertex_kernel.eval(u, mesh, verts)
 
             V.append(vals_matrix)
             I.append(verts)
@@ -98,7 +98,7 @@ def _get_VIJ(
     for boundary_kernel in boundary_kernels:
         for subdomain in boundary_kernel.subdomains:
             verts = mesh.get_vertices(subdomain)
-            vals_matrix = boundary_kernel.eval(u, verts)
+            vals_matrix = boundary_kernel.eval(u, mesh, verts)
 
             V.append(vals_matrix)
             I.append(verts)

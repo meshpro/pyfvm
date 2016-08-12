@@ -56,7 +56,7 @@ Likewise, [PyAMG](https://github.com/pyamg/pyamg) is a much faster solver
 for this problem
 ```
 import pyamg
-ml = pyamg.ruge_stuben_solver(linear_system.matrix)
+ml = pyamg.smoothed_aggregation_solver(linear_system.matrix)
 u = ml.solve(linear_system.rhs, tol=1e-10)
 ```
 

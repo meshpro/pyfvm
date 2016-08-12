@@ -25,9 +25,9 @@ class TestPDEs(unittest.TestCase):
             def dirichlet(self, u):
                 return [(u, 'boundary')]
 
-        linear_system = pyfvm.discretize_linear(Poisson(), mesh)
+        matrix, rhs = pyfvm.discretize_linear(Poisson(), mesh)
 
-        u = linalg.spsolve(linear_system.matrix, linear_system.rhs)
+        u = linalg.spsolve(matrix, rhs)
 
         norm1 = numpy.sum(mesh.control_volumes * abs(u))
         self.assertAlmostEqual(norm1, alpha, delta=1.0e-7)
@@ -103,9 +103,9 @@ class TestPDEs(unittest.TestCase):
                 )
         mesh = pyfvm.meshTri.meshTri(vertices, cells)
 
-        linear_system = pyfvm.discretize_linear(Poisson(), mesh)
+        matrix, rhs = pyfvm.discretize_linear(Poisson(), mesh)
 
-        u = linalg.spsolve(linear_system.matrix, linear_system.rhs)
+        u = linalg.spsolve(matrix, rhs)
 
         norm1 = numpy.sum(mesh.control_volumes * abs(u))
         self.assertAlmostEqual(norm1, 0.55175078324384885, delta=1.0e-7)
@@ -140,9 +140,9 @@ class TestPDEs(unittest.TestCase):
                 )
         mesh = pyfvm.meshTri.meshTri(vertices, cells)
 
-        linear_system = pyfvm.discretize_linear(Poisson(), mesh)
+        matrix, rhs = pyfvm.discretize_linear(Poisson(), mesh)
 
-        u = linalg.spsolve(linear_system.matrix, linear_system.rhs)
+        u = linalg.spsolve(matrix, rhs)
 
         norm1 = numpy.sum(mesh.control_volumes * abs(u))
         self.assertAlmostEqual(norm1, 0.64033452662531842, delta=1.0e-7)
@@ -181,9 +181,9 @@ class TestPDEs(unittest.TestCase):
                 )
         mesh = pyfvm.meshTri.meshTri(vertices, cells)
 
-        linear_system = pyfvm.discretize_linear(Poisson(), mesh)
+        matrix, rhs = pyfvm.discretize_linear(Poisson(), mesh)
 
-        u = linalg.spsolve(linear_system.matrix, linear_system.rhs)
+        u = linalg.spsolve(matrix, rhs)
 
         norm1 = numpy.sum(mesh.control_volumes * abs(u))
         self.assertAlmostEqual(norm1, 1.4064456286297495, delta=1.0e-7)
@@ -218,9 +218,9 @@ class TestPDEs(unittest.TestCase):
                 )
         mesh = pyfvm.meshTri.meshTri(vertices, cells)
 
-        linear_system = pyfvm.discretize_linear(Poisson(), mesh)
+        matrix, rhs = pyfvm.discretize_linear(Poisson(), mesh)
 
-        u = linalg.spsolve(linear_system.matrix, linear_system.rhs)
+        u = linalg.spsolve(matrix, rhs)
 
         norm1 = numpy.sum(mesh.control_volumes * abs(u))
         self.assertAlmostEqual(norm1, 0.033893251703668408, delta=1.0e-7)

@@ -46,9 +46,9 @@ class ConvergenceReaction3dCubeTest(unittest.TestCase):
     @staticmethod
     def solve(verbose=False):
         def solver(mesh):
-            linear_system = pyfvm.discretize_linear(Reaction(), mesh)
-            ml = pyamg.ruge_stuben_solver(linear_system.matrix)
-            u = ml.solve(linear_system.rhs, tol=1e-10)
+            matrix, rhs = pyfvm.discretize_linear(Reaction(), mesh)
+            ml = pyamg.smoothed_aggregation_solver(matrix)
+            u = ml.solve(rhs, tol=1e-10)
             return u
 
         return helpers.perform_convergence_tests(

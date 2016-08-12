@@ -10,7 +10,7 @@ import sympy
 
 
 class EdgeKernel(object):
-    def __init__(self, mesh, val):
+    def __init__(self, val):
         self.val = val
         self.subdomains = ['everywhere']
         return
