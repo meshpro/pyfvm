@@ -4,19 +4,11 @@ import numpy
 from scipy import sparse
 
 
-class LinearFvmProblem(object):
-    def __init__(
-            self,
-            mesh,
-            edge_kernels, vertex_kernels, boundary_kernels, dirichlets
-            ):
-        self.mesh = mesh
-        self.edge_kernels = edge_kernels
-        self.vertex_kernels = vertex_kernels
-        self.boundary_kernels = boundary_kernels
-        self.dirichlets = dirichlets
-
-        V, I, J, self.rhs = _get_VIJ(
+def get_linear_fvm_problem(
+        mesh,
+        edge_kernels, vertex_kernels, boundary_kernels, dirichlets
+        ):
+        V, I, J, rhs = _get_VIJ(
                 mesh,
                 edge_kernels,
                 vertex_kernels,
@@ -26,26 +18,26 @@ class LinearFvmProblem(object):
 
         # One unknown per vertex
         n = len(mesh.node_coords)
-        self.matrix = sparse.coo_matrix((V, (I, J)), shape=(n, n))
+        matrix = sparse.coo_matrix((V, (I, J)), shape=(n, n))
         # Transform to CSR format for efficiency
-        self.matrix = self.matrix.tocsr()
+        matrix = matrix.tocsr()
 
         # Apply Dirichlet conditions.
-        d = self.matrix.diagonal()
+        d = matrix.diagonal()
         for dirichlet in dirichlets:
             verts = mesh.get_vertices(dirichlet.subdomain)
             # Set all Dirichlet rows to 0.
             for i in verts:
-                self.matrix.data[self.matrix.indptr[i]:self.matrix.indptr[i+1]] = 0.0
+                matrix.data[matrix.indptr[i]:matrix.indptr[i+1]] = 0.0
 
             # Set the diagonal and RHS.
-            coeff, rhs = dirichlet.eval(verts)
+            coeff, rhs_vals = dirichlet.eval(verts)
             d[verts] = coeff
-            self.rhs[verts] = rhs
+            rhs[verts] = rhs_vals
 
-        self.matrix.setdiag(d)
+        matrix.setdiag(d)
 
-        return
+        return matrix, rhs
 
 
 def _get_VIJ(
@@ -64,7 +56,7 @@ def _get_VIJ(
             edges = mesh.get_edges(subdomain)
             edge_nodes = mesh.edges['nodes'][edges]
 
-            v_matrix, v_rhs = edge_kernel.eval(edges)
+            v_matrix, v_rhs = edge_kernel.eval(mesh, edges)
 
             # if dot() is used in the expression, the shape of of v_matrix will
             # be (2, 2, 1, k) instead of (2, 2, k).

@@ -2,7 +2,7 @@
 #
 import numpy
 from . import form_language
-import linear_fvm_problem
+from linear_fvm_problem import get_linear_fvm_problem
 import sympy
 from sympy.matrices.expressions.matexpr import MatrixExpr, MatrixSymbol
 
@@ -289,7 +289,7 @@ def discretize_linear(obj, mesh):
             l_eval = sympy.lambdify((x0, x1, er, el), linear, modules=a2a)
             a_eval = sympy.lambdify((x0, x1, er, el), affine, modules=a2a)
 
-            edge_kernels.add(EdgeLinearKernel(mesh, l_eval, a_eval))
+            edge_kernels.add(EdgeLinearKernel(l_eval, a_eval))
 
         elif isinstance(integral.measure, form_language.ControlVolume):
             x = sympy.DeferredVector('x')
@@ -360,7 +360,7 @@ def discretize_linear(obj, mesh):
                 DirichletLinearKernel(mesh, coeff_eval, rhs_eval, subdomain)
                 )
 
-    return linear_fvm_problem.LinearFvmProblem(
+    return get_linear_fvm_problem(
             mesh,
             edge_kernels, vertex_kernels, boundary_kernels, dirichlet_kernels
             )

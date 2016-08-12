@@ -3,7 +3,8 @@ import numpy
 from numpy import pi
 import pyamg
 import pyfvm
-from pyfvm.form_language import *
+from pyfvm.form_language import integrate, Subdomain, FvmProblem, \
+        dS, dV, n_dot_grad
 from sympy import sin
 
 
@@ -58,10 +59,10 @@ coords = m.coordinates()
 coords = numpy.c_[coords, numpy.zeros(len(coords))]
 mesh = pyfvm.meshTri.meshTri(coords, m.cells())
 
-linear_system = pyfvm.discretize_linear(Poisson(), mesh)
+matrix, rhs = pyfvm.discretize_linear(Poisson(), mesh)
 
-ml = pyamg.ruge_stuben_solver(linear_system.matrix)
-u = ml.solve(linear_system.rhs, tol=1e-10)
+ml = pyamg.smoothed_aggregation_solver(matrix)
+u = ml.solve(rhs, tol=1e-10)
 # from scipy.sparse import linalg
 # u = linalg.spsolve(linear_system.matrix, linear_system.rhs)
 
