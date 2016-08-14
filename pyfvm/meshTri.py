@@ -358,6 +358,7 @@ class meshTri(_base_mesh):
             # headless mode, for remote executions (and travis)
             mpl.use('Agg')
         from matplotlib import pyplot as plt
+        from matplotlib.collections import LineCollection
 
         # from mpl_toolkits.mplot3d import Axes3D
         fig = plt.figure()
@@ -365,10 +366,26 @@ class meshTri(_base_mesh):
         ax = fig.gca()
         plt.axis('equal')
 
-        # plot edges
-        for node_ids in self.edges['nodes']:
-            x = self.node_coords[node_ids]
-            ax.plot(x[:, 0], x[:, 1], 'k')
+        xmin = numpy.amin(self.node_coords[:, 0])
+        xmax = numpy.amax(self.node_coords[:, 0])
+        ymin = numpy.amin(self.node_coords[:, 1])
+        ymax = numpy.amax(self.node_coords[:, 1])
+
+        width = xmax - xmin
+        xmin -= 0.1 * width
+        xmax += 0.1 * width
+
+        height = ymax - ymin
+        ymin -= 0.1 * height
+        ymax += 0.1 * height
+
+        ax.set_xlim(xmin, xmax)
+        ax.set_ylim(ymin, ymax)
+
+        # Get edges, cut off z-component.
+        e = self.node_coords[self.edges['nodes']][:, :, :2]
+        line_segments = LineCollection(e, color='k')
+        ax.add_collection(line_segments)
 
         if show_ce_ratios:
             # Connect all cell circumcenters with the edge midpoints
@@ -376,17 +393,32 @@ class meshTri(_base_mesh):
                 X = self.node_coords[self.cells['nodes']]
                 self.cell_circumcenters = \
                     self.compute_triangle_circumcenters(X)
+
             edge_midpoints = 0.5 * (
                 self.node_coords[self.edges['nodes'][:, 0]] +
                 self.node_coords[self.edges['nodes'][:, 1]]
                 )
-            for cell_id, edges in enumerate(self.cells['edges']):
-                for edge_id in edges:
-                    p = numpy.c_[
-                            self.cell_circumcenters[cell_id],
-                            edge_midpoints[edge_id],
-                            ]
-                    ax.plot(p[0], p[1], color='0.8')
+
+            # Plot connection of the circumcenter to the midpoint of all three
+            # axes.
+            a = numpy.stack([
+                    self.cell_circumcenters[:, :2],
+                    edge_midpoints[self.cells['edges'][:, 0], :2]
+                    ], axis=1)
+            b = numpy.stack([
+                    self.cell_circumcenters[:, :2],
+                    edge_midpoints[self.cells['edges'][:, 1], :2]
+                    ], axis=1)
+            c = numpy.stack([
+                    self.cell_circumcenters[:, :2],
+                    edge_midpoints[self.cells['edges'][:, 2], :2]
+                    ], axis=1)
+
+            line_segments = LineCollection(
+                numpy.r_[a, b, c],
+                color=[0.8, 0.8, 0.8]
+                )
+            ax.add_collection(line_segments)
 
         # plot centroids
         ax.plot(self.centroids[:, 0], self.centroids[:, 1], 'r.')
