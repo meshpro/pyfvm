@@ -28,8 +28,7 @@ class meshTri(_base_mesh):
 
         self.create_edges()
         self.compute_edge_lengths()
-        self.compute_cell_volumes_and_ce_ratios()
-        self.compute_control_volumes()
+        self.compute_cell_volumes_and_ce_ratios_and_control_volumes()
 
         self.mark_default_subdomains()
 
@@ -110,42 +109,88 @@ class meshTri(_base_mesh):
         self.edges['cells'] = edge_cells
         return
 
-    def compute_control_volumes(self):
-        '''Compute the control volumes of all nodes in the mesh.
-        '''
-        e = self.node_coords[self.edges['nodes'][:, 1]] - \
-            self.node_coords[self.edges['nodes'][:, 0]]
-
-        #   0.5 * (0.5 * edge_length) * covolume
-        # = 0.5 * (0.5 * edge_length**2) * ce_ratio_edge_ratio
-        vals = 0.25 * _row_dot(e, e) * self.ce_ratios
-
+    def compute_cell_volumes_and_ce_ratios_and_control_volumes(self):
         edge_nodes = self.edges['nodes']
 
-        self.control_volumes = numpy.zeros(len(self.node_coords), dtype=float)
-        numpy.add.at(self.control_volumes, edge_nodes[:, 0], vals)
-        numpy.add.at(self.control_volumes, edge_nodes[:, 1], vals)
-
-        return
-
-    def compute_cell_volumes_and_ce_ratios(self):
         edges = \
-            self.node_coords[self.edges['nodes'][:, 1]] - \
-            self.node_coords[self.edges['nodes'][:, 0]]
+            self.node_coords[edge_nodes[:, 1]] - \
+            self.node_coords[edge_nodes[:, 0]]
         cells_edges = edges[self.cells['edges']]
         e0 = cells_edges[:, 0, :]
         e1 = cells_edges[:, 1, :]
         e2 = cells_edges[:, 2, :]
-        self.cell_volumes, sol = \
+        self.cell_volumes, ce_per_cell_edge = \
             self.compute_tri_areas_and_ce_ratios(e0, e1, e2)
 
         num_edges = len(self.edges['nodes'])
         self.ce_ratios = numpy.zeros(num_edges, dtype=float)
-        numpy.add.at(
-                self.ce_ratios,
-                self.cells['edges'],
-                sol
-                )
+        numpy.add.at(self.ce_ratios, self.cells['edges'], ce_per_cell_edge)
+
+        # Compute the control volumes. Note that
+        #   0.5 * (0.5 * edge_length) * covolume
+        # = 0.5 * (0.5 * edge_length**2) * ce_ratio_edge_ratio
+        edge_lengths_squared = _row_dot(edges, edges)
+        triangle_vols = 0.25 * edge_lengths_squared * self.ce_ratios
+
+        self.control_volumes = numpy.zeros(len(self.node_coords), dtype=float)
+        numpy.add.at(self.control_volumes, edge_nodes[:, 0], triangle_vols)
+        numpy.add.at(self.control_volumes, edge_nodes[:, 1], triangle_vols)
+
+        # Compute the control volume centroid.
+        # This is actually only necessary for special applications like Lloyd's
+        # smoothing <https://en.wikipedia.org/wiki/Lloyd%27s_algorithm>.
+        # However, we need access to `ce_per_cell_edge`; more precisely: the
+        # area of the triangles vertex---edge midpoint---cell circumcenter.
+        # This information is tossed after the ce_ratios are computed.
+        #
+        # The centroid of any volume V is given by
+        #
+        #   c = \int_V x / \int_V 1.
+        #
+        # The numerator is the control volume. The denominator can be computed
+        # by making use of the fact that the control volume around any vertex
+        # v_0 is composed of right triangles, two for each adjacent cell. The
+        # integral of any linear function over a triangle is the the average of
+        # the values of the function in each of the three corners, times the
+        # area of the triangle.
+        edge_midpoints = 0.5 * (
+            self.node_coords[edge_nodes[:, 1]] +
+            self.node_coords[edge_nodes[:, 0]]
+            )
+
+        edge_lengths_per_cell = edge_lengths_squared[self.cells['edges']]
+        right_triangle_vols = 0.25 * edge_lengths_per_cell * ce_per_cell_edge
+
+        X = self.node_coords[self.cells['nodes']]
+        cell_circumcenters = self.compute_triangle_circumcenters(X)
+
+        self.centroids = numpy.zeros((len(self.node_coords), 3))
+
+        # # Exclude the edges with negative volume. This is a safeguard for
+        # # funny things.
+        # right_triangle_vols = right_triangle_vols.clip(min=0.0)
+
+        for cell_edge_idx in range(3):
+            edge_idx = self.cells['edges'][:, cell_edge_idx]
+
+            pt0_idx = self.edges['nodes'][edge_idx][:, 0]
+            val = right_triangle_vols[:, cell_edge_idx, None] * (
+                    cell_circumcenters +
+                    edge_midpoints[self.cells['edges'][:, cell_edge_idx]] +
+                    self.node_coords[pt0_idx]
+                    ) / 3.0
+            numpy.add.at(self.centroids, pt0_idx, val)
+
+            pt1_idx = self.edges['nodes'][edge_idx][:, 1]
+            val = right_triangle_vols[:, cell_edge_idx, None] * (
+                    cell_circumcenters +
+                    edge_midpoints[self.cells['edges'][:, cell_edge_idx]] +
+                    self.node_coords[pt1_idx]
+                    ) / 3.0
+            numpy.add.at(self.centroids, pt1_idx, val)
+
+        # Don't forget to divide by the control volume!
+        self.centroids /= self.control_volumes[:, None]
 
         return
 
@@ -342,6 +387,10 @@ class meshTri(_base_mesh):
                             edge_midpoints[edge_id],
                             ]
                     ax.plot(p[0], p[1], color='0.8')
+
+        # plot centroids
+        ax.plot(self.centroids[:, 0], self.centroids[:, 1], 'r.')
+
         return
 
     def show_vertex(self, node_id, show_ce_ratio=True):
