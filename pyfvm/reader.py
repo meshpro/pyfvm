@@ -26,11 +26,11 @@ def read(filename):
     points, cells_nodes, point_data, cell_data, field_data = \
         meshio.read(filename)
 
-    if 'triangle' in cells_nodes:
-        return pyfvm.meshTri.meshTri(points, cells_nodes['triangle']), \
-               point_data, cell_data, field_data
-    elif 'tetra' in cells_nodes:
+    if 'tetra' in cells_nodes:
         return pyfvm.meshTetra.meshTetra(points, cells_nodes['tetra']), \
+               point_data, cell_data, field_data
+    elif 'triangle' in cells_nodes:
+        return pyfvm.meshTri.meshTri(points, cells_nodes['triangle']), \
                point_data, cell_data, field_data
     else:
         raise RuntimeError('Unknown mesh type.')

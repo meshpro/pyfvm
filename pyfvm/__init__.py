@@ -4,7 +4,7 @@ from . import fvm_problem
 from . import linear_fvm_problem
 from . import meshTri
 from . import meshTetra
-from . import reader
+from .reader import read
 
 from .discretize_linear import *
 from .discretize import *
