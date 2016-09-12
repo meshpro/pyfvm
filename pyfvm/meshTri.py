@@ -11,7 +11,7 @@ class meshTri(_base_mesh):
 
     .. inheritance-diagram:: meshTri
     '''
-    def __init__(self, nodes, cells):
+    def __init__(self, nodes, cells, allow_negative_volumes=False):
         '''Initialization.
         '''
         # Make sure to only to include those vertices which are part of a cell
@@ -26,6 +26,7 @@ class meshTri(_base_mesh):
                 )
         self.cells['nodes'] = cells
 
+        self.allow_negative_volumes = allow_negative_volumes
         self.create_edges()
         self.compute_edge_lengths()
         self.compute_cell_volumes_and_ce_ratios_and_control_volumes()
@@ -125,6 +126,21 @@ class meshTri(_base_mesh):
         num_edges = len(self.edges['nodes'])
         self.ce_ratios = numpy.zeros(num_edges, dtype=float)
         numpy.add.at(self.ce_ratios, self.cells['edges'], ce_per_cell_edge)
+
+        # TODO correct boundary ce_ratios etc
+
+        if not self.allow_negative_volumes:
+            idx = numpy.where(self.ce_ratios < 0.0)
+            idx = idx[0]
+            if len(idx) > 0:
+                if all(self.is_boundary_edge[idx]):
+                    raise RuntimeError(
+                        'Found negative covolume-edge ratio. All on boundary.'
+                        )
+                raise RuntimeError(
+                    'Found negative covolume-edge ratio inside the domain. ' +
+                    'Mesh is not Delaunay.'
+                    )
 
         # Compute the control volumes. Note that
         #   0.5 * (0.5 * edge_length) * covolume
