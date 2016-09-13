@@ -119,9 +119,12 @@ class TestVolumes(unittest.TestCase):
         self.assertAlmostEqual(mesh.cell_volumes[0], 0.5 * h, delta=tol)
 
         # surface areas
-        self.assertAlmostEqual(mesh.surface_areas[0], 0.0, delta=tol)
-        self.assertAlmostEqual(mesh.surface_areas[1], 0.0, delta=tol)
-        self.assertAlmostEqual(mesh.surface_areas[2], 0.0, delta=tol)
+        edge_length = numpy.sqrt(0.5**2 + h**2)
+        # circumference = 1.0 + 2 * edge_length
+        alpha = 0.5 * (1.0 + edge_length)
+        self.assertAlmostEqual(mesh.surface_areas[0], alpha, delta=tol)
+        self.assertAlmostEqual(mesh.surface_areas[1], alpha, delta=tol)
+        self.assertAlmostEqual(mesh.surface_areas[2], edge_length, delta=tol)
 
         self.assertEqual(mesh.num_delaunay_violations(), 0)
         return
@@ -157,22 +160,21 @@ class TestVolumes(unittest.TestCase):
         # control volumes
         cv = ce * edge_length
         alpha = 0.25 * edge_length * cv
-        print(cv)
-        print(mesh.control_volumes)
-        print
-        print(sum(mesh.control_volumes))
-        print
+        beta = 0.5*h - 2*alpha
         self.assertAlmostEqual(mesh.control_volumes[0], alpha, delta=tol)
         self.assertAlmostEqual(mesh.control_volumes[1], alpha, delta=tol)
-        self.assertAlmostEqual(mesh.control_volumes[2], 0.5*h - 2*alpha, delta=tol)
+        self.assertAlmostEqual(mesh.control_volumes[2], beta, delta=tol)
 
         # cell volumes
         self.assertAlmostEqual(mesh.cell_volumes[0], 0.5 * h, delta=tol)
 
         # surface areas
-        self.assertAlmostEqual(mesh.surface_areas[0], 0.0, delta=tol)
-        self.assertAlmostEqual(mesh.surface_areas[1], 0.0, delta=tol)
-        self.assertAlmostEqual(mesh.surface_areas[2], 0.0, delta=tol)
+        g = numpy.sqrt((0.5 * edge_length)**2 + (ce * edge_length)**2)
+        alpha = 0.5 * edge_length + g
+        beta = edge_length + (1.0 - 2*g)
+        self.assertAlmostEqual(mesh.surface_areas[0], alpha, delta=tol)
+        self.assertAlmostEqual(mesh.surface_areas[1], alpha, delta=tol)
+        self.assertAlmostEqual(mesh.surface_areas[2], beta, delta=tol)
 
         self.assertEqual(mesh.num_delaunay_violations(), 0)
         return
