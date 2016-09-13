@@ -95,7 +95,8 @@ class TestVolumes(unittest.TestCase):
         cells = numpy.array([[0, 1, 2]])
         mesh = pyfvm.meshTri.meshTri(
                 points,
-                cells
+                cells,
+                allow_negative_volumes=True
                 )
 
         tol = 1.0e-14
@@ -117,6 +118,62 @@ class TestVolumes(unittest.TestCase):
         # cell volumes
         self.assertAlmostEqual(mesh.cell_volumes[0], 0.5 * h, delta=tol)
 
+        # surface areas
+        self.assertAlmostEqual(mesh.surface_areas[0], 0.0, delta=tol)
+        self.assertAlmostEqual(mesh.surface_areas[1], 0.0, delta=tol)
+        self.assertAlmostEqual(mesh.surface_areas[2], 0.0, delta=tol)
+
+        self.assertEqual(mesh.num_delaunay_violations(), 0)
+        return
+
+    def test_degenerate_small0b(self):
+        h = 1.0e-3
+        points = numpy.array([
+            [0, 0, 0],
+            [1, 0, 0],
+            [0.5, h, 0.0],
+            ])
+        cells = numpy.array([[0, 1, 2]])
+        mesh = pyfvm.meshTri.meshTri(
+                points,
+                cells,
+                allow_negative_volumes=False
+                )
+
+        tol = 1.0e-14
+
+        # edge lengths
+        edge_length = numpy.sqrt(0.5**2 + h**2)
+        self.assertAlmostEqual(mesh.edge_lengths[0], 1.0, delta=tol)
+        self.assertAlmostEqual(mesh.edge_lengths[1], edge_length, delta=tol)
+        self.assertAlmostEqual(mesh.edge_lengths[2], edge_length, delta=tol)
+
+        # ce_ratios
+        ce = h
+        self.assertAlmostEqual(mesh.ce_ratios[0], 0.0, delta=tol)
+        self.assertAlmostEqual(mesh.ce_ratios[1], ce, delta=tol)
+        self.assertAlmostEqual(mesh.ce_ratios[2], ce, delta=tol)
+
+        # control volumes
+        cv = ce * edge_length
+        alpha = 0.25 * edge_length * cv
+        print(cv)
+        print(mesh.control_volumes)
+        print
+        print(sum(mesh.control_volumes))
+        print
+        self.assertAlmostEqual(mesh.control_volumes[0], alpha, delta=tol)
+        self.assertAlmostEqual(mesh.control_volumes[1], alpha, delta=tol)
+        self.assertAlmostEqual(mesh.control_volumes[2], 0.5*h - 2*alpha, delta=tol)
+
+        # cell volumes
+        self.assertAlmostEqual(mesh.cell_volumes[0], 0.5 * h, delta=tol)
+
+        # surface areas
+        self.assertAlmostEqual(mesh.surface_areas[0], 0.0, delta=tol)
+        self.assertAlmostEqual(mesh.surface_areas[1], 0.0, delta=tol)
+        self.assertAlmostEqual(mesh.surface_areas[2], 0.0, delta=tol)
+
         self.assertEqual(mesh.num_delaunay_violations(), 0)
         return
 
@@ -133,48 +190,6 @@ class TestVolumes(unittest.TestCase):
                 points,
                 cells,
                 allow_negative_volumes=True
-                )
-
-        tol = 1.0e-14
-
-        # ce_ratios
-        alpha = h - 1.0 / (4*h)
-        beta = 1.0 / (4*h)
-        self.assertAlmostEqual(mesh.ce_ratios[0], alpha, delta=tol)
-        self.assertAlmostEqual(mesh.ce_ratios[1], beta, delta=tol)
-        self.assertAlmostEqual(mesh.ce_ratios[2], beta, delta=tol)
-        self.assertAlmostEqual(mesh.ce_ratios[3], beta, delta=tol)
-        self.assertAlmostEqual(mesh.ce_ratios[4], beta, delta=tol)
-
-        # control volumes
-        alpha1 = 0.125 * (3*h - 1.0/(4*h))
-        alpha2 = 0.125 * (h + 1.0 / (4*h))
-        self.assertAlmostEqual(mesh.control_volumes[0], alpha1, delta=tol)
-        self.assertAlmostEqual(mesh.control_volumes[1], alpha1, delta=tol)
-        self.assertAlmostEqual(mesh.control_volumes[2], alpha2, delta=tol)
-        self.assertAlmostEqual(mesh.control_volumes[3], alpha2, delta=tol)
-
-        # cell volumes
-        self.assertAlmostEqual(mesh.cell_volumes[0], 0.5 * h, delta=tol)
-        self.assertAlmostEqual(mesh.cell_volumes[1], 0.5 * h, delta=tol)
-
-        self.assertEqual(mesh.num_delaunay_violations(), 1)
-
-        return
-
-    def test_degenerate_small2(self):
-        h = 1.0e-2
-        points = numpy.array([
-            [0, 0, 0],
-            [1, 0, 0],
-            [0.5, h, 0.0],
-            [0.5, -h, 0.0]
-            ])
-        cells = numpy.array([[0, 1, 2], [0, 1, 3]])
-        mesh = pyfvm.meshTri.meshTri(
-                points,
-                cells,
-                allow_negative_volumes=False
                 )
 
         tol = 1.0e-14

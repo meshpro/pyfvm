@@ -11,7 +11,7 @@ class meshTri(_base_mesh):
 
     .. inheritance-diagram:: meshTri
     '''
-    def __init__(self, nodes, cells, allow_negative_volumes=False):
+    def __init__(self, nodes, cells, allow_negative_volumes=True):
         '''Initialization.
         '''
         # Make sure to only to include those vertices which are part of a cell
@@ -124,87 +124,101 @@ class meshTri(_base_mesh):
         self.cell_volumes, self.ce_ratios_per_half_edge = \
             self.compute_tri_areas_and_ce_ratios(e0, e1, e2)
 
-        # Find the cell_id and local edge id of the negative
-        # covolume-edgelength ratios.
-        cell_ids, local_edge_ids = numpy.where(
-            self.ce_ratios_per_half_edge < 0.0
-            )
+        extra_control_volume = numpy.zeros(len(self.node_coords), dtype=float)
+        if not self.allow_negative_volumes:
+            # Find the cell_id and local edge id of the negative
+            # covolume-edgelength ratios.
+            cell_ids, local_edge_ids = numpy.where(
+                self.ce_ratios_per_half_edge < 0.0
+                )
 
-        for cell_id, local_edge_id in zip(cell_ids, local_edge_ids):
-            edge_id = self.cells['edges'][cell_id, local_edge_id]
-            if not self.is_boundary_edge[edge_id]:
-                continue
-            # If a boundary edge has a negative covolume-edge ratio (i.e., a
-            # negative covolume), take a look at the triangle. Add a ghost node
-            # for the point _not_ on the edge, mirror along the edge, and flip
-            # the edge, i.e., from
-            #
-            #        p0
-            #      _/  \__
-            #    _/       \__
-            #   /            \
-            #  p1-------------p2
-            #       outside
-            #
-            # create
-            #
-            #        p0
-            #      _/| \__
-            #    _/  |    \__
-            #   /    |       \
-            #  p1    |        p2
-            #   \_   |     __/
-            #     \_ |  __/
-            #       \| /
-            #       ghost
-            #
-            # The new edge is Delaunay, and the covolume-edge ratios are
-            # exactly as needed.
-            # Note that p0 occupies part of the outside boundary, so this needs
-            # to be taken into account as well.
-            #
-            # In each cell, edge k is opposite of vertex k.
-            p0_local_id = local_edge_id
-            p1_local_id = (local_edge_id + 1) % 3
-            p2_local_id = (local_edge_id + 2) % 3
+            for cell_id, local_edge_id in zip(cell_ids, local_edge_ids):
+                edge_id = self.cells['edges'][cell_id, local_edge_id]
+                if not self.is_boundary_edge[edge_id]:
+                    continue
+                # If a boundary edge has a negative covolume-edge ratio (i.e.,
+                # a negative covolume), take a look at the triangle. Add a
+                # ghost node for the point _not_ on the edge, mirror along the
+                # edge, and flip the edge, i.e., from
+                #
+                #        p0
+                #      _/  \__
+                #    _/       \__
+                #   /            \
+                #  p1-------------p2
+                #       outside
+                #
+                # create
+                #
+                #        p0
+                #      _/| \__
+                #    _/  |    \__
+                #   /    |       \
+                #  p1    |        p2
+                #   \_   |     __/
+                #     \_ |  __/
+                #       \| /
+                #       ghost
+                #
+                # The new edge is Delaunay, and the covolume-edge ratios are
+                # exactly as needed.
+                # Note that p0 occupies part of the outside boundary, so this
+                # needs to be taken into account as well.
+                #
+                # In each cell, edge k is opposite of vertex k.
+                p0_local_id = local_edge_id
+                p1_local_id = (local_edge_id + 1) % 3
+                p2_local_id = (local_edge_id + 2) % 3
 
-            p0_id = self.cells['nodes'][cell_id][p0_local_id]
-            p1_id = self.cells['nodes'][cell_id][p1_local_id]
-            p2_id = self.cells['nodes'][cell_id][p2_local_id]
+                p0_id = self.cells['nodes'][cell_id][p0_local_id]
+                p1_id = self.cells['nodes'][cell_id][p1_local_id]
+                p2_id = self.cells['nodes'][cell_id][p2_local_id]
 
-            p0 = self.node_coords[p0_id]
-            p1 = self.node_coords[p1_id]
-            p2 = self.node_coords[p2_id]
+                p0 = self.node_coords[p0_id]
+                p1 = self.node_coords[p1_id]
+                p2 = self.node_coords[p2_id]
 
-            # Create the ghost.
-            normed_edge = (p2 - p1) / numpy.sqrt(numpy.dot(p2 - p1))
-            # q: Intersection point of old and new edge
-            q = p1 + numpy.dot(p0 - p1, normed_edge) * normed_edge
-            ghost = 2 * q - p0
-            # Create the two new triangles
-            _, ce_ratios1 = self.compute_tri_areas_and_ce_ratios(
-                    p0-ghost, p1-p0, ghost-p1
-                    )
-            _, ce_ratios2 = self.compute_tri_areas_and_ce_ratios(
-                    p2-ghost, p0-p2, ghost-p0
-                    )
-            # symmetry
-            assert ce_ratios1[1] == ce_ratios1[2]
-            assert ce_ratios2[0] == ce_ratios2[1]
+                # Create the ghost.
+                normed_edge = (p2 - p1) / numpy.linalg.norm(p2 - p1)
+                # q: Intersection point of old and new edge
+                q = p1 + numpy.dot(p0 - p1, normed_edge) * normed_edge
+                ghost = 2 * q - p0
+                # Create the two new triangles
+                _, ce_ratios1 = self.compute_tri_areas_and_ce_ratios(
+                        [p0-ghost], [p1-p0], [ghost-p1]
+                        )
+                ce_ratios1 = ce_ratios1[0]
+                _, ce_ratios2 = self.compute_tri_areas_and_ce_ratios(
+                        [p2-ghost], [p0-p2], [ghost-p0]
+                        )
+                ce_ratios2 = ce_ratios2[0]
+                # symmetry
+                assert abs(ce_ratios1[1] - ce_ratios1[2]) < 1.0e-14
+                assert abs(ce_ratios2[0] - ce_ratios2[1]) < 1.0e-14
 
-            # override covolume-edgelength ratios
-            self.ce_ratios_per_half_edge[cell_id][0] = 0.0
-            self.ce_ratios_per_half_edge[cell_id][1] = ce_ratios1[1]
-            self.ce_ratios_per_half_edge[cell_id][2] = ce_ratios2[1]
+                # override covolume-edgelength ratios
+                self.ce_ratios_per_half_edge[cell_id][p0_local_id] = 0.0
+                self.ce_ratios_per_half_edge[cell_id][p1_local_id] = \
+                    ce_ratios1[1]
+                self.ce_ratios_per_half_edge[cell_id][p2_local_id] = \
+                    ce_ratios2[1]
 
-            # override surface areas
-            self.surface_areas[p0_id] += ce_ratios1[0] + ce_ratios2[2]
-            self.surface_areas[p1_id] += \
-                numpy.linalg.norm(q - p1) - ce_ratios1[0] \
-                - 0.5 * self.edge_lengths[edge_id]
-            self.surface_areas[p2_id] += \
-                numpy.linalg.norm(q - p2) - ce_ratios2[2] \
-                - 0.5 * self.edge_lengths[edge_id]
+                # add volume to the colvolume around p0
+                ghostedge_length = numpy.linalg.norm(ghost - p0)
+                ghost_cv = (ce_ratios1[0] + ce_ratios2[2]) * ghostedge_length
+                extra_control_volume[p0_id] += \
+                    0.25 * ghost_cv * ghostedge_length
+
+                # override surface areas
+                cv1 = ce_ratios1[0] * ghostedge_length
+                cv2 = ce_ratios2[2] * ghostedge_length
+                self.surface_areas[p0_id] += cv1 + cv2
+                self.surface_areas[p1_id] += \
+                    numpy.linalg.norm(q - p1) - cv1 \
+                    - 0.5 * self.edge_lengths[edge_id]
+                self.surface_areas[p2_id] += \
+                    numpy.linalg.norm(q - p2) - cv2 \
+                    - 0.5 * self.edge_lengths[edge_id]
 
         num_edges = len(self.edges['nodes'])
         self.ce_ratios = numpy.zeros(num_edges, dtype=float)
@@ -229,6 +243,8 @@ class meshTri(_base_mesh):
         self.control_volumes = numpy.zeros(len(self.node_coords), dtype=float)
         numpy.add.at(self.control_volumes, edge_nodes[:, 0], triangle_vols)
         numpy.add.at(self.control_volumes, edge_nodes[:, 1], triangle_vols)
+        # add extra volume from boundary corrections
+        self.control_volumes += extra_control_volume
 
         return
 
