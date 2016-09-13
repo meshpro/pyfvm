@@ -29,11 +29,10 @@ class meshTri(_base_mesh):
         self.allow_negative_volumes = allow_negative_volumes
         self.create_edges()
         self.compute_edge_lengths()
-        self.compute_cell_volumes_and_ce_ratios_and_control_volumes()
-
         self.mark_default_subdomains()
-
         self.compute_surface_areas()
+        self.compute_cell_volumes_and_ce_ratios_and_control_volumes()
+        self.compute_control_volume_centroids()
 
         self.cell_circumcenters = None
 
@@ -122,59 +121,100 @@ class meshTri(_base_mesh):
         e0 = cells_edges[:, 0, :]
         e1 = cells_edges[:, 1, :]
         e2 = cells_edges[:, 2, :]
-        self.cell_volumes, ce_per_cell_edge = \
+        self.cell_volumes, self.ce_ratios_per_half_edge = \
             self.compute_tri_areas_and_ce_ratios(e0, e1, e2)
+
+        # Find the cell_id and local edge id of the negative
+        # covolume-edgelength ratios.
+        cell_ids, local_edge_ids = numpy.where(
+            self.ce_ratios_per_half_edge < 0.0
+            )
+
+        for cell_id, local_edge_id in zip(cell_ids, local_edge_ids):
+            edge_id = self.cells['edges'][cell_id, local_edge_id]
+            if not self.is_boundary_edge[edge_id]:
+                continue
+            # If a boundary edge has a negative covolume-edge ratio (i.e., a
+            # negative covolume), take a look at the triangle. Add a ghost node
+            # for the point _not_ on the edge, mirror along the edge, and flip
+            # the edge, i.e., from
+            #
+            #        p0
+            #      _/  \__
+            #    _/       \__
+            #   /            \
+            #  p1-------------p2
+            #       outside
+            #
+            # create
+            #
+            #        p0
+            #      _/| \__
+            #    _/  |    \__
+            #   /    |       \
+            #  p1    |        p2
+            #   \_   |     __/
+            #     \_ |  __/
+            #       \| /
+            #       ghost
+            #
+            # The new edge is Delaunay, and the covolume-edge ratios are
+            # exactly as needed.
+            # Note that p0 occupies part of the outside boundary, so this needs
+            # to be taken into account as well.
+            #
+            # In each cell, edge k is opposite of vertex k.
+            p0_local_id = local_edge_id
+            p1_local_id = (local_edge_id + 1) % 3
+            p2_local_id = (local_edge_id + 2) % 3
+
+            p0_id = self.cells['nodes'][cell_id][p0_local_id]
+            p1_id = self.cells['nodes'][cell_id][p1_local_id]
+            p2_id = self.cells['nodes'][cell_id][p2_local_id]
+
+            p0 = self.node_coords[p0_id]
+            p1 = self.node_coords[p1_id]
+            p2 = self.node_coords[p2_id]
+
+            # Create the ghost.
+            normed_edge = (p2 - p1) / numpy.sqrt(numpy.dot(p2 - p1))
+            # q: Intersection point of old and new edge
+            q = p1 + numpy.dot(p0 - p1, normed_edge) * normed_edge
+            ghost = 2 * q - p0
+            # Create the two new triangles
+            _, ce_ratios1 = self.compute_tri_areas_and_ce_ratios(
+                    p0-ghost, p1-p0, ghost-p1
+                    )
+            _, ce_ratios2 = self.compute_tri_areas_and_ce_ratios(
+                    p2-ghost, p0-p2, ghost-p0
+                    )
+            # symmetry
+            assert ce_ratios1[1] == ce_ratios1[2]
+            assert ce_ratios2[0] == ce_ratios2[1]
+
+            # override covolume-edgelength ratios
+            self.ce_ratios_per_half_edge[cell_id][0] = 0.0
+            self.ce_ratios_per_half_edge[cell_id][1] = ce_ratios1[1]
+            self.ce_ratios_per_half_edge[cell_id][2] = ce_ratios2[1]
+
+            # override surface areas
+            self.surface_areas[p0_id] += ce_ratios1[0] + ce_ratios2[2]
+            self.surface_areas[p1_id] += \
+                numpy.linalg.norm(q - p1) - ce_ratios1[0] \
+                - 0.5 * self.edge_lengths[edge_id]
+            self.surface_areas[p2_id] += \
+                numpy.linalg.norm(q - p2) - ce_ratios2[2] \
+                - 0.5 * self.edge_lengths[edge_id]
 
         num_edges = len(self.edges['nodes'])
         self.ce_ratios = numpy.zeros(num_edges, dtype=float)
-        numpy.add.at(self.ce_ratios, self.cells['edges'], ce_per_cell_edge)
+        numpy.add.at(
+            self.ce_ratios,
+            self.cells['edges'],
+            self.ce_ratios_per_half_edge
+            )
 
-        idx = numpy.where(self.ce_ratios < 0.0)
-        idx = idx[0]
-        # negative_boundary_edges = idx[self.is_boundary_edge[idx]]
-        # for edge_id in negative_boundary_edges:
-        #     # If a boundary edge has a negative covolume-edge ratio (i.e., a
-        #     # negative covolume), take a look at the triangle. Add a ghost node
-        #     # for the point _not_ on the edge, mirror along the edge, and flip
-        #     # the edge, i.e., from
-        #     #
-        #     #        p2
-        #     #      _/  \__
-        #     #    _/       \__
-        #     #   /            \
-        #     #  p0-------------p1
-        #     #       outside
-        #     #
-        #     # create
-        #     #
-        #     #        p2
-        #     #      _/| \__
-        #     #    _/  |    \__
-        #     #   /    |       \
-        #     #  p0    |        p1
-        #     #   \_   |     __/
-        #     #     \_ |  __/
-        #     #       \| /
-        #     #       ghost
-        #     #
-        #     # The new edge is Delaunay, and the covolume-edge ratios are
-        #     # exactly as needed.
-        #     # Note that p2 occupies part of the outside boundary, so this needs
-        #     # to be taken into account as well.
-        #     #
-        #     cell_id = cells_edges[edge_id]
-        #     vertices = self.edges['nodes'][edge_id]
-        #     p0 = self.node_coords[vertices[0]]
-        #     p1 = self.node_coords[vertices[1]]
-        #     p2id = self.cells['nodes']
-
-        if len(idx) > 0:
-            if all(self.is_boundary_edge[idx]):
-                raise RuntimeError(
-                    'Found negative covolume-edge ratio. All on boundary.'
-                    )
-
-        if not self.allow_negative_volumes and any(self.is_boundary_edge[idx]):
+        if not self.allow_negative_volumes and any(self.ce_ratios < 0.0):
             raise RuntimeError(
                 'Found negative covolume-edge ratio inside the domain. ' +
                 'Mesh is not Delaunay.'
@@ -190,12 +230,12 @@ class meshTri(_base_mesh):
         numpy.add.at(self.control_volumes, edge_nodes[:, 0], triangle_vols)
         numpy.add.at(self.control_volumes, edge_nodes[:, 1], triangle_vols)
 
+        return
+
+    def compute_control_volume_centroids(self):
         # Compute the control volume centroid.
         # This is actually only necessary for special applications like Lloyd's
         # smoothing <https://en.wikipedia.org/wiki/Lloyd%27s_algorithm>.
-        # However, we need access to `ce_per_cell_edge`; more precisely: the
-        # area of the triangles vertex---edge midpoint---cell circumcenter.
-        # This information is tossed after the ce_ratios are computed.
         #
         # The centroid of any volume V is given by
         #
@@ -207,13 +247,20 @@ class meshTri(_base_mesh):
         # integral of any linear function over a triangle is the the average of
         # the values of the function in each of the three corners, times the
         # area of the triangle.
+        edge_nodes = self.edges['nodes']
+        edges = \
+            self.node_coords[edge_nodes[:, 1]] - \
+            self.node_coords[edge_nodes[:, 0]]
+        edge_lengths_squared = _row_dot(edges, edges)
+
         edge_midpoints = 0.5 * (
             self.node_coords[edge_nodes[:, 1]] +
             self.node_coords[edge_nodes[:, 0]]
             )
 
         edge_lengths_per_cell = edge_lengths_squared[self.cells['edges']]
-        right_triangle_vols = 0.25 * edge_lengths_per_cell * ce_per_cell_edge
+        right_triangle_vols = \
+            0.25 * edge_lengths_per_cell * self.ce_ratios_per_half_edge
 
         X = self.node_coords[self.cells['nodes']]
         cell_circumcenters = self.compute_triangle_circumcenters(X)
@@ -241,7 +288,6 @@ class meshTri(_base_mesh):
 
         # Don't forget to divide by the control volume!
         self.centroids /= self.control_volumes[:, None]
-
         return
 
     def compute_surface_areas(self):
