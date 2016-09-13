@@ -63,10 +63,12 @@ class meshTri(_base_mesh):
         '''Setup edge-node and edge-cell relations.
         '''
         self.cells['nodes'].sort(axis=1)
+        # Order the edges such that node 0 doesn't occur in edge 0 etc., i.e.,
+        # node k is opposite of edge k.
         a = numpy.vstack([
-            self.cells['nodes'][:, [0, 1]],
             self.cells['nodes'][:, [1, 2]],
-            self.cells['nodes'][:, [0, 2]]
+            self.cells['nodes'][:, [0, 2]],
+            self.cells['nodes'][:, [0, 1]]
             ])
 
         # Find the unique edges
@@ -90,9 +92,9 @@ class meshTri(_base_mesh):
         # cell->edges relationship
         num_cells = len(self.cells['nodes'])
         cells_edges = inv.reshape([3, num_cells]).T
-        cells = self.cells['nodes']
+        cells_nodes = self.cells['nodes']
         self.cells = {
-            'nodes': cells,
+            'nodes': cells_nodes,
             'edges': cells_edges
             }
 
@@ -127,20 +129,56 @@ class meshTri(_base_mesh):
         self.ce_ratios = numpy.zeros(num_edges, dtype=float)
         numpy.add.at(self.ce_ratios, self.cells['edges'], ce_per_cell_edge)
 
-        # TODO correct boundary ce_ratios etc
+        idx = numpy.where(self.ce_ratios < 0.0)
+        idx = idx[0]
+        # negative_boundary_edges = idx[self.is_boundary_edge[idx]]
+        # for edge_id in negative_boundary_edges:
+        #     # If a boundary edge has a negative covolume-edge ratio (i.e., a
+        #     # negative covolume), take a look at the triangle. Add a ghost node
+        #     # for the point _not_ on the edge, mirror along the edge, and flip
+        #     # the edge, i.e., from
+        #     #
+        #     #        p2
+        #     #      _/  \__
+        #     #    _/       \__
+        #     #   /            \
+        #     #  p0-------------p1
+        #     #       outside
+        #     #
+        #     # create
+        #     #
+        #     #        p2
+        #     #      _/| \__
+        #     #    _/  |    \__
+        #     #   /    |       \
+        #     #  p0    |        p1
+        #     #   \_   |     __/
+        #     #     \_ |  __/
+        #     #       \| /
+        #     #       ghost
+        #     #
+        #     # The new edge is Delaunay, and the covolume-edge ratios are
+        #     # exactly as needed.
+        #     # Note that p2 occupies part of the outside boundary, so this needs
+        #     # to be taken into account as well.
+        #     #
+        #     cell_id = cells_edges[edge_id]
+        #     vertices = self.edges['nodes'][edge_id]
+        #     p0 = self.node_coords[vertices[0]]
+        #     p1 = self.node_coords[vertices[1]]
+        #     p2id = self.cells['nodes']
 
-        if not self.allow_negative_volumes:
-            idx = numpy.where(self.ce_ratios < 0.0)
-            idx = idx[0]
-            if len(idx) > 0:
-                if all(self.is_boundary_edge[idx]):
-                    raise RuntimeError(
-                        'Found negative covolume-edge ratio. All on boundary.'
-                        )
+        if len(idx) > 0:
+            if all(self.is_boundary_edge[idx]):
                 raise RuntimeError(
-                    'Found negative covolume-edge ratio inside the domain. ' +
-                    'Mesh is not Delaunay.'
+                    'Found negative covolume-edge ratio. All on boundary.'
                     )
+
+        if not self.allow_negative_volumes and any(self.is_boundary_edge[idx]):
+            raise RuntimeError(
+                'Found negative covolume-edge ratio inside the domain. ' +
+                'Mesh is not Delaunay.'
+                )
 
         # Compute the control volumes. Note that
         #   0.5 * (0.5 * edge_length) * covolume
@@ -181,10 +219,6 @@ class meshTri(_base_mesh):
         cell_circumcenters = self.compute_triangle_circumcenters(X)
 
         self.centroids = numpy.zeros((len(self.node_coords), 3))
-
-        # # Exclude the edges with negative volume. This is a safeguard for
-        # # funny things.
-        # right_triangle_vols = right_triangle_vols.clip(min=0.0)
 
         for cell_edge_idx in range(3):
             edge_idx = self.cells['edges'][:, cell_edge_idx]

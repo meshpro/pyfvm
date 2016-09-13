@@ -95,18 +95,15 @@ class meshTetra(_base_mesh):
         return
 
     def create_cell_face_relationships(self):
-        # All possible faces
+        self.cells['nodes'].sort(axis=1)
+
+        # All possible faces.
+        # Face k is opposite of node k in each cell.
         a = numpy.vstack([
-            self.cells['nodes'][:, [0, 1, 2]],
-            self.cells['nodes'][:, [0, 1, 3]],
+            self.cells['nodes'][:, [1, 2, 3]],
             self.cells['nodes'][:, [0, 2, 3]],
-            self.cells['nodes'][:, [1, 2, 3]]
-            ])
-        other = numpy.vstack([
-            self.cells['nodes'][:, [3]],
-            self.cells['nodes'][:, [2]],
-            self.cells['nodes'][:, [1]],
-            self.cells['nodes'][:, [0]]
+            self.cells['nodes'][:, [0, 1, 3]],
+            self.cells['nodes'][:, [0, 1, 2]]
             ])
 
         # Find the unique faces
@@ -133,7 +130,7 @@ class meshTetra(_base_mesh):
         self.cells['faces'] = cells_faces
 
         # Store the opposing nodes too
-        self.cells['opposing vertex'] = other.reshape([4, num_cells]).T
+        self.cells['opposing vertex'] = self.cells['nodes']
 
         # save for create_edge_cells
         self._inv_faces = inv
