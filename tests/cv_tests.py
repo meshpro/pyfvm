@@ -82,6 +82,17 @@ class TestVolumes(unittest.TestCase):
         # cell volumes
         self.assertAlmostEqual(mesh.cell_volumes[0], 0.5, delta=tol)
 
+        # centroids
+        self.assertAlmostEqual(mesh.centroids[0][0], 0.25, delta=tol)
+        self.assertAlmostEqual(mesh.centroids[0][1], 0.25, delta=tol)
+        self.assertAlmostEqual(mesh.centroids[0][2], 0.0, delta=tol)
+        self.assertAlmostEqual(mesh.centroids[1][0], 2.0/3.0, delta=tol)
+        self.assertAlmostEqual(mesh.centroids[1][1], 1.0/6.0, delta=tol)
+        self.assertAlmostEqual(mesh.centroids[1][2], 0.0, delta=tol)
+        self.assertAlmostEqual(mesh.centroids[2][0], 1.0/6.0, delta=tol)
+        self.assertAlmostEqual(mesh.centroids[2][1], 2.0/3.0, delta=tol)
+        self.assertAlmostEqual(mesh.centroids[2][2], 0.0, delta=tol)
+
         self.assertEqual(mesh.num_delaunay_violations(), 0)
         return
 
@@ -125,6 +136,21 @@ class TestVolumes(unittest.TestCase):
         self.assertAlmostEqual(mesh.surface_areas[0], alpha, delta=tol)
         self.assertAlmostEqual(mesh.surface_areas[1], alpha, delta=tol)
         self.assertAlmostEqual(mesh.surface_areas[2], edge_length, delta=tol)
+
+        # centroids
+        alpha = -41.66666666933336
+        beta = 0.58333199998399976
+        self.assertAlmostEqual(mesh.centroids[0][0], 0.416668000016, delta=tol)
+        self.assertAlmostEqual(mesh.centroids[0][1], alpha, delta=tol)
+        self.assertAlmostEqual(mesh.centroids[0][2], 0.0, delta=tol)
+
+        self.assertAlmostEqual(mesh.centroids[1][0], beta, delta=tol)
+        self.assertAlmostEqual(mesh.centroids[1][1], alpha, delta=tol)
+        self.assertAlmostEqual(mesh.centroids[1][2], 0.0, delta=tol)
+
+        self.assertAlmostEqual(mesh.centroids[2][0], 0.5, delta=tol)
+        self.assertAlmostEqual(mesh.centroids[2][1], -41.666, delta=tol)
+        self.assertAlmostEqual(mesh.centroids[2][2], 0.0, delta=tol)
 
         self.assertEqual(mesh.num_delaunay_violations(), 0)
         return
@@ -175,6 +201,22 @@ class TestVolumes(unittest.TestCase):
         self.assertAlmostEqual(mesh.surface_areas[0], alpha, delta=tol)
         self.assertAlmostEqual(mesh.surface_areas[1], alpha, delta=tol)
         self.assertAlmostEqual(mesh.surface_areas[2], beta, delta=tol)
+
+        # centroids
+        alpha = -41.666333333333327
+        self.assertAlmostEqual(mesh.centroids[0][0], 0.25, delta=tol)
+        self.assertAlmostEqual(mesh.centroids[0][1], alpha, delta=tol)
+        self.assertAlmostEqual(mesh.centroids[0][2], 0.0, delta=tol)
+
+        self.assertAlmostEqual(mesh.centroids[1][0], 0.75, delta=tol)
+        self.assertAlmostEqual(mesh.centroids[1][1], alpha, delta=tol)
+        self.assertAlmostEqual(mesh.centroids[1][2], 0.0, delta=tol)
+
+        beta = 0.16666755555674073
+        gamma = -13.888740739654317
+        self.assertAlmostEqual(mesh.centroids[2][0], beta, delta=tol)
+        self.assertAlmostEqual(mesh.centroids[2][1], gamma, delta=tol)
+        self.assertAlmostEqual(mesh.centroids[2][2], 0.0, delta=tol)
 
         self.assertEqual(mesh.num_delaunay_violations(), 0)
         return
