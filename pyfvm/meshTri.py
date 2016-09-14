@@ -198,12 +198,14 @@ class meshTri(_base_mesh):
 
                 # override covolume-edgelength ratios
                 self.ce_ratios_per_half_edge[cell_id][p0_local_id] = 0.0
+                # The edge with local ID p1_local_id is _opposite_ of the
+                # vertex with local ID p1_local_id.
                 self.ce_ratios_per_half_edge[cell_id][p1_local_id] = \
-                    ce_ratios1[1]
-                self.ce_ratios_per_half_edge[cell_id][p2_local_id] = \
                     ce_ratios2[1]
+                self.ce_ratios_per_half_edge[cell_id][p2_local_id] = \
+                    ce_ratios1[1]
 
-                # add volume to the colvolume around p0
+                # add volume to the control volume around p0
                 ghostedge_length = numpy.linalg.norm(ghost - p0)
                 ghost_cv = (ce_ratios1[0] + ce_ratios2[2]) * ghostedge_length
                 extra_control_volume[p0_id] += \

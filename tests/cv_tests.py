@@ -180,6 +180,65 @@ class TestVolumes(unittest.TestCase):
         return
 
     def test_degenerate_small1(self):
+        h = 1.0e-3
+        a = 0.3
+        points = numpy.array([
+            [0, 0, 0],
+            [1, 0, 0],
+            [a, h, 0.0],
+            ])
+        cells = numpy.array([[0, 1, 2]])
+        mesh = pyfvm.meshTri.meshTri(
+                points,
+                cells,
+                allow_negative_volumes=False
+                )
+
+        tol = 1.0e-14
+
+        # edge lengths
+        el1 = numpy.sqrt(a**2 + h**2)
+        el2 = numpy.sqrt((1.0 - a)**2 + h**2)
+        self.assertAlmostEqual(mesh.edge_lengths[0], 1.0, delta=tol)
+        self.assertAlmostEqual(mesh.edge_lengths[1], el1, delta=tol)
+        self.assertAlmostEqual(mesh.edge_lengths[2], el2, delta=tol)
+
+        # ce_ratios
+        ce1 = 0.5 * h / a
+        ce2 = 0.5 * h / (1.0 - a)
+        self.assertAlmostEqual(mesh.ce_ratios[0], 0.0, delta=tol)
+        self.assertAlmostEqual(mesh.ce_ratios[1], ce1, delta=tol)
+        self.assertAlmostEqual(mesh.ce_ratios[2], ce2, delta=tol)
+
+        # control volumes
+        cv1 = ce1 * el1
+        alpha1 = 0.25 * el1 * cv1
+        cv2 = ce2 * el2
+        alpha2 = 0.25 * el2 * cv2
+        beta = 0.5*h - (alpha1 + alpha2)
+        self.assertAlmostEqual(mesh.control_volumes[0], alpha1, delta=tol)
+        self.assertAlmostEqual(mesh.control_volumes[1], alpha2, delta=tol)
+        self.assertAlmostEqual(mesh.control_volumes[2], beta, delta=tol)
+        self.assertAlmostEqual(sum(mesh.control_volumes), 0.5 * h, delta=tol)
+
+        # cell volumes
+        self.assertAlmostEqual(mesh.cell_volumes[0], 0.5 * h, delta=tol)
+
+        # surface areas
+        b1 = numpy.sqrt((0.5*el1)**2 + cv1**2)
+        alpha0 = b1 + 0.5*el1
+        b2 = numpy.sqrt((0.5*el2)**2 + cv2**2)
+        alpha1 = b2 + 0.5*el2
+        total = 1.0 + el1 + el2
+        alpha2 = total - alpha0 - alpha1
+        self.assertAlmostEqual(mesh.surface_areas[0], alpha0, delta=tol)
+        self.assertAlmostEqual(mesh.surface_areas[1], alpha1, delta=tol)
+        self.assertAlmostEqual(mesh.surface_areas[2], alpha2, delta=tol)
+
+        self.assertEqual(mesh.num_delaunay_violations(), 0)
+        return
+
+    def test_degenerate_small2(self):
         h = 1.0e-2
         points = numpy.array([
             [0, 0, 0],
