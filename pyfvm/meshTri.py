@@ -285,24 +285,24 @@ class meshTri(_base_mesh):
 
         self.centroids = numpy.zeros((len(self.node_coords), 3))
 
-        for cell_edge_idx in range(3):
-            edge_idx = self.cells['edges'][:, cell_edge_idx]
+        cells_edges = self.cells['edges']
+        pt0_idx = self.edges['nodes'][cells_edges][..., 0]
+        midpoint0 = (
+            cell_circumcenters[:, None, :] +
+            edge_midpoints[cells_edges] +
+            self.node_coords[pt0_idx]
+            ) / 3.0
+        val = right_triangle_vols[:, :, None] * midpoint0
+        numpy.add.at(self.centroids, pt0_idx, val)
 
-            pt0_idx = self.edges['nodes'][edge_idx][:, 0]
-            val = right_triangle_vols[:, cell_edge_idx, None] * (
-                    cell_circumcenters +
-                    edge_midpoints[self.cells['edges'][:, cell_edge_idx]] +
-                    self.node_coords[pt0_idx]
-                    ) / 3.0
-            numpy.add.at(self.centroids, pt0_idx, val)
-
-            pt1_idx = self.edges['nodes'][edge_idx][:, 1]
-            val = right_triangle_vols[:, cell_edge_idx, None] * (
-                    cell_circumcenters +
-                    edge_midpoints[self.cells['edges'][:, cell_edge_idx]] +
-                    self.node_coords[pt1_idx]
-                    ) / 3.0
-            numpy.add.at(self.centroids, pt1_idx, val)
+        pt1_idx = self.edges['nodes'][cells_edges][..., 1]
+        midpoint1 = (
+            cell_circumcenters[:, None, :] +
+            edge_midpoints[cells_edges] +
+            self.node_coords[pt1_idx]
+            ) / 3.0
+        val = right_triangle_vols[:, :, None] * midpoint1
+        numpy.add.at(self.centroids, pt1_idx, val)
 
         # Don't forget to divide by the control volume!
         self.centroids /= self.control_volumes[:, None]
