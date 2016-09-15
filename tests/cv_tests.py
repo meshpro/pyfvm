@@ -35,11 +35,14 @@ class TestVolumes(unittest.TestCase):
         norm = numpy.linalg.norm(mesh.cell_volumes, ord=numpy.Inf)
         self.assertAlmostEqual(cellvol_norms[1], norm, delta=tol)
 
-        # Check the volume by summing over the
-        #   1/n * edge_lengths * ce_ratios
-        # ce_ratios.
-        total_ce_ratio = fsum(mesh.edge_lengths**2 * mesh.ce_ratios / dim)
-        self.assertAlmostEqual(volume, total_ce_ratio, delta=tol * volume)
+        # If everything is Delaunay and the boundary elements aren't flat, the
+        # volume of the domain is given by
+        #   1/n * edge_lengths * ce_ratios.
+        # Unfortuantely, this isn't always the case.
+        # ```
+        # total_ce_ratio = fsum(mesh.edge_lengths**2 * mesh.ce_ratios / dim)
+        # self.assertAlmostEqual(volume, total_ce_ratio, delta=tol * volume)
+        # ```
         # Check ce_ratio norms.
         alpha = fsum(mesh.ce_ratios**2)
         self.assertAlmostEqual(covol_norms[0], alpha, delta=tol)
@@ -617,8 +620,8 @@ class TestVolumes(unittest.TestCase):
         self._run_test(
                 mesh,
                 73.64573933105898,
-                [3.596101914906618, 0.26638548094154707],
-                [719.8706213234083, 1.8142648825759053],
+                [3.5908322974649631, 0.26638548094154707],
+                [669.3501944927655, 1.8142648825759053],
                 [2.6213234038171014, 0.13841739494523228]
                 )
 
