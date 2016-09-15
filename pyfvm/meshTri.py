@@ -11,7 +11,7 @@ class meshTri(_base_mesh):
 
     .. inheritance-diagram:: meshTri
     '''
-    def __init__(self, nodes, cells, allow_negative_volumes=True):
+    def __init__(self, nodes, cells):
         '''Initialization.
         '''
         # Make sure to only to include those vertices which are part of a cell
@@ -26,41 +26,40 @@ class meshTri(_base_mesh):
                 )
         self.cells['nodes'] = cells
 
-        self.allow_negative_volumes = allow_negative_volumes
         self.create_edges()
         self.compute_edge_lengths()
         self.mark_default_subdomains()
-        self.compute_surface_areas()
 
         self.compute_cell_volumes_and_ce_ratios()
 
-        if self.allow_negative_volumes:
-            extra_control_volume = numpy.zeros(len(self.node_coords))
-        else:
-            # TODO make this mandatory, remove self.allow_negative_volumes
-            extra_control_volume = self.flat_boundary_corrections()
+        # Find out which boundary cells need special treatment
+        cell_ids, local_edge_ids = numpy.where(numpy.logical_and(
+            self.ce_ratios_per_half_edge < 0.0,
+            self.is_boundary_edge[self.cells['edges']]
+            ))
 
-        # sum covolume-edgelength ratios for each edge
-        num_edges = len(self.edges['nodes'])
-        self.ce_ratios = numpy.zeros(num_edges, dtype=float)
-        numpy.add.at(
-            self.ce_ratios,
-            self.cells['edges'],
-            self.ce_ratios_per_half_edge
-            )
+        X = self.node_coords[self.cells['nodes']]
+        self.cell_circumcenters = self.compute_triangle_circumcenters(X)
 
-        if not self.allow_negative_volumes and any(self.ce_ratios < 0.0):
-            raise RuntimeError(
-                'Found negative covolume. Mesh is not Delaunay.'
+        self.compute_surface_areas()
+
+        extra_control_volume = self.flat_boundary_corrections(
+                cell_ids, local_edge_ids
                 )
 
-        self.compute_control_volumes()
-        # add extra volume from boundary corrections
-        self.control_volumes += extra_control_volume
+        # Sum up all the partial entities for convenience.
+        # covolume-edgelength ratios
+        self.ce_ratios = numpy.zeros(len(self.edges['nodes']), dtype=float)
+        cells_edges = self.cells['edges']
+        numpy.add.at(self.ce_ratios, cells_edges, self.ce_ratios_per_half_edge)
 
-        self.compute_control_volume_centroids()
+        # control_volumes
+        self.compute_control_volumes(self.ce_ratios, extra_control_volume)
 
-        self.cell_circumcenters = None
+        # surface areas
+
+        # centroids
+        self.compute_control_volume_centroids(self.cell_circumcenters)
 
         return
 
@@ -152,14 +151,8 @@ class meshTri(_base_mesh):
 
         return
 
-    def flat_boundary_corrections(self):
+    def flat_boundary_corrections(self, cell_ids, local_edge_ids):
         extra_control_volume = numpy.zeros(len(self.node_coords), dtype=float)
-        # Find the cell_id and local edge id of the negative
-        # covolume-edgelength ratios.
-        cell_ids, local_edge_ids = numpy.where(numpy.logical_and(
-            self.ce_ratios_per_half_edge < 0.0,
-            self.is_boundary_edge[self.cells['edges']]
-            ))
 
         for cell_id, local_edge_id in zip(cell_ids, local_edge_ids):
             edge_id = self.cells['edges'][cell_id, local_edge_id]
@@ -206,9 +199,12 @@ class meshTri(_base_mesh):
             p2 = self.node_coords[p2_id]
 
             # Create the ghost.
-            normed_edge = (p2 - p1) / numpy.linalg.norm(p2 - p1)
             # q: Intersection point of old and new edge
-            q = p1 + numpy.dot(p0 - p1, normed_edge) * normed_edge
+            # q = p1 + dot(p0-p1, (p2-p1)/||p2-p1||) * (p2-p1)/||p2-p1||
+            #   = p1 + dot(p0-p1, p2-p1)/dot(p2-p1, p2-p1) * (p2-p1)
+            #
+            q = p1 + numpy.dot(p0-p1, p2-p1)/numpy.dot(p2-p1, p2-p1) * (p2-p1)
+            # ghost = p0 + 2*(q - p0)
             ghost = 2 * q - p0
             # Create the two new triangles
             _, ce_ratios1 = self.compute_tri_areas_and_ce_ratios(
@@ -224,21 +220,21 @@ class meshTri(_base_mesh):
             assert abs(ce_ratios2[0] - ce_ratios2[1]) < 1.0e-14
 
             # override covolume-edgelength ratios
-            self.ce_ratios_per_half_edge[cell_id][p0_local_id] = 0.0
             # The edge with local ID p1_local_id is _opposite_ of the
             # vertex with local ID p1_local_id.
-            self.ce_ratios_per_half_edge[cell_id][p1_local_id] = \
-                ce_ratios2[1]
-            self.ce_ratios_per_half_edge[cell_id][p2_local_id] = \
-                ce_ratios1[1]
+            c1 = ce_ratios2[1]
+            c2 = ce_ratios1[1]
+            self.ce_ratios_per_half_edge[cell_id][p0_local_id] = 0.0
+            self.ce_ratios_per_half_edge[cell_id][p1_local_id] = c1
+            self.ce_ratios_per_half_edge[cell_id][p2_local_id] = c2
 
             # add volume to the control volume around p0
-            ghostedge_length = numpy.linalg.norm(ghost - p0)
-            ghost_cv = (ce_ratios1[0] + ce_ratios2[2]) * ghostedge_length
+            ghostedge_length_2 = numpy.dot(ghost - p0, ghost - p0)
             extra_control_volume[p0_id] += \
-                0.25 * ghost_cv * ghostedge_length
+                0.25 * (ce_ratios1[0] + ce_ratios2[2]) * ghostedge_length_2
 
             # override surface areas
+            ghostedge_length = numpy.sqrt(ghostedge_length_2)
             cv1 = ce_ratios1[0] * ghostedge_length
             cv2 = ce_ratios2[2] * ghostedge_length
             self.surface_areas[p0_id] += cv1 + cv2
@@ -251,7 +247,7 @@ class meshTri(_base_mesh):
 
         return extra_control_volume
 
-    def compute_control_volumes(self):
+    def compute_control_volumes(self, ce_ratios, extra_control_volume):
         edge_nodes = self.edges['nodes']
 
         edges = \
@@ -261,15 +257,18 @@ class meshTri(_base_mesh):
         #   0.5 * (0.5 * edge_length) * covolume
         # = 0.5 * (0.5 * edge_length**2) * ce_ratio_edge_ratio
         edge_lengths_squared = _row_dot(edges, edges)
-        triangle_vols = 0.25 * edge_lengths_squared * self.ce_ratios
+        triangle_vols = 0.25 * edge_lengths_squared * ce_ratios
 
         self.control_volumes = numpy.zeros(len(self.node_coords), dtype=float)
         numpy.add.at(self.control_volumes, edge_nodes[:, 0], triangle_vols)
         numpy.add.at(self.control_volumes, edge_nodes[:, 1], triangle_vols)
 
+        # add extra volume from boundary corrections
+        self.control_volumes += extra_control_volume
+
         return
 
-    def compute_control_volume_centroids(self):
+    def compute_control_volume_centroids(self, cell_circumcenters):
         # Compute the control volume centroid.
         # This is actually only necessary for special applications like Lloyd's
         # smoothing <https://en.wikipedia.org/wiki/Lloyd%27s_algorithm>.
@@ -278,12 +277,12 @@ class meshTri(_base_mesh):
         #
         #   c = \int_V x / \int_V 1.
         #
-        # The numerator is the control volume. The denominator can be computed
+        # The denominator is the control volume. The numerator can be computed
         # by making use of the fact that the control volume around any vertex
         # v_0 is composed of right triangles, two for each adjacent cell. The
-        # integral of any linear function over a triangle is the the average of
-        # the values of the function in each of the three corners, times the
-        # area of the triangle.
+        # integral of any linear function over a triangle is the average of the
+        # values of the function in each of the three corners, times the area
+        # of the triangle.
         edge_nodes = self.edges['nodes']
         edges = \
             self.node_coords[edge_nodes[:, 1]] - \
@@ -299,22 +298,18 @@ class meshTri(_base_mesh):
         right_triangle_vols = \
             0.25 * edge_lengths_per_cell * self.ce_ratios_per_half_edge
 
-        X = self.node_coords[self.cells['nodes']]
-        cell_circumcenters = self.compute_triangle_circumcenters(X)
-
         cells_edges = self.cells['edges']
 
         pt_idx = self.edges['nodes'][cells_edges]
-        midpoint = (
+        average = (
             cell_circumcenters[:, None, None, :] +
             edge_midpoints[cells_edges, None, :] +
             self.node_coords[pt_idx]
             ) / 3.0
-        val = right_triangle_vols[:, :, None, None] * midpoint
+        val = right_triangle_vols[:, :, None, None] * average
 
         self.centroids = numpy.zeros((len(self.node_coords), 3))
         numpy.add.at(self.centroids, pt_idx, val)
-
         # Don't forget to divide by the control volume!
         self.centroids /= self.control_volumes[:, None]
         return
