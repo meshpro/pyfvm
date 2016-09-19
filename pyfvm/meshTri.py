@@ -27,9 +27,6 @@ class FlatBoundaryCorrector(object):
 
     def create_data(self):
         n = len(self.cell_ids)
-        self.p0_local_id = numpy.empty(n, dtype=int)
-        self.p1_local_id = numpy.empty(n, dtype=int)
-        self.p2_local_id = numpy.empty(n, dtype=int)
         self.p0_id = numpy.empty(n, dtype=int)
         self.p1_id = numpy.empty(n, dtype=int)
         self.p2_id = numpy.empty(n, dtype=int)
@@ -40,13 +37,14 @@ class FlatBoundaryCorrector(object):
         self.ce_ratios1 = numpy.empty((n, 2), dtype=float)
         self.ce_ratios2 = numpy.empty((n, 2), dtype=float)
         self.ghostedge_length_2 = numpy.empty(n, dtype=float)
+
+        # In each cell, edge k is opposite of vertex k.
+        self.p0_local_id = self.local_edge_ids.copy()
+        self.p1_local_id = (self.local_edge_ids.copy() + 1) % 3
+        self.p2_local_id = (self.local_edge_ids.copy() + 2) % 3
+
         for k, (cell_id, local_edge_id) in \
                 enumerate(zip(self.cell_ids, self.local_edge_ids)):
-            # In each cell, edge k is opposite of vertex k.
-            self.p0_local_id[k] = local_edge_id
-            self.p1_local_id[k] = (local_edge_id + 1) % 3
-            self.p2_local_id[k] = (local_edge_id + 2) % 3
-
             self.p0_id[k] = self.cells['nodes'][cell_id][self.p0_local_id[k]]
             self.p1_id[k] = self.cells['nodes'][cell_id][self.p1_local_id[k]]
             self.p2_id[k] = self.cells['nodes'][cell_id][self.p2_local_id[k]]
