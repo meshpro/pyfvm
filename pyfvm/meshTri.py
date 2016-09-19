@@ -39,12 +39,32 @@ def _mirror_point(p0, p1, p2):
     #   = p1 + dot(p0-p1, p2-p1)/dot(p2-p1, p2-p1) * (p2-p1)
     #
     if len(p0) == 0:
-        return numpy.array([]), numpy.array([])
+        return numpy.empty(p0.shape), numpy.empty(p0.shape)
     alpha = _row_dot(p0-p1, p2-p1)/_row_dot(p2-p1, p2-p1)
     q = p1 + alpha[:, None] * (p2-p1)
     # mirror = p0 + 2*(q - p0)
     mirror = 2 * q - p0
     return mirror, q
+
+
+def _isosceles_ce_ratios(p0, p1, p2):
+    '''Compute the _two_ covolume-edge length ratios of the isosceles
+    triaingle p0, p1, p2; the edges p0---p1 and p0---p2 are assumed to be
+    equally long.:
+               p0
+             _/ \_
+           _/     \_
+         _/         \_
+        /             \
+       p1-------------p2
+    '''
+    e0 = p2 - p1
+    e1 = p0 - p2
+    e2 = p1 - p0
+    assert all(abs(_row_dot(e2, e2) - _row_dot(e1, e1)) < 1.0e-14)
+    _, ce_ratios = compute_tri_areas_and_ce_ratios(e0, e1, e2)
+    assert all(abs(ce_ratios[:, 1] - ce_ratios[:, 2]) < 1.0e-14)
+    return ce_ratios[:, [0, 1]]
 
 
 class FlatBoundaryCorrector(object):
@@ -64,8 +84,6 @@ class FlatBoundaryCorrector(object):
 
     def create_data(self):
         n = len(self.cell_ids)
-        self.ce_ratios1 = numpy.empty((n, 2), dtype=float)
-        self.ce_ratios2 = numpy.empty((n, 2), dtype=float)
         self.ghostedge_length_2 = numpy.empty(n, dtype=float)
 
         # In each cell, edge k is opposite of vertex k.
@@ -83,46 +101,21 @@ class FlatBoundaryCorrector(object):
 
         ghost, self.q = _mirror_point(self.p0, self.p1, self.p2)
 
+        self.ce_ratios1 = _isosceles_ce_ratios(self.p1, self.p0, ghost)
+        assert (self.ce_ratios1 > 0.0).all()
+
+        self.ce_ratios2 = _isosceles_ce_ratios(self.p2, self.p0, ghost)
+        assert (self.ce_ratios2 > 0.0).all()
+
         for k, (cell_id, local_edge_id) in \
                 enumerate(zip(self.cell_ids, self.local_edge_ids)):
 
-            self.ce_ratios1[k] = self._isosceles_ce_ratios(
-                    self.p1[k],
-                    self.p0[k],
-                    ghost[k]
-                    )
-            assert all(self.ce_ratios1[k] > 0.0)
-            self.ce_ratios2[k] = self._isosceles_ce_ratios(
-                    self.p2[k],
-                    self.p0[k],
-                    ghost[k]
-                    )
-            assert all(self.ce_ratios2[k] > 0.0)
             self.ghostedge_length_2[k] = numpy.dot(
                     ghost[k] - self.p0[k],
                     ghost[k] - self.p0[k]
                     )
 
         return
-
-    def _isosceles_ce_ratios(self, p0, p1, p2):
-        '''Compute the _two_ covolume-edge length ratios of the isosceles
-        triaingle p0, p1, p2; the edges p0---p1 and p0---p2 are assumed to be
-        equally long.:
-                   p0
-                 _/ \_
-               _/     \_
-             _/         \_
-            /             \
-           p1-------------p2
-        '''
-        e0 = p2-p1
-        e1 = p0-p2
-        e2 = p1-p0
-        assert abs(numpy.dot(e2, e2) - numpy.dot(e1, e1)) < 1.0e-14
-        _, ce_ratios = compute_tri_areas_and_ce_ratios([e0], [e1], [e2])
-        assert abs(ce_ratios[0][1] - ce_ratios[0][2]) < 1.0e-14
-        return ce_ratios[0][0], ce_ratios[0][1]
 
     def correct_ce_ratios(self):
         vals = numpy.empty((len(self.cell_ids), 3), dtype=float)
