@@ -10,6 +10,43 @@ from pyfvm.base import \
 __all__ = ['meshTri']
 
 
+def _mirror_point(p0, p1, p2):
+    '''For any given triangle and local edge
+
+            p0
+          _/  \__
+        _/       \__
+       /            \
+      p1-------------p2
+
+     this method creates the point p0, mirrored along the edge, and the point q
+     at the perpendicular intersection of the mirror
+
+            p0
+          _/| \__
+        _/  |    \__
+       /    |q      \
+      p1----|--------p2
+       \_   |     __/
+         \_ |  __/
+           \| /
+           mirror
+
+    '''
+    # Create the mirror.
+    # q: Intersection point of old and new edge
+    # q = p1 + dot(p0-p1, (p2-p1)/||p2-p1||) * (p2-p1)/||p2-p1||
+    #   = p1 + dot(p0-p1, p2-p1)/dot(p2-p1, p2-p1) * (p2-p1)
+    #
+    if len(p0) == 0:
+        return numpy.array([]), numpy.array([])
+    alpha = _row_dot(p0-p1, p2-p1)/_row_dot(p2-p1, p2-p1)
+    q = p1 + alpha[:, None] * (p2-p1)
+    # mirror = p0 + 2*(q - p0)
+    mirror = 2 * q - p0
+    return mirror, q
+
+
 class FlatBoundaryCorrector(object):
     '''For flat elements on the boundary, a couple of things need to be
     adjusted: The covolume-edge length ratio, the control volumes
@@ -27,7 +64,6 @@ class FlatBoundaryCorrector(object):
 
     def create_data(self):
         n = len(self.cell_ids)
-        self.q = numpy.empty((n, 3), dtype=float)
         self.ce_ratios1 = numpy.empty((n, 2), dtype=float)
         self.ce_ratios2 = numpy.empty((n, 2), dtype=float)
         self.ghostedge_length_2 = numpy.empty(n, dtype=float)
@@ -45,63 +81,29 @@ class FlatBoundaryCorrector(object):
         self.p1 = self.node_coords[self.p1_id]
         self.p2 = self.node_coords[self.p2_id]
 
+        ghost, self.q = _mirror_point(self.p0, self.p1, self.p2)
+
         for k, (cell_id, local_edge_id) in \
                 enumerate(zip(self.cell_ids, self.local_edge_ids)):
-
-            ghost, self.q[k] = \
-                self._mirror_point(self.p0[k], self.p1[k], self.p2[k])
 
             self.ce_ratios1[k] = self._isosceles_ce_ratios(
                     self.p1[k],
                     self.p0[k],
-                    ghost
+                    ghost[k]
                     )
             assert all(self.ce_ratios1[k] > 0.0)
             self.ce_ratios2[k] = self._isosceles_ce_ratios(
                     self.p2[k],
                     self.p0[k],
-                    ghost
+                    ghost[k]
                     )
             assert all(self.ce_ratios2[k] > 0.0)
             self.ghostedge_length_2[k] = numpy.dot(
-                    ghost - self.p0[k],
-                    ghost - self.p0[k]
+                    ghost[k] - self.p0[k],
+                    ghost[k] - self.p0[k]
                     )
 
         return
-
-    def _mirror_point(self, p0, p1, p2):
-        '''For any given triangle and local edge
-
-                p0
-              _/  \__
-            _/       \__
-           /            \
-          p1-------------p2
-
-         this method creates the point p0, mirrored along the edge, and the
-         point q at the perpendicular intersection of the mirror
-
-                p0
-              _/| \__
-            _/  |    \__
-           /    |q      \
-          p1----|--------p2
-           \_   |     __/
-             \_ |  __/
-               \| /
-               mirror
-
-        '''
-        # Create the mirror.
-        # q: Intersection point of old and new edge
-        # q = p1 + dot(p0-p1, (p2-p1)/||p2-p1||) * (p2-p1)/||p2-p1||
-        #   = p1 + dot(p0-p1, p2-p1)/dot(p2-p1, p2-p1) * (p2-p1)
-        #
-        q = p1 + numpy.dot(p0-p1, p2-p1)/numpy.dot(p2-p1, p2-p1) * (p2-p1)
-        # mirror = p0 + 2*(q - p0)
-        mirror = 2 * q - p0
-        return mirror, q
 
     def _isosceles_ce_ratios(self, p0, p1, p2):
         '''Compute the _two_ covolume-edge length ratios of the isosceles
