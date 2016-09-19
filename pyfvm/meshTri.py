@@ -40,8 +40,8 @@ class FlatBoundaryCorrector(object):
 
         # In each cell, edge k is opposite of vertex k.
         self.p0_local_id = self.local_edge_ids.copy()
-        self.p1_local_id = (self.local_edge_ids.copy() + 1) % 3
-        self.p2_local_id = (self.local_edge_ids.copy() + 2) % 3
+        self.p1_local_id = (self.local_edge_ids + 1) % 3
+        self.p2_local_id = (self.local_edge_ids + 2) % 3
 
         for k, (cell_id, local_edge_id) in \
                 enumerate(zip(self.cell_ids, self.local_edge_ids)):
@@ -234,10 +234,7 @@ class meshTri(_base_mesh):
         is_regular_boundary_edge = \
             numpy.zeros(len(self.edges['nodes']), dtype=bool)
         is_regular_boundary_edge[self.get_edges('boundary')] = True
-        irregular_edge_ids = numpy.array([
-                self.cells['edges'][cell_id][local_edge_id]
-                for cell_id, local_edge_id in zip(cell_ids, local_edge_ids)
-                ], dtype=int)
+        irregular_edge_ids = self.cells['edges'][cell_ids, local_edge_ids]
         is_regular_boundary_edge[irregular_edge_ids] = False
         # base values: half the edge length of each adjacent node
         ids1 = self.edges['nodes'][is_regular_boundary_edge]
