@@ -83,9 +83,6 @@ class FlatBoundaryCorrector(object):
         return
 
     def create_data(self):
-        n = len(self.cell_ids)
-        self.ghostedge_length_2 = numpy.empty(n, dtype=float)
-
         # In each cell, edge k is opposite of vertex k.
         self.p0_local_id = self.local_edge_ids.copy()
         self.p1_local_id = (self.local_edge_ids + 1) % 3
@@ -107,14 +104,10 @@ class FlatBoundaryCorrector(object):
         self.ce_ratios2 = _isosceles_ce_ratios(self.p2, self.p0, ghost)
         assert (self.ce_ratios2 > 0.0).all()
 
-        for k, (cell_id, local_edge_id) in \
-                enumerate(zip(self.cell_ids, self.local_edge_ids)):
-
-            self.ghostedge_length_2[k] = numpy.dot(
-                    ghost[k] - self.p0[k],
-                    ghost[k] - self.p0[k]
-                    )
-
+        self.ghostedge_length_2 = _row_dot(
+                ghost - self.p0,
+                ghost - self.p0
+                )
         return
 
     def correct_ce_ratios(self):
