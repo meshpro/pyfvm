@@ -120,10 +120,10 @@ class FlatBoundaryCorrector(object):
 
     def correct_control_volumes(self):
         # add volume to the control volume around p0
-        ids = self.p0_id
+        ids = numpy.c_[self.p0_id, self.p0_id]
         vals = 0.25 \
-            * (self.ce_ratios1[:, 0] + self.ce_ratios2[:, 0]) \
-            * self.ghostedge_length_2
+            * numpy.c_[self.ce_ratios1[:, 0], self.ce_ratios2[:, 0]] \
+            * self.ghostedge_length_2[:, None]
         return ids, vals
 
     def correct_surface_areas(self):
@@ -200,7 +200,17 @@ class MeshTri(_base_mesh):
         numpy.add.at(self.ce_ratios, cells_edges, self.ce_ratios_per_half_edge)
 
         # control_volumes
-        self.compute_control_volumes(self.ce_ratios, fbc)
+        edge_nodes = self.edges['nodes']
+        triangle_vols = self.compute_control_volumes(self.ce_ratios)
+        # extra volume from boundary corrections
+        ids, vals = fbc.correct_control_volumes()
+        # add it all up
+        self.control_volumes = numpy.zeros(len(self.node_coords), dtype=float)
+        numpy.add.at(
+                self.control_volumes,
+                numpy.vstack([edge_nodes, ids]),
+                numpy.vstack([triangle_vols, vals])
+                )
 
         # surface areas
         # flat boundary correction
@@ -226,7 +236,7 @@ class MeshTri(_base_mesh):
                 )
 
         # centroids
-        self.compute_control_volume_centroids(self.cell_circumcenters, fbc)
+        vals = self.compute_control_volume_centroids(self.cell_circumcenters)
 
         return
 
@@ -314,7 +324,7 @@ class MeshTri(_base_mesh):
         e2 = cells_edges[:, 2, :]
         return compute_tri_areas_and_ce_ratios(e0, e1, e2)
 
-    def compute_control_volumes(self, ce_ratios, fbc):
+    def compute_control_volumes(self, ce_ratios):
         edge_nodes = self.edges['nodes']
 
         edges = \
@@ -324,19 +334,14 @@ class MeshTri(_base_mesh):
         #   0.5 * (0.5 * edge_length) * covolume
         # = 0.5 * (0.5 * edge_length**2) * ce_ratio_edge_ratio
         edge_lengths_squared = _row_dot(edges, edges)
-        triangle_vols = 0.25 * edge_lengths_squared * ce_ratios
+        triangle_vols = numpy.c_[
+                0.25 * edge_lengths_squared * ce_ratios,
+                0.25 * edge_lengths_squared * ce_ratios
+                ]
 
-        self.control_volumes = numpy.zeros(len(self.node_coords), dtype=float)
-        numpy.add.at(self.control_volumes, edge_nodes[:, 0], triangle_vols)
-        numpy.add.at(self.control_volumes, edge_nodes[:, 1], triangle_vols)
+        return triangle_vols
 
-        # add extra volume from boundary corrections
-        ids, vals = fbc.correct_control_volumes()
-        numpy.add.at(self.control_volumes, ids, vals)
-
-        return
-
-    def compute_control_volume_centroids(self, cell_circumcenters, fbc):
+    def compute_control_volume_centroids(self, cell_circumcenters):
         # Compute the control volume centroid.
         # This is actually only necessary for special applications like Lloyd's
         # smoothing <https://en.wikipedia.org/wiki/Lloyd%27s_algorithm>.
