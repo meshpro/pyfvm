@@ -48,7 +48,7 @@ class TestPDEs(unittest.TestCase):
                 21, 21,
                 zigzag=True
                 )
-        mesh = pyfvm.meshTri.meshTri(vertices, cells)
+        mesh = pyfvm.mesh_tri.MeshTri(vertices, cells)
         self.poisson(
                 mesh,
                 0.03486068399064314,
@@ -63,7 +63,7 @@ class TestPDEs(unittest.TestCase):
                 0.0, 1.0, 0.0, 1.0, 0.0, 1.0,
                 11, 11, 11
                 )
-        mesh = pyfvm.meshTetra.meshTetra(vertices, cells)
+        mesh = pyfvm.mesh_tetra.MeshTetra(vertices, cells)
         self.poisson(
                 mesh,
                 0.019193629907227189,
@@ -102,7 +102,7 @@ class TestPDEs(unittest.TestCase):
                 21, 21,
                 zigzag=True
                 )
-        mesh = pyfvm.meshTri.meshTri(vertices, cells)
+        mesh = pyfvm.mesh_tri.MeshTri(vertices, cells)
 
         matrix, rhs = pyfvm.discretize_linear(Poisson(), mesh)
 
@@ -139,7 +139,7 @@ class TestPDEs(unittest.TestCase):
                 21, 21,
                 zigzag=True
                 )
-        mesh = pyfvm.meshTri.meshTri(vertices, cells)
+        mesh = pyfvm.mesh_tri.MeshTri(vertices, cells)
 
         matrix, rhs = pyfvm.discretize_linear(Poisson(), mesh)
 
@@ -180,7 +180,7 @@ class TestPDEs(unittest.TestCase):
                 21, 21,
                 zigzag=True
                 )
-        mesh = pyfvm.meshTri.meshTri(vertices, cells)
+        mesh = pyfvm.mesh_tri.MeshTri(vertices, cells)
 
         matrix, rhs = pyfvm.discretize_linear(Poisson(), mesh)
 
@@ -219,7 +219,7 @@ class TestPDEs(unittest.TestCase):
                 21, 21,
                 zigzag=True
                 )
-        mesh = pyfvm.meshTri.meshTri(vertices, cells)
+        mesh = pyfvm.mesh_tri.MeshTri(vertices, cells)
 
         matrix, rhs = pyfvm.discretize_linear(Poisson(), mesh)
 
@@ -254,7 +254,7 @@ class TestPDEs(unittest.TestCase):
                 21, 21,
                 zigzag=True
                 )
-        mesh = pyfvm.meshTri.meshTri(vertices, cells)
+        mesh = pyfvm.mesh_tri.MeshTri(vertices, cells)
 
         f, jacobian = pyfvm.discretize(Bratu(), mesh)
 

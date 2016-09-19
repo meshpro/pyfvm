@@ -18,7 +18,7 @@ class DC(object):
 
 
 vertices, cells = meshzoo.rectangle.create_mesh(0.0, 1.0, 0.0, 1.0, 51, 51)
-mesh = pyfvm.meshTri.meshTri(vertices, cells)
+mesh = pyfvm.mesh_tri.MeshTri(vertices, cells)
 
 matrix, rhs = pyfvm.discretize_linear(DC(), mesh)
 

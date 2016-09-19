@@ -40,7 +40,7 @@ def get_mesh(k):
             n+1, n+1,
             zigzag=True
             )
-    return pyfvm.meshTri.meshTri(vertices, cells)
+    return pyfvm.mesh_tri.MeshTri(vertices, cells)
 
 
 class ConvergenceConvection2dSquareTest(unittest.TestCase):

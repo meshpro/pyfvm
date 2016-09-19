@@ -7,7 +7,7 @@ from pyfvm.base import \
         compute_tri_areas_and_ce_ratios, \
         compute_triangle_circumcenters
 
-__all__ = ['meshTri']
+__all__ = ['MeshTri']
 
 
 def _mirror_point(p0, p1, p2):
@@ -150,10 +150,10 @@ class FlatBoundaryCorrector(object):
         return
 
 
-class meshTri(_base_mesh):
+class MeshTri(_base_mesh):
     '''Class for handling triangular meshes.
 
-    .. inheritance-diagram:: meshTri
+    .. inheritance-diagram:: MeshTri
     '''
     def __init__(self, nodes, cells):
         '''Initialization.
@@ -163,7 +163,7 @@ class meshTri(_base_mesh):
         cells = uidx.reshape(cells.shape)
         nodes = nodes[uvertices]
 
-        super(meshTri, self).__init__(nodes, cells)
+        super(MeshTri, self).__init__(nodes, cells)
         self.cells = numpy.empty(
                 len(cells),
                 dtype=numpy.dtype([('nodes', (int, 3))])

@@ -51,7 +51,7 @@ def get_mesh(k):
     coords = m.coordinates()
     coords = numpy.c_[coords, numpy.zeros(len(coords))]
 
-    return pyfvm.meshTri.meshTri(coords, m.cells())
+    return pyfvm.mesh_tri.MeshTri(coords, m.cells())
 
 
 class ConvergenceNeumann2dCircleTest(unittest.TestCase):

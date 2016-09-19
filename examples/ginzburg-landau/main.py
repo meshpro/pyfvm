@@ -42,7 +42,7 @@ class Energy(pyfvm.EdgeMatrixKernel):
             ])
 
 vertices, cells = meshzoo.rectangle.create_mesh(0.0, 1.0, 0.0, 1.0, 31, 31)
-mesh = pyfvm.meshTri.meshTri(vertices, cells)
+mesh = pyfvm.mesh_tri.MeshTri(vertices, cells)
 
 # Equivalently, one could have written
 #

@@ -7,17 +7,17 @@ from pyfvm.base import \
         compute_tri_areas_and_ce_ratios, \
         compute_triangle_circumcenters
 
-__all__ = ['meshTetra']
+__all__ = ['MeshTetra']
 
 
 def _my_dot(a, b):
     return numpy.einsum('ijk, ijk->ij', a, b)
 
 
-class meshTetra(_base_mesh):
+class MeshTetra(_base_mesh):
     '''Class for handling tetrahedral meshes.
 
-    .. inheritance-diagram:: meshTetra
+    .. inheritance-diagram:: MeshTetra
     '''
     def __init__(self, node_coords, cells, mode='algebraic'):
         '''Initialization.
@@ -27,7 +27,7 @@ class meshTetra(_base_mesh):
         cells = uidx.reshape(cells.shape)
         node_coords = node_coords[uvertices]
 
-        super(meshTetra, self).__init__(node_coords, cells)
+        super(MeshTetra, self).__init__(node_coords, cells)
 
         self.cells = {
             'nodes': cells

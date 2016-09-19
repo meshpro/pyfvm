@@ -18,7 +18,7 @@ class TestIo(unittest.TestCase):
                 2, 2,
                 zigzag=True
                 )
-        mesh = pyfvm.meshTri.meshTri(vertices, cells)
+        mesh = pyfvm.mesh_tri.MeshTri(vertices, cells)
         # mesh, _, _, _ = pyfvm.reader.read('pacman.vtu')
 
         self.assertEqual(mesh.num_delaunay_violations(), 0)
@@ -45,7 +45,7 @@ class TestIo(unittest.TestCase):
                 0.0, 1.0, 0.0, 1.0, 0.0, 1.0,
                 2, 2, 2
                 )
-        mesh = pyfvm.meshTetra.meshTetra(vertices, cells)
+        mesh = pyfvm.mesh_tetra.MeshTetra(vertices, cells)
 
         self.assertEqual(mesh.num_delaunay_violations(), 0)
 

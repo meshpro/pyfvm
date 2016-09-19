@@ -39,14 +39,14 @@ class Poisson(FvmProblem):
 #         0.0, 1.0, 0.0, 1.0, 0.0, 1.0,
 #         25, 25, 25
 #         )
-# mesh = pyfvm.meshTetra.meshTetra(vertices, cells)
+# mesh = pyfvm.mesh_tetra.MeshTetra(vertices, cells)
 # vertices, cells = meshzoo.rectangle.create_mesh(
 #         0.0, 2.0,
 #         0.0, 1.0,
 #         401, 201,
 #         zigzag=True
 #         )
-# mesh = pyfvm.meshTri.meshTri(vertices, cells)
+# mesh = pyfvm.mesh_tri.MeshTri(vertices, cells)
 
 import mshr
 import dolfin
@@ -57,7 +57,7 @@ c = mshr.Circle(dolfin.Point(0., 0., 0.), 1, int(2*pi / h))
 m = mshr.generate_mesh(c, 2.0 / h)
 coords = m.coordinates()
 coords = numpy.c_[coords, numpy.zeros(len(coords))]
-mesh = pyfvm.meshTri.meshTri(coords, m.cells())
+mesh = pyfvm.mesh_tri.MeshTri(coords, m.cells())
 
 matrix, rhs = pyfvm.discretize_linear(Poisson(), mesh)
 

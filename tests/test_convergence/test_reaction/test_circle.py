@@ -38,7 +38,7 @@ def get_mesh(k):
     m = mshr.generate_mesh(c, 2.0 / h)
     coords = m.coordinates()
     coords = numpy.c_[coords, numpy.zeros(len(coords))]
-    return pyfvm.meshTri.meshTri(coords, m.cells())
+    return pyfvm.mesh_tri.MeshTri(coords, m.cells())
 
 
 class ConvergenceReaction2dCircleTest(unittest.TestCase):

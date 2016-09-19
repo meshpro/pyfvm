@@ -33,7 +33,7 @@ def get_mesh(k):
     h = 0.5**(k+2)
     c = mshr.Sphere(dolfin.Point(0., 0., 0.), 1.0, int(2*pi / h))
     m = mshr.generate_mesh(c, 2.0 / h)
-    return pyfvm.meshTetra.meshTetra(
+    return pyfvm.mesh_tetra.MeshTetra(
             m.coordinates(),
             m.cells(),
             mode='geometric'

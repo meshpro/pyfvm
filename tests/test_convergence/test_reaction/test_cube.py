@@ -35,7 +35,7 @@ def get_mesh(k):
             0.0, 1.0,
             n+1, n+1, n+1
             )
-    return pyfvm.meshTetra.meshTetra(vertices, cells, mode='algebraic')
+    return pyfvm.mesh_tetra.MeshTetra(vertices, cells, mode='algebraic')
 
 
 class ConvergenceReaction3dCubeTest(unittest.TestCase):

@@ -68,7 +68,7 @@ class TestVolumes(unittest.TestCase):
             [0, 1, 0]
             ])
         cells = numpy.array([[0, 1, 2]])
-        mesh = pyfvm.meshTri.meshTri(points, cells)
+        mesh = pyfvm.mesh_tri.MeshTri(points, cells)
 
         tol = 1.0e-14
 
@@ -107,7 +107,7 @@ class TestVolumes(unittest.TestCase):
     #         [0.5, h, 0.0],
     #         ])
     #     cells = numpy.array([[0, 1, 2]])
-    #     mesh = pyfvm.meshTri.meshTri(
+    #     mesh = pyfvm.mesh_tri.MeshTri(
     #             points,
     #             cells,
     #             allow_negative_volumes=True
@@ -166,7 +166,7 @@ class TestVolumes(unittest.TestCase):
             [0.5, h, 0.0],
             ])
         cells = numpy.array([[0, 1, 2]])
-        mesh = pyfvm.meshTri.meshTri(
+        mesh = pyfvm.mesh_tri.MeshTri(
                 points,
                 cells
                 )
@@ -232,7 +232,7 @@ class TestVolumes(unittest.TestCase):
             [a, h, 0.0],
             ])
         cells = numpy.array([[0, 1, 2]])
-        mesh = pyfvm.meshTri.meshTri(
+        mesh = pyfvm.mesh_tri.MeshTri(
                 points,
                 cells
                 )
@@ -290,7 +290,7 @@ class TestVolumes(unittest.TestCase):
             [0.5, -h, 0.0]
             ])
         cells = numpy.array([[0, 1, 2], [0, 1, 3]])
-        mesh = pyfvm.meshTri.meshTri(
+        mesh = pyfvm.mesh_tri.MeshTri(
                 points,
                 cells
                 )
@@ -332,7 +332,7 @@ class TestVolumes(unittest.TestCase):
             [0.0, 0.0, numpy.sqrt(2.0)],
             ]) / numpy.sqrt(3.0) * a
         cells = numpy.array([[0, 1, 2, 3]])
-        mesh = pyfvm.meshTetra.meshTetra(points, cells)
+        mesh = pyfvm.mesh_tetra.MeshTetra(points, cells)
 
         mesh.show()
         mesh.show_edge(0)
@@ -380,7 +380,7 @@ class TestVolumes(unittest.TestCase):
         cells = numpy.array([[0, 1, 2, 3]])
         tol = 1.0e-10
 
-        mesh = pyfvm.meshTetra.meshTetra(points, cells, mode='algebraic')
+        mesh = pyfvm.mesh_tetra.MeshTetra(points, cells, mode='algebraic')
 
         self.assertAlmostEqual(mesh.cell_circumcenters[0][0], a/2.0, delta=tol)
         self.assertAlmostEqual(mesh.cell_circumcenters[0][1], a/2.0, delta=tol)
@@ -417,7 +417,7 @@ class TestVolumes(unittest.TestCase):
         cells = numpy.array([[0, 1, 2, 3]])
         tol = 1.0e-10
 
-        mesh = pyfvm.meshTetra.meshTetra(points, cells, mode='geometric')
+        mesh = pyfvm.mesh_tetra.MeshTetra(points, cells, mode='geometric')
 
         self.assertAlmostEqual(mesh.cell_circumcenters[0][0], a/2.0, delta=tol)
         self.assertAlmostEqual(mesh.cell_circumcenters[0][1], a/2.0, delta=tol)
@@ -451,7 +451,7 @@ class TestVolumes(unittest.TestCase):
             [0.5, 0.5, h],
             ])
         cells = numpy.array([[0, 1, 2, 3]])
-        mesh = pyfvm.meshTetra.meshTetra(points, cells)
+        mesh = pyfvm.mesh_tetra.MeshTetra(points, cells)
 
         tol = 1.0e-7
 
@@ -504,7 +504,7 @@ class TestVolumes(unittest.TestCase):
             [0, 1, 2, 3],
             [0, 1, 2, 4]
             ])
-        mesh = pyfvm.meshTetra.meshTetra(points, cells)
+        mesh = pyfvm.mesh_tetra.MeshTetra(points, cells)
 
         total_vol = h / 3.0
 
@@ -529,7 +529,7 @@ class TestVolumes(unittest.TestCase):
             [0, 2, 3]
             ])
 
-        mesh = pyfvm.meshTri.meshTri(points, cells)
+        mesh = pyfvm.mesh_tri.MeshTri(points, cells)
 
         tol = 1.0e-14
 
@@ -569,7 +569,7 @@ class TestVolumes(unittest.TestCase):
             [0, 1, 4, 5],
             [0, 3, 4, 5]
             ])
-        mesh = pyfvm.meshTetra.meshTetra(nodes, cellsNodes)
+        mesh = pyfvm.mesh_tetra.MeshTetra(nodes, cellsNodes)
 
         # # pull this to see what a negative ce_ratio looks like
         # mesh.show()
@@ -643,7 +643,7 @@ class TestVolumes(unittest.TestCase):
             [0, 3, 4],
             [0, 1, 4]
             ])
-        mesh = pyfvm.meshTri.meshTri(points, cells)
+        mesh = pyfvm.mesh_tri.MeshTri(points, cells)
         self._run_test(
                 mesh,
                 2 * numpy.sqrt(3),
@@ -690,7 +690,7 @@ class TestVolumes(unittest.TestCase):
             [1, 3, 5, 6],
             [2, 3, 5, 7]
             ])
-        mesh = pyfvm.meshTetra.meshTetra(points, cells)
+        mesh = pyfvm.mesh_tetra.MeshTetra(points, cells)
         self._run_test(
                 mesh,
                 10.0,

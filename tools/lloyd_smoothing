@@ -21,7 +21,7 @@ def smoothing():
     #     [2, 3, 4],
     #     [3, 0, 4]
     #     ])
-    # mesh = pyfvm.meshTri.meshTri(points, cells)
+    # mesh = pyfvm.mesh_tri.MeshTri(points, cells)
 
     # 2D mesh
     assert all(mesh.node_coords[:, 2] == 0.0)
@@ -34,7 +34,7 @@ def smoothing():
         print(k)
         new_points = mesh.centroids
         new_points[boundary_verts] = mesh.node_coords[boundary_verts]
-        mesh = pyfvm.meshTri.meshTri(new_points, mesh.cells['nodes'])
+        mesh = pyfvm.mesh_tri.MeshTri(new_points, mesh.cells['nodes'])
         # mesh.show()
         # plt.show()
         mesh.write('circle%03d.vtu' % (k+1))

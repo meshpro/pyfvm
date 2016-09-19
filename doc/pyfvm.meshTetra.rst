@@ -1,7 +1,7 @@
-:mod:`pyfvm.meshTetra`
+:mod:`pyfvm.mesh_tetra`
 =======================
 
-.. automodule:: pyfvm.meshTetra
+.. automodule:: pyfvm.mesh_tetra
     :members:
     :undoc-members:
     :show-inheritance:
