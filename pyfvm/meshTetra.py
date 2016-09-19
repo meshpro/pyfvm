@@ -1,7 +1,11 @@
 # -*- coding: utf-8 -*-
 #
 import numpy
-from pyfvm.base import _base_mesh, _row_dot
+from pyfvm.base import \
+        _base_mesh, \
+        _row_dot, \
+        compute_tri_areas_and_ce_ratios, \
+        compute_triangle_circumcenters
 
 __all__ = ['meshTetra']
 
@@ -274,7 +278,7 @@ class meshTetra(_base_mesh):
         e1 = e[:, 1, :]
         e2 = e[:, 2, :]
 
-        _, face_ce_ratios = self.compute_tri_areas_and_ce_ratios(e0, e1, e2)
+        _, face_ce_ratios = compute_tri_areas_and_ce_ratios(e0, e1, e2)
         fce_ratios = face_ce_ratios[self.cells['faces']]
 
         # Multiply
@@ -387,7 +391,7 @@ class meshTetra(_base_mesh):
                     # draw the connection
                     #   tet circumcenter---face circumcenter
                     X = self.node_coords[self.faces['nodes'][[face_id]]]
-                    fcc = self.compute_triangle_circumcenters(X)
+                    fcc = compute_triangle_circumcenters(X)
                     ax.plot(
                         [cc[0], fcc[0, 0]],
                         [cc[1], fcc[0, 1]],
