@@ -235,8 +235,24 @@ class MeshTri(_base_mesh):
                 numpy.vstack([vals0, vals1])
                 )
 
-        # centroids
-        vals = self.compute_control_volume_centroids(self.cell_circumcenters)
+        # Compute the control volume centroids.
+        # This is actually only necessary for special applications like Lloyd's
+        # smoothing <https://en.wikipedia.org/wiki/Lloyd%27s_algorithm>.
+        #
+        # The centroid of any volume V is given by
+        #
+        #   c = \int_V x / \int_V 1.
+        #
+        # The denominator is the control volume. The numerator can be computed
+        # by making use of the fact that the control volume around any vertex
+        # v_0 is composed of right triangles, two for each adjacent cell.
+        pt_idx, contribs = \
+            self.compute_integral_x(self.cell_circumcenters)
+        # add them all up
+        self.centroids = numpy.zeros((len(self.node_coords), 3))
+        numpy.add.at(self.centroids, pt_idx, contribs)
+        # Don't forget to divide by the control volume!
+        self.centroids /= self.control_volumes[:, None]
 
         return
 
@@ -341,21 +357,17 @@ class MeshTri(_base_mesh):
 
         return triangle_vols
 
-    def compute_control_volume_centroids(self, cell_circumcenters):
-        # Compute the control volume centroid.
-        # This is actually only necessary for special applications like Lloyd's
-        # smoothing <https://en.wikipedia.org/wiki/Lloyd%27s_algorithm>.
-        #
-        # The centroid of any volume V is given by
-        #
-        #   c = \int_V x / \int_V 1.
-        #
-        # The denominator is the control volume. The numerator can be computed
-        # by making use of the fact that the control volume around any vertex
-        # v_0 is composed of right triangles, two for each adjacent cell. The
-        # integral of any linear function over a triangle is the average of the
-        # values of the function in each of the three corners, times the area
-        # of the triangle.
+    def compute_integral_x(self, cell_circumcenters):
+        '''Computes the integral of x,
+
+          \int_V x,
+
+        over all "triangles", i.e., areas enclosed by half of an edge and the
+        covolume,
+        '''
+        # The integral of any linear function over a triangle is the average of
+        # the values of the function in each of the three corners, times the
+        # area of the triangle.
         edge_nodes = self.edges['nodes']
         edges = \
             self.node_coords[edge_nodes[:, 1]] - \
@@ -379,13 +391,9 @@ class MeshTri(_base_mesh):
             edge_midpoints[cells_edges, None, :] +
             self.node_coords[pt_idx]
             ) / 3.0
-        val = right_triangle_vols[:, :, None, None] * average
+        contribs = right_triangle_vols[:, :, None, None] * average
 
-        self.centroids = numpy.zeros((len(self.node_coords), 3))
-        numpy.add.at(self.centroids, pt_idx, val)
-        # Don't forget to divide by the control volume!
-        self.centroids /= self.control_volumes[:, None]
-        return
+        return pt_idx, contribs
 
     def compute_surface_areas(self, fbc):
         self.surface_areas = numpy.zeros(len(self.get_vertices('everywhere')))
