@@ -112,13 +112,10 @@ class FlatBoundaryCorrector(object):
 
     def correct_ce_ratios(self):
         vals = numpy.empty((len(self.cell_ids), 3), dtype=float)
-        for k, (cell_id, local_edge_id) in \
-                enumerate(zip(self.cell_ids, self.local_edge_ids)):
-            # The edge with local ID p1_local_id is _opposite_ of the vertex
-            # with local ID p1_local_id.
-            vals[k, self.p0_local_id[k]] = 0.0
-            vals[k, self.p1_local_id[k]] = self.ce_ratios2[k, 1]
-            vals[k, self.p2_local_id[k]] = self.ce_ratios1[k, 1]
+        i = numpy.arange(len(vals))
+        vals[i, self.p0_local_id] = 0.0
+        vals[i, self.p1_local_id] = self.ce_ratios2[:, 1]
+        vals[i, self.p2_local_id] = self.ce_ratios1[:, 1]
         return self.cell_ids, vals
 
     def correct_control_volumes(self):
