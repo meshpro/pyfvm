@@ -124,33 +124,28 @@ class FlatBoundaryCorrector(object):
     def correct_control_volumes(self):
         # add volume to the control volume around p0
         ids = self.p0_id
-        vals = numpy.empty(len(self.cell_ids), dtype=float)
-        for k, (cell_id, local_edge_id) in \
-                enumerate(zip(self.cell_ids, self.local_edge_ids)):
-            vals[k] = 0.25 \
-                * (self.ce_ratios1[k, 0] + self.ce_ratios2[k, 0]) \
-                * self.ghostedge_length_2[k]
+        vals = 0.25 \
+            * (self.ce_ratios1[:, 0] + self.ce_ratios2[:, 0]) \
+            * self.ghostedge_length_2
         return ids, vals
 
     def correct_surface_areas(self):
-        n = len(self.cell_ids)
-        ids = numpy.empty((2*n, 2), dtype=int)
-        vals = numpy.empty((2*n, 2), dtype=float)
-        for k, (cell_id, local_edge_id) in \
-                enumerate(zip(self.cell_ids, self.local_edge_ids)):
-            ghostedge_length = numpy.sqrt(self.ghostedge_length_2[k])
-            cv1 = self.ce_ratios1[k, 0] * ghostedge_length
-            cv2 = self.ce_ratios2[k, 0] * ghostedge_length
+        ghostedge_length = numpy.sqrt(self.ghostedge_length_2)
 
-            ids[2*k, :] = [self.p0_id[k], self.p0_id[k]]
-            vals[2*k, :] = [cv1, cv2]
+        cv1 = self.ce_ratios1[:, 0] * ghostedge_length
+        cv2 = self.ce_ratios2[:, 0] * ghostedge_length
 
-            ids[2*k+1, :] = [self.p1_id[k], self.p2_id[k]]
-            vals[2*k+1, :] = [
-                    numpy.linalg.norm(self.q[k] - self.p1[k]) - cv1,
-                    numpy.linalg.norm(self.q[k] - self.p2[k]) - cv2
-                    ]
+        ids0 = numpy.c_[self.p0_id, self.p0_id]
+        vals0 = numpy.c_[cv1, cv2]
 
+        ids1 = numpy.c_[self.p1_id, self.p2_id]
+        vals1 = numpy.c_[
+                numpy.linalg.norm(self.q - self.p1) - cv1,
+                numpy.linalg.norm(self.q - self.p2) - cv2
+                ]
+
+        ids = numpy.vstack([ids0, ids1])
+        vals = numpy.vstack([vals0, vals1])
         return self.cell_ids, self.local_edge_ids, ids, vals
 
     def correct_centroids(self):
