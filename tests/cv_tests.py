@@ -20,12 +20,12 @@ class TestVolumes(unittest.TestCase):
             cv_norms, covol_norms, cellvol_norms,
             tol=1.0e-12
             ):
-        if mesh.cells['nodes'].shape[1] == 3:
-            dim = 2
-        elif mesh.cells['nodes'].shape[1] == 4:
-            dim = 3
-        else:
-            raise ValueError('Can only handle triangles and tets.')
+        # if mesh.cells['nodes'].shape[1] == 3:
+        #     dim = 2
+        # elif mesh.cells['nodes'].shape[1] == 4:
+        #     dim = 3
+        # else:
+        #     raise ValueError('Can only handle triangles and tets.')
 
         # Check cell volumes.
         total_cellvolume = fsum(mesh.cell_volumes)

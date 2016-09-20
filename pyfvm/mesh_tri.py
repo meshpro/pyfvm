@@ -111,6 +111,8 @@ class FlatBoundaryCorrector(object):
         return
 
     def correct_ce_ratios(self):
+        '''Return the covolume-edge length ratios for the flat boundary cells.
+        '''
         vals = numpy.empty((len(self.cell_ids), 3), dtype=float)
         i = numpy.arange(len(vals))
         vals[i, self.p0_local_id] = 0.0
@@ -118,15 +120,52 @@ class FlatBoundaryCorrector(object):
         vals[i, self.p2_local_id] = self.ce_ratios1[:, 1]
         return self.cell_ids, vals
 
-    def correct_control_volumes(self):
-        # add volume to the control volume around p0
-        ids = numpy.c_[self.p0_id, self.p0_id]
-        vals = 0.25 \
-            * numpy.c_[self.ce_ratios1[:, 0], self.ce_ratios2[:, 0]] \
-            * self.ghostedge_length_2[:, None]
+    def control_volumes(self):
+        e1 = self.p0 - self.p2
+        e2 = self.p1 - self.p0
+
+        e1_length2 = _row_dot(e1, e1)
+        e2_length2 = _row_dot(e2, e2)
+
+        ids = numpy.stack([
+            numpy.c_[self.p0_id, self.p0_id],
+            numpy.c_[self.p0_id, self.p1_id],
+            numpy.c_[self.p0_id, self.p2_id]
+            ], axis=1)
+        vals = numpy.stack([
+            numpy.c_[
+               0.25 * self.ce_ratios1[:, 0] * self.ghostedge_length_2,
+               0.25 * self.ce_ratios2[:, 0] * self.ghostedge_length_2
+               ],
+            numpy.c_[
+                0.25 * self.ce_ratios1[:, 1] * e2_length2,
+                0.25 * self.ce_ratios1[:, 1] * e2_length2
+                ],
+            numpy.c_[
+                0.25 * self.ce_ratios2[:, 1] * e1_length2,
+                0.25 * self.ce_ratios2[:, 1] * e1_length2
+                ],
+            ], axis=1)
+
         return ids, vals
 
     def correct_surface_areas(self):
+        '''In the triangle
+
+                               p0
+                               _^_
+                           ___//|\\___
+                       ___/   / | \   \___
+                   ___/     _/  |  \_     \___
+               ___/   \    /    |    \    /   \___
+           ___/        \  /     |     \  /        \___
+          /_____________\/__cv1_|_cv2__\/_____________\
+         p1                     q                     p2
+                             OUTSIDE
+
+        associate the lenght dist(p1, q1) with p1, dist(q2, p2) to p2, and
+        dist(q1, q2) to p0.
+        '''
         ghostedge_length = numpy.sqrt(self.ghostedge_length_2)
 
         cv1 = self.ce_ratios1[:, 0] * ghostedge_length
@@ -145,9 +184,67 @@ class FlatBoundaryCorrector(object):
         vals = numpy.vstack([vals0, vals1])
         return self.cell_ids, self.local_edge_ids, ids, vals
 
-    def correct_centroids(self):
-        raise NotImplementedError('')
-        return
+    def integral_x(self):
+        '''Computes the integral of x,
+
+          \int_V x,
+
+        over all "atomic" triangles
+
+                               p0
+                               _^_
+                           ___//|\\___
+                       ___/   / | \   \___
+                   ___/     _/  |  \_     \___
+               ___/   \    /    |    \    /   \___
+           ___/        \  /     |     \  /        \___
+          /_____________\/______|______\/_____________\
+         p1             q1      q      q2             p2
+        '''
+        ids = numpy.empty((len(self.cell_ids), 3, 2), dtype=int)
+        vals = numpy.empty((len(self.cell_ids), 3, 2, 3))
+        for k, (cell_id, local_edge_id) in \
+                enumerate(zip(self.cell_ids, self.local_edge_ids)):
+            # The long edge is opposite of p0 and has its local index, likewise
+            # for the other edges.
+            ids[k, self.p0_local_id] = [self.p0_id, self.p0_id]
+            ids[k, self.p1_local_id] = [self.p0_id, self.p2_id]
+            ids[k, self.p2_local_id] = [self.p0_id, self.p1_id]
+
+            e0 = self.p2[k] - self.p1[k]
+            e1 = self.p0[k] - self.p2[k]
+            e2 = self.p1[k] - self.p0[k]
+
+            e1_length = numpy.sqrt(numpy.dot(e1, e1))
+            e2_length = numpy.sqrt(numpy.dot(e2, e2))
+
+            lambda1 = (0.5 * e2_length + numpy.dot(self.p1[k], e2)) \
+                / numpy.dot(e0, e2)
+            lambda2 = (0.5 * e1_length + numpy.dot(self.p2[k], e1)) \
+                / numpy.dot(e0, e1)
+
+            q1 = self.p1[k] + lambda1 * (self.p2[k] - self.p1[k])
+            q2 = self.p2[k] + lambda2 * (self.p1[k] - self.p2[k])
+
+            # The integral of any linear function over a triangle is the
+            # average of the values of the function in each of the three
+            # corners, times the area of the triangle.
+            vals[k, self.p1_local_id] = [
+                    [
+                        (self.p0 + self.q + q1) / 3.0,
+                        (self.p0 + self.q + q1) / 3.0
+                    ],
+                    [
+                        (self.p0 + self.q + q2) / 3.0,
+                        (self.p0 + self.q + q2) / 3.0
+                    ],
+                    [
+                        (self.p0 + self.q + q1) / 3.0,
+                        (self.p0 + self.q + q1) / 3.0
+                    ]
+                    ]
+
+        return self.cell_ids, self.local_edge_ids, ids, vals
 
 
 class MeshTri(_base_mesh):
@@ -182,10 +279,15 @@ class MeshTri(_base_mesh):
             self.compute_cell_volumes_and_ce_ratios()
 
         # Find out which boundary cells need special treatment
-        cell_ids, local_edge_ids = numpy.where(numpy.logical_and(
+        is_flat_boundary = numpy.logical_and(
             self.ce_ratios_per_half_edge < 0.0,
             self.is_boundary_edge[self.cells['edges']]
-            ))
+            )
+        cell_ids, local_edge_ids = numpy.where(is_flat_boundary)
+        # All rows which are completely not flat boundary
+        regular_cell_ids = numpy.where(
+                numpy.all(numpy.logical_not(is_flat_boundary), axis=1)
+                )[0]
 
         fbc = FlatBoundaryCorrector(
                 self.cells, self.node_coords, cell_ids, local_edge_ids
@@ -200,16 +302,15 @@ class MeshTri(_base_mesh):
         numpy.add.at(self.ce_ratios, cells_edges, self.ce_ratios_per_half_edge)
 
         # control_volumes
-        edge_nodes = self.edges['nodes']
-        triangle_vols = self.compute_control_volumes(self.ce_ratios)
+        ids, vals = self.compute_control_volumes(regular_cell_ids)
         # extra volume from boundary corrections
-        ids, vals = fbc.correct_control_volumes()
+        fb_ids, fb_vals = fbc.control_volumes()
         # add it all up
         self.control_volumes = numpy.zeros(len(self.node_coords), dtype=float)
         numpy.add.at(
                 self.control_volumes,
-                numpy.vstack([edge_nodes, ids]),
-                numpy.vstack([triangle_vols, vals])
+                numpy.vstack([ids, fb_ids]),
+                numpy.vstack([vals, fb_vals])
                 )
 
         # surface areas
@@ -340,7 +441,7 @@ class MeshTri(_base_mesh):
         e2 = cells_edges[:, 2, :]
         return compute_tri_areas_and_ce_ratios(e0, e1, e2)
 
-    def compute_control_volumes(self, ce_ratios):
+    def compute_control_volumes(self, cell_ids):
         edge_nodes = self.edges['nodes']
 
         edges = \
@@ -350,12 +451,13 @@ class MeshTri(_base_mesh):
         #   0.5 * (0.5 * edge_length) * covolume
         # = 0.5 * (0.5 * edge_length**2) * ce_ratio_edge_ratio
         edge_lengths_squared = _row_dot(edges, edges)
-        triangle_vols = numpy.c_[
-                0.25 * edge_lengths_squared * ce_ratios,
-                0.25 * edge_lengths_squared * ce_ratios
-                ]
+        el2 = edge_lengths_squared[self.cells['edges'][cell_ids]]
 
-        return triangle_vols
+        ids = self.edges['nodes'][self.cells['edges'][cell_ids]]
+        v = 0.25 * el2 * self.ce_ratios_per_half_edge[cell_ids]
+        vals = numpy.stack([v, v], axis=2)
+
+        return ids, vals
 
     def compute_integral_x(self, cell_circumcenters):
         '''Computes the integral of x,
