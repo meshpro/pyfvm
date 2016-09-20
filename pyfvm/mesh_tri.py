@@ -207,7 +207,7 @@ class FlatBoundaryCorrector(object):
                                _^_
                            ___//|\\___
                        ___/   / | \   \___
-                   ___/     _/  |  \_     \___
+                   _em2     _/  |  \_     em1_
                ___/   \    /    |    \    /   \___
            ___/        \  /     |     \  /        \___
           /_____________\/______|______\/_____________\
@@ -217,46 +217,68 @@ class FlatBoundaryCorrector(object):
         vals = numpy.empty((len(self.cell_ids), 3, 2, 3))
         for k, (cell_id, local_edge_id) in \
                 enumerate(zip(self.cell_ids, self.local_edge_ids)):
-            # The long edge is opposite of p0 and has its local index, likewise
-            # for the other edges.
-            ids[k, self.p0_local_id] = [self.p0_id, self.p0_id]
-            ids[k, self.p1_local_id] = [self.p0_id, self.p2_id]
-            ids[k, self.p2_local_id] = [self.p0_id, self.p1_id]
-
+            # The long edge is opposite of p0 and has the same local index,
+            # likewise for the other edges.
             e0 = self.p2[k] - self.p1[k]
             e1 = self.p0[k] - self.p2[k]
             e2 = self.p1[k] - self.p0[k]
 
-            e1_length = numpy.sqrt(numpy.dot(e1, e1))
-            e2_length = numpy.sqrt(numpy.dot(e2, e2))
-
-            lambda1 = (0.5 * e2_length + numpy.dot(self.p1[k], e2)) \
-                / numpy.dot(e0, e2)
-            lambda2 = (0.5 * e1_length + numpy.dot(self.p2[k], e1)) \
-                / numpy.dot(e0, e1)
-
+            # The orthogonal projection of the point q1 (and likewise q2) is
+            # the midpoint em2 of the edge e2, so
+            #
+            #     <q1 - p1, (p0 - p1)/||p0 - p1||> = 0.5 * ||p0 - p1||.
+            #
+            # Setting
+            #
+            #     q1 = p1 + lambda1 * (p2 - p1)
+            #
+            # gives
+            #
+            #     lambda1 = 0.5 * <p0-p1, p0-p1> / <p2-p1, p0-p1>.
+            #
+            lambda1 = 0.5 * numpy.dot(e2, e2) / numpy.dot(e0, -e2)
+            lambda2 = 0.5 * numpy.dot(e1, e1) / numpy.dot(e0, -e1)
             q1 = self.p1[k] + lambda1 * (self.p2[k] - self.p1[k])
             q2 = self.p2[k] + lambda2 * (self.p1[k] - self.p2[k])
+
+            em1 = 0.5 * (self.p0[k] + self.p2[k])
+            em2 = 0.5 * (self.p1[k] + self.p0[k])
+
+            e1_length2 = numpy.dot(e1, e1)
+            e2_length2 = numpy.dot(e2, e2)
+
+            # triangle areas
+            # TODO take from control volume contributions
+            area_p0_q_q1 = \
+                0.25 * self.ce_ratios1[k, 0] * self.ghostedge_length_2
+            area_p0_q_q2 = \
+                0.25 * self.ce_ratios2[k, 0] * self.ghostedge_length_2
+            area_p0_q1_em2 = 0.25 * self.ce_ratios1[k, 1] * e2_length2
+            area_p1_q1_em2 = area_p0_q1_em2
+            area_p0_q2_em1 = 0.25 * self.ce_ratios2[k, 1] * e1_length2
+            area_p2_q2_em1 = area_p0_q2_em1
 
             # The integral of any linear function over a triangle is the
             # average of the values of the function in each of the three
             # corners, times the area of the triangle.
-            vals[k, self.p1_local_id] = [
-                    [
-                        (self.p0 + self.q + q1) / 3.0,
-                        (self.p0 + self.q + q1) / 3.0
-                    ],
-                    [
-                        (self.p0 + self.q + q2) / 3.0,
-                        (self.p0 + self.q + q2) / 3.0
-                    ],
-                    [
-                        (self.p0 + self.q + q1) / 3.0,
-                        (self.p0 + self.q + q1) / 3.0
+            ids[k, 0] = [self.p0_id[k], self.p0_id[k]]
+            ids[k, 1] = [self.p0_id[k], self.p1_id[k]]
+            ids[k, 2] = [self.p0_id[k], self.p2_id[k]]
+
+            vals[k, 0] = [
+                    area_p0_q_q1 * (self.p0[k] + self.q[k] + q1) / 3.0,
+                    area_p0_q_q2 * (self.p0[k] + self.q[k] + q2) / 3.0
                     ]
+            vals[k, 1] = [
+                    area_p0_q1_em2 * (self.p0[k] + q1 + em2) / 3.0,
+                    area_p1_q1_em2 * (self.p1[k] + q1 + em2) / 3.0
+                    ]
+            vals[k, 2] = [
+                    area_p0_q2_em1 * (self.p0[k] + em1 + q2) / 3.0,
+                    area_p2_q2_em1 * (self.p2[k] + em1 + q2) / 3.0
                     ]
 
-        return self.cell_ids, self.local_edge_ids, ids, vals
+        return ids, vals
 
 
 class MeshTri(_base_mesh):
@@ -358,13 +380,31 @@ class MeshTri(_base_mesh):
         # The denominator is the control volume. The numerator can be computed
         # by making use of the fact that the control volume around any vertex
         # v_0 is composed of right triangles, two for each adjacent cell.
-        pt_idx, contribs = \
-            self.compute_integral_x(self.cell_circumcenters)
+        ids0, vals0 = \
+            self.compute_integral_x(self.cell_circumcenters, regular_cell_ids)
+        print
+        print(ids0)
+        print(vals0)
+        print
+        # flat boundary contributions
+        ids1, vals1 = fbc.integral_x()
+        print
+        print(ids1)
+        print(vals1)
+        print
         # add them all up
         self.centroids = numpy.zeros((len(self.node_coords), 3))
-        numpy.add.at(self.centroids, pt_idx, contribs)
-        # Don't forget to divide by the control volume!
+        numpy.add.at(
+            self.centroids,
+            numpy.vstack([ids0, ids1]),
+            numpy.vstack([vals0, vals1])
+            )
+        # Don't forget to divide by the control volume for the centroids
         self.centroids /= self.control_volumes[:, None]
+
+        print
+        print(self.centroids)
+        print
 
         return
 
@@ -470,7 +510,7 @@ class MeshTri(_base_mesh):
 
         return ids, vals
 
-    def compute_integral_x(self, cell_circumcenters):
+    def compute_integral_x(self, cell_circumcenters, cell_ids):
         '''Computes the integral of x,
 
           \int_V x,
@@ -492,15 +532,17 @@ class MeshTri(_base_mesh):
             self.node_coords[edge_nodes[:, 0]]
             )
 
-        edge_lengths_per_cell = edge_lengths_squared[self.cells['edges']]
-        right_triangle_vols = \
-            0.25 * edge_lengths_per_cell * self.ce_ratios_per_half_edge
+        cells_edges = self.cells['edges'][cell_ids]
 
-        cells_edges = self.cells['edges']
+        edge_lengths_per_cell = edge_lengths_squared[cells_edges]
+        right_triangle_vols = \
+            0.25 * \
+            edge_lengths_per_cell * \
+            self.ce_ratios_per_half_edge[cell_ids]
 
         pt_idx = self.edges['nodes'][cells_edges]
         average = (
-            cell_circumcenters[:, None, None, :] +
+            cell_circumcenters[cell_ids, None, None, :] +
             edge_midpoints[cells_edges, None, :] +
             self.node_coords[pt_idx]
             ) / 3.0
