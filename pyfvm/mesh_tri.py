@@ -121,6 +121,18 @@ class FlatBoundaryCorrector(object):
         return self.cell_ids, vals
 
     def control_volumes(self):
+        '''Control volume contributions
+
+                               p0
+                               _^_
+                           ___//|\\___
+                   e2  ___/   / | \   \___  e1
+                   ___/  p0 _/  |  \_ p0  \___
+               ___/   \    /    |    \    /   \___
+           ___/   p1   \  /  p0 | p0  \  /  p2    \___
+          /_____________\/______|______\/_____________\
+         p1                                           p2
+        '''
         e1 = self.p0 - self.p2
         e2 = self.p1 - self.p0
 
@@ -149,7 +161,7 @@ class FlatBoundaryCorrector(object):
 
         return ids, vals
 
-    def correct_surface_areas(self):
+    def surface_areas(self):
         '''In the triangle
 
                                p0
@@ -182,7 +194,7 @@ class FlatBoundaryCorrector(object):
 
         ids = numpy.vstack([ids0, ids1])
         vals = numpy.vstack([vals0, vals1])
-        return self.cell_ids, self.local_edge_ids, ids, vals
+        return ids, vals
 
     def integral_x(self):
         '''Computes the integral of x,
@@ -284,6 +296,14 @@ class MeshTri(_base_mesh):
             self.is_boundary_edge[self.cells['edges']]
             )
         cell_ids, local_edge_ids = numpy.where(is_flat_boundary)
+        # regular boundary cells
+        is_regular_boundary = numpy.logical_and(
+            self.ce_ratios_per_half_edge >= 0.0,
+            self.is_boundary_edge[self.cells['edges']]
+            )
+        regular_boundary_cell_ids, regular_local_edge_ids = \
+            numpy.where(is_regular_boundary)
+
         # All rows which are completely not flat boundary
         regular_cell_ids = numpy.where(
                 numpy.all(numpy.logical_not(is_flat_boundary), axis=1)
@@ -303,7 +323,7 @@ class MeshTri(_base_mesh):
 
         # control_volumes
         ids, vals = self.compute_control_volumes(regular_cell_ids)
-        # extra volume from boundary corrections
+        # flat boundary elements
         fb_ids, fb_vals = fbc.control_volumes()
         # add it all up
         self.control_volumes = numpy.zeros(len(self.node_coords), dtype=float)
@@ -314,21 +334,13 @@ class MeshTri(_base_mesh):
                 )
 
         # surface areas
+        ids0, vals0 = self.compute_surface_areas(
+                regular_boundary_cell_ids,
+                regular_local_edge_ids
+                )
         # flat boundary correction
-        cell_ids, local_edge_ids, ids0, vals0 = fbc.correct_surface_areas()
-        # all the rest
-        is_regular_boundary_edge = \
-            numpy.zeros(len(self.edges['nodes']), dtype=bool)
-        is_regular_boundary_edge[self.get_edges('boundary')] = True
-        irregular_edge_ids = self.cells['edges'][cell_ids, local_edge_ids]
-        is_regular_boundary_edge[irregular_edge_ids] = False
-        # base values: half the edge length of each adjacent node
-        ids1 = self.edges['nodes'][is_regular_boundary_edge]
-        vals1 = numpy.c_[
-                0.5 * self.edge_lengths[is_regular_boundary_edge],
-                0.5 * self.edge_lengths[is_regular_boundary_edge]
-                ]
-        # add it all up
+        ids1, vals1 = fbc.surface_areas()
+        # add them all up
         self.surface_areas = numpy.zeros(len(self.node_coords))
         numpy.add.at(
                 self.surface_areas,
@@ -497,18 +509,15 @@ class MeshTri(_base_mesh):
 
         return pt_idx, contribs
 
-    def compute_surface_areas(self, fbc):
-        self.surface_areas = numpy.zeros(len(self.get_vertices('everywhere')))
-        boundary_edges = self.get_edges('boundary')
-        numpy.add.at(
-            self.surface_areas,
-            self.edges['nodes'][boundary_edges],
-            numpy.c_[
-                0.5 * self.edge_lengths[boundary_edges],
-                0.5 * self.edge_lengths[boundary_edges]
+    def compute_surface_areas(self, regular_boundary_cell_ids, local_edge_ids):
+        edge_ids = \
+            self.cells['edges'][regular_boundary_cell_ids, local_edge_ids]
+        ids = self.edges['nodes'][edge_ids]
+        vals = numpy.c_[
+                0.5 * self.edge_lengths[edge_ids],
+                0.5 * self.edge_lengths[edge_ids]
                 ]
-            )
-        return
+        return ids, vals
 
     def compute_gradient(self, u):
         '''Computes an approximation to the gradient :math:`\\nabla u` of a
