@@ -192,8 +192,8 @@ class FlatBoundaryCorrector(object):
                 numpy.linalg.norm(self.q - self.p2) - cv2
                 ]
 
-        ids = numpy.vstack([ids0, ids1])
-        vals = numpy.vstack([vals0, vals1])
+        ids = numpy.r_[ids0, ids1]
+        vals = numpy.r_[vals0, vals1]
         return ids, vals
 
     def integral_x(self):
@@ -303,7 +303,6 @@ class MeshTri(_base_mesh):
             )
         regular_boundary_cell_ids, regular_local_edge_ids = \
             numpy.where(is_regular_boundary)
-
         # All rows which are completely not flat boundary
         regular_cell_ids = numpy.where(
                 numpy.all(numpy.logical_not(is_flat_boundary), axis=1)
@@ -329,8 +328,8 @@ class MeshTri(_base_mesh):
         self.control_volumes = numpy.zeros(len(self.node_coords), dtype=float)
         numpy.add.at(
                 self.control_volumes,
-                numpy.vstack([ids, fb_ids]),
-                numpy.vstack([vals, fb_vals])
+                numpy.r_[ids, fb_ids],
+                numpy.r_[vals, fb_vals]
                 )
 
         # surface areas
@@ -344,8 +343,8 @@ class MeshTri(_base_mesh):
         self.surface_areas = numpy.zeros(len(self.node_coords))
         numpy.add.at(
                 self.surface_areas,
-                numpy.vstack([ids0, ids1]),
-                numpy.vstack([vals0, vals1])
+                numpy.r_[ids0, ids1],
+                numpy.r_[vals0, vals1]
                 )
 
         # Compute the control volume centroids.
