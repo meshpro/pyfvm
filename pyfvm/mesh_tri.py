@@ -250,9 +250,9 @@ class FlatBoundaryCorrector(object):
             # triangle areas
             # TODO take from control volume contributions
             area_p0_q_q1 = \
-                0.25 * self.ce_ratios1[k, 0] * self.ghostedge_length_2
+                0.25 * self.ce_ratios1[k, 0] * self.ghostedge_length_2[k]
             area_p0_q_q2 = \
-                0.25 * self.ce_ratios2[k, 0] * self.ghostedge_length_2
+                0.25 * self.ce_ratios2[k, 0] * self.ghostedge_length_2[k]
             area_p0_q1_em2 = 0.25 * self.ce_ratios1[k, 1] * e2_length2
             area_p1_q1_em2 = area_p0_q1_em2
             area_p0_q2_em1 = 0.25 * self.ce_ratios2[k, 1] * e1_length2
@@ -382,16 +382,8 @@ class MeshTri(_base_mesh):
         # v_0 is composed of right triangles, two for each adjacent cell.
         ids0, vals0 = \
             self.compute_integral_x(self.cell_circumcenters, regular_cell_ids)
-        print
-        print(ids0)
-        print(vals0)
-        print
         # flat boundary contributions
         ids1, vals1 = fbc.integral_x()
-        print
-        print(ids1)
-        print(vals1)
-        print
         # add them all up
         self.centroids = numpy.zeros((len(self.node_coords), 3))
         numpy.add.at(
@@ -401,10 +393,6 @@ class MeshTri(_base_mesh):
             )
         # Don't forget to divide by the control volume for the centroids
         self.centroids /= self.control_volumes[:, None]
-
-        print
-        print(self.centroids)
-        print
 
         return
 
