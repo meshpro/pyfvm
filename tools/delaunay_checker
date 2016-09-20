@@ -14,23 +14,23 @@ def _main():
 
     # read the mesh
     print 'Reading the mesh...',
-    mesh, _, _ = pyfvm.read(args.filename)
+    mesh, _, _, _ = pyfvm.read(args.filename)
     print 'done.'
 
-    num_delaunay_violations, num_interior_edges = mesh.check_delaunay()
+    num_delaunay_violations = mesh.num_delaunay_violations()
+    num_edges = len(mesh.edges['nodes'])
 
     if num_delaunay_violations == 0:
         print 'The given mesh is a Delaunay mesh.'
     else:
-        alpha = float(num_delaunay_violations) / num_interior_edges
+        alpha = float(num_delaunay_violations) / num_edges
         print(
             ('Delaunay condition NOT fulfilled '
              'on %d of %d interior edges/faces (%g%%).') %
-            (num_delaunay_violations, num_interior_edges, alpha*100)
+            (num_delaunay_violations, num_edges, alpha*100)
             )
 
     # Try and compute the control volumes.
-    mesh.compute_control_volumes()
     num_negative_vols = np.count_nonzero(mesh.control_volumes < 0.0)
     if num_negative_vols > 0:
         alpha = float(num_negative_vols) / len(mesh.control_volumes)
