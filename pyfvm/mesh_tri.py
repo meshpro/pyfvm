@@ -463,14 +463,15 @@ class MeshTri(_base_mesh):
 
         return
 
-    def create_edge_cells(self):
-        # Create edge->cells relationships
+    def compute_edge_cells(self):
+        '''This creates edge->cell relations. As an upstream relation, this is
+        relatively expensive to compute and hardly ever necessary.
+        '''
         num_cells = len(self.cells['nodes'])
         edge_cells = [[] for k in range(len(self.edges['nodes']))]
         for k, edge_id in enumerate(self._inv):
             edge_cells[edge_id].append(k % num_cells)
-        self.edges['cells'] = edge_cells
-        return
+        return edge_cells
 
     def compute_cell_volumes_and_ce_ratios(self):
         edge_nodes = self.edges['nodes']
