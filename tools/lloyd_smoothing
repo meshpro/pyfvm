@@ -1,5 +1,6 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
+import argparse
 import numpy
 from matplotlib import pyplot as plt
 import pyfvm
@@ -64,34 +65,16 @@ def _flip_edges(mesh):
     return mesh.node_coords, cells
 
 
-def smoothing():
-    mesh, _, _, _ = pyfvm.reader.read('circle000.vtu')
-    # mesh, _, _, _ = pyfvm.reader.read('pacman000.vtu')
-
-    # points = numpy.array([
-    #     [0.0, 0.0, 0.0],
-    #     [1.0, 0.0, 0.0],
-    #     [1.0, 1.0, 0.0],
-    #     [0.0, 1.0, 0.0],
-    #     [0.1, 0.5, 0.0]
-    #     ])
-    # cells = numpy.array([
-    #     [0, 1, 4],
-    #     [1, 2, 4],
-    #     [2, 3, 4],
-    #     [3, 0, 4]
-    #     ])
-    # mesh = pyfvm.mesh_tri.MeshTri(points, cells)
-
+def lloyd_smoothing(mesh, tol, verbose=True):
     # 2D mesh
     assert all(mesh.node_coords[:, 2] == 0.0)
 
-    while any(mesh.ce_ratios < 0.0):
+    # If any of the covolume-edge length ratios is negative, it must be on the
+    # interior. If we flip the edge, it should be positive.
+    if any(mesh.ce_ratios < 0.0):
         points, cells = _flip_edges(mesh)
         mesh = pyfvm.mesh_tri.MeshTri(points, cells)
-
-    # mesh.show()
-    # plt.show()
+    assert all(mesh.ce_ratios >= 0.0)
 
     boundary_verts = mesh.get_vertices('boundary')
 
@@ -100,26 +83,68 @@ def smoothing():
 
     k = 0
     while max_move > tol:
+        k += 1
+
+        # move interior points into centroids
         new_points = mesh.centroids
         new_points[boundary_verts] = mesh.node_coords[boundary_verts]
         diff = new_points - mesh.node_coords
-        # maximum move
         max_move = numpy.sqrt(numpy.max(numpy.sum(diff*diff, axis=1)))
-        print('%d %.15e' % (k, max_move))
+
+        if verbose:
+            print('step: %d,  maximum move: %.15e' % (k, max_move))
+
+        # create new mesh and flip edges if necessary
         mesh = pyfvm.mesh_tri.MeshTri(new_points, mesh.cells['nodes'])
-        # mesh.show()
-        # plt.show()
-        while any(mesh.ce_ratios < 0.0):
+        if any(mesh.ce_ratios < 0.0):
             points, cells = _flip_edges(mesh)
             mesh = pyfvm.mesh_tri.MeshTri(points, cells)
-            # mesh.show()
-            # plt.show()
-        # assert all(mesh.ce_ratios >= 0.0)
-        mesh.write('circle%03d.vtu' % (k+1))
-        k += 1
+        assert all(mesh.ce_ratios >= 0.0)
 
-    return
+        # mesh.write('circle%04d.vtu' % (k+1))
+
+    return mesh
+
+
+def _parse_input_arguments():
+    parser = argparse.ArgumentParser(
+        description='Perform Lloyd smoothing on a 2D mesh.'
+        )
+
+    parser.add_argument(
+        'input',
+        metavar='INPUT',
+        type=str,
+        help='Input file'
+        )
+
+    parser.add_argument(
+        'output',
+        metavar='OUTPUT',
+        type=str,
+        help='Output file'
+        )
+
+    parser.add_argument(
+        '--tolerance', '-t',
+        metavar='TOL',
+        type=float,
+        required=True,
+        help='convergence criterium (maximum move)'
+        )
+
+    parser.add_argument(
+            '--verbose', '-v',
+            dest='verbose',
+            action='store_true',
+            default=False
+            )
+
+    return parser.parse_args()
 
 
 if __name__ == '__main__':
-    smoothing()
+    args = _parse_input_arguments()
+    mesh, _, _, _ = pyfvm.reader.read(args.input)
+    out_mesh = lloyd_smoothing(mesh, args.tolerance, verbose=args.verbose)
+    out_mesh.write(args.output)
