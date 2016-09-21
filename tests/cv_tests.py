@@ -210,18 +210,17 @@ class TestVolumes(unittest.TestCase):
         self.assertAlmostEqual(mesh.surface_areas[2], beta, delta=tol)
 
         # centroids
-        alpha = -41.666333333333327
-        self.assertAlmostEqual(mesh.centroids[0][0], 0.25, delta=tol)
+        alpha = 1.0 / 6000.0
+        self.assertAlmostEqual(mesh.centroids[0][0], 0.166667, delta=tol)
         self.assertAlmostEqual(mesh.centroids[0][1], alpha, delta=tol)
         self.assertAlmostEqual(mesh.centroids[0][2], 0.0, delta=tol)
 
-        self.assertAlmostEqual(mesh.centroids[1][0], 0.75, delta=tol)
+        self.assertAlmostEqual(mesh.centroids[1][0], 0.833333, delta=tol)
         self.assertAlmostEqual(mesh.centroids[1][1], alpha, delta=tol)
         self.assertAlmostEqual(mesh.centroids[1][2], 0.0, delta=tol)
 
-        beta = 0.16666755555674073
-        gamma = -13.888740739654317
-        self.assertAlmostEqual(mesh.centroids[2][0], beta, delta=tol)
+        gamma = 0.00038888918518558031
+        self.assertAlmostEqual(mesh.centroids[2][0], 0.5, delta=tol)
         self.assertAlmostEqual(mesh.centroids[2][1], gamma, delta=tol)
         self.assertAlmostEqual(mesh.centroids[2][2], 0.0, delta=tol)
 
