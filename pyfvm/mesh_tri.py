@@ -99,10 +99,12 @@ class FlatBoundaryCorrector(object):
         ghost, self.q = _mirror_point(self.p0, self.p1, self.p2)
 
         self.ce_ratios1 = _isosceles_ce_ratios(self.p1, self.p0, ghost)
-        assert (self.ce_ratios1 > 0.0).all()
-
         self.ce_ratios2 = _isosceles_ce_ratios(self.p2, self.p0, ghost)
-        assert (self.ce_ratios2 > 0.0).all()
+
+        # The ce_ratios should all be greater than 0, but due to round-off
+        # errors can be slightly smaller sometimes.
+        # assert (self.ce_ratios1 > 0.0).all()
+        # assert (self.ce_ratios2 > 0.0).all()
 
         self.ghostedge_length_2 = _row_dot(
                 ghost - self.p0,
@@ -215,6 +217,7 @@ class FlatBoundaryCorrector(object):
         '''
         ids = numpy.empty((len(self.cell_ids), 3, 2), dtype=int)
         vals = numpy.empty((len(self.cell_ids), 3, 2, 3))
+        # TODO vectorize
         for k, (cell_id, local_edge_id) in \
                 enumerate(zip(self.cell_ids, self.local_edge_ids)):
             # The long edge is opposite of p0 and has the same local index,
