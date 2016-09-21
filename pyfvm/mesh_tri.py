@@ -726,8 +726,14 @@ class MeshTri(_base_mesh):
 
         # Get edges, cut off z-component.
         e = self.node_coords[self.edges['nodes']][:, :, :2]
-        line_segments = LineCollection(e, color='k')
-        ax.add_collection(line_segments)
+        # Plot regular edges black, those with negative ce-ratio red.
+        pos = self.ce_ratios >= 0
+        line_segments0 = LineCollection(e[pos], color='k')
+        ax.add_collection(line_segments0)
+        #
+        neg = numpy.logical_not(pos)
+        line_segments1 = LineCollection(e[neg], color='r')
+        ax.add_collection(line_segments1)
 
         if show_ce_ratios:
             # Connect all cell circumcenters with the edge midpoints
