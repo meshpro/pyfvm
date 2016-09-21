@@ -10,6 +10,103 @@ from pyfvm.base import \
 __all__ = ['MeshTri']
 
 
+def _flip_edges(mesh, is_flip_edge):
+    '''Takes a mesh and flips some edges. Note that each cell can have at most
+    one flip edge.
+    '''
+    is_flip_edge_per_cell = is_flip_edge[mesh.cells['edges']]
+
+    # can only handle the case where each cell has at most one edge to flip
+    count = numpy.sum(is_flip_edge_per_cell, axis=1)
+    assert all(count <= 1)
+
+    # add new cells
+    edge_cells = mesh.compute_edge_cells()
+    flip_edges = numpy.where(is_flip_edge)[0]
+    new_cells = numpy.empty((len(flip_edges), 2, 3), dtype=int)
+    for k, flip_edge in enumerate(flip_edges):
+        adj_cells = edge_cells[flip_edge]
+        assert len(adj_cells) == 2
+        # The local edge ids are opposite of the local vertex with the same id.
+        cell0_local_edge_id = numpy.where(
+            is_flip_edge_per_cell[adj_cells[0]]
+            )[0]
+        cell1_local_edge_id = numpy.where(
+            is_flip_edge_per_cell[adj_cells[1]]
+            )[0]
+
+        #     0
+        #     /\
+        #    /  \
+        #   / 0  \
+        # 2/______\3
+        #  \      /
+        #   \  1 /
+        #    \  /
+        #     \/
+        #      1
+        verts = [
+            mesh.cells['nodes'][adj_cells[0], cell0_local_edge_id],
+            mesh.cells['nodes'][adj_cells[1], cell1_local_edge_id],
+            mesh.cells['nodes'][adj_cells[0], (cell0_local_edge_id + 1) % 3],
+            mesh.cells['nodes'][adj_cells[0], (cell0_local_edge_id + 2) % 3]
+            ]
+        new_cells[k, 0] = [verts[0], verts[1], verts[2]]
+        new_cells[k, 1] = [verts[0], verts[1], verts[3]]
+
+    # find cells that can stay
+    is_good_cell = numpy.all(
+            numpy.logical_not(is_flip_edge_per_cell),
+            axis=1
+            )
+
+    cells = numpy.r_[
+        mesh.cells['nodes'][is_good_cell],
+        new_cells[:, 0, :],
+        new_cells[:, 1, :]
+        ]
+
+    return mesh.node_coords, cells
+
+
+def lloyd_smoothing(mesh, tol, verbose=True):
+    # 2D mesh
+    assert all(mesh.node_coords[:, 2] == 0.0)
+
+    # If any of the covolume-edge length ratios is negative, it must be on the
+    # interior. If we flip the edge, it should be positive.
+    if any(mesh.ce_ratios < 0.0):
+        points, cells = _flip_edges(mesh, mesh.ce_ratios < 0.0)
+        mesh = MeshTri(points, cells)
+    assert all(mesh.ce_ratios >= 0.0)
+
+    boundary_verts = mesh.get_vertices('boundary')
+
+    max_move = tol + 1
+
+    k = 0
+    while max_move > tol:
+        k += 1
+
+        # move interior points into centroids
+        new_points = mesh.centroids
+        new_points[boundary_verts] = mesh.node_coords[boundary_verts]
+        diff = new_points - mesh.node_coords
+        max_move = numpy.sqrt(numpy.max(numpy.sum(diff*diff, axis=1)))
+
+        if verbose:
+            print('step: %d,  maximum move: %.15e' % (k, max_move))
+
+        # create new mesh and flip edges if necessary
+        mesh = MeshTri(new_points, mesh.cells['nodes'])
+        if any(mesh.ce_ratios < 0.0):
+            pts, cells = _flip_edges(mesh, mesh.ce_ratios < 0.0)
+            mesh = MeshTri(pts, cells)
+        assert all(mesh.ce_ratios >= 0.0)
+
+    return mesh
+
+
 def _mirror_point(p0, p1, p2):
     '''For any given triangle and local edge
 
@@ -217,15 +314,16 @@ class FlatBoundaryCorrector(object):
         '''
         ids = numpy.empty((len(self.cell_ids), 3, 2), dtype=int)
         vals = numpy.empty((len(self.cell_ids), 3, 2, 3))
-        # TODO vectorize
+
+        # The long edge is opposite of p0 and has the same local index,
+        # likewise for the other edges.
+        e0 = self.p2 - self.p1
+        e1 = self.p0 - self.p2
+        e2 = self.p1 - self.p0
+
         for k, (cell_id, local_edge_id) in \
                 enumerate(zip(self.cell_ids, self.local_edge_ids)):
-            # The long edge is opposite of p0 and has the same local index,
-            # likewise for the other edges.
-            e0 = self.p2[k] - self.p1[k]
-            e1 = self.p0[k] - self.p2[k]
-            e2 = self.p1[k] - self.p0[k]
-
+            # TODO vectorize
             # The orthogonal projection of the point q1 (and likewise q2) is
             # the midpoint em2 of the edge e2, so
             #
@@ -239,16 +337,16 @@ class FlatBoundaryCorrector(object):
             #
             #     lambda1 = 0.5 * <p0-p1, p0-p1> / <p2-p1, p0-p1>.
             #
-            lambda1 = 0.5 * numpy.dot(e2, e2) / numpy.dot(e0, -e2)
-            lambda2 = 0.5 * numpy.dot(e1, e1) / numpy.dot(e0, -e1)
+            lambda1 = 0.5 * numpy.dot(e2[k], e2[k]) / numpy.dot(e0[k], -e2[k])
+            lambda2 = 0.5 * numpy.dot(e1[k], e1[k]) / numpy.dot(e0[k], -e1[k])
             q1 = self.p1[k] + lambda1 * (self.p2[k] - self.p1[k])
             q2 = self.p2[k] + lambda2 * (self.p1[k] - self.p2[k])
 
             em1 = 0.5 * (self.p0[k] + self.p2[k])
             em2 = 0.5 * (self.p1[k] + self.p0[k])
 
-            e1_length2 = numpy.dot(e1, e1)
-            e2_length2 = numpy.dot(e2, e2)
+            e1_length2 = numpy.dot(e1[k], e1[k])
+            e2_length2 = numpy.dot(e2[k], e2[k])
 
             # triangle areas
             # TODO take from control volume contributions
