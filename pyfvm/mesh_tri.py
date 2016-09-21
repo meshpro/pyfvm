@@ -312,72 +312,68 @@ class FlatBoundaryCorrector(object):
           /_____________\/______|______\/_____________\
          p1             q1      q      q2             p2
         '''
-        ids = numpy.empty((len(self.cell_ids), 3, 2), dtype=int)
-        vals = numpy.empty((len(self.cell_ids), 3, 2, 3))
-
         # The long edge is opposite of p0 and has the same local index,
         # likewise for the other edges.
         e0 = self.p2 - self.p1
         e1 = self.p0 - self.p2
         e2 = self.p1 - self.p0
 
-        for k, (cell_id, local_edge_id) in \
-                enumerate(zip(self.cell_ids, self.local_edge_ids)):
-            # TODO vectorize
-            # The orthogonal projection of the point q1 (and likewise q2) is
-            # the midpoint em2 of the edge e2, so
-            #
-            #     <q1 - p1, (p0 - p1)/||p0 - p1||> = 0.5 * ||p0 - p1||.
-            #
-            # Setting
-            #
-            #     q1 = p1 + lambda1 * (p2 - p1)
-            #
-            # gives
-            #
-            #     lambda1 = 0.5 * <p0-p1, p0-p1> / <p2-p1, p0-p1>.
-            #
-            lambda1 = 0.5 * numpy.dot(e2[k], e2[k]) / numpy.dot(e0[k], -e2[k])
-            lambda2 = 0.5 * numpy.dot(e1[k], e1[k]) / numpy.dot(e0[k], -e1[k])
-            q1 = self.p1[k] + lambda1 * (self.p2[k] - self.p1[k])
-            q2 = self.p2[k] + lambda2 * (self.p1[k] - self.p2[k])
+        # The orthogonal projection of the point q1 (and likewise q2) is the
+        # midpoint em2 of the edge e2, so
+        #
+        #     <q1 - p1, (p0 - p1)/||p0 - p1||> = 0.5 * ||p0 - p1||.
+        #
+        # Setting
+        #
+        #     q1 = p1 + lambda1 * (p2 - p1)
+        #
+        # gives
+        #
+        #     lambda1 = 0.5 * <p0-p1, p0-p1> / <p2-p1, p0-p1>.
+        #
+        lambda1 = 0.5 * _row_dot(e2, e2) / _row_dot(e0, -e2)
+        lambda2 = 0.5 * _row_dot(e1, e1) / _row_dot(e0, -e1)
+        q1 = self.p1 + lambda1[:, None] * (self.p2 - self.p1)
+        q2 = self.p2 + lambda2[:, None] * (self.p1 - self.p2)
 
-            em1 = 0.5 * (self.p0[k] + self.p2[k])
-            em2 = 0.5 * (self.p1[k] + self.p0[k])
+        em1 = 0.5 * (self.p0 + self.p2)
+        em2 = 0.5 * (self.p1 + self.p0)
 
-            e1_length2 = numpy.dot(e1[k], e1[k])
-            e2_length2 = numpy.dot(e2[k], e2[k])
+        e1_length2 = _row_dot(e1, e1)
+        e2_length2 = _row_dot(e2, e2)
 
-            # triangle areas
-            # TODO take from control volume contributions
-            area_p0_q_q1 = \
-                0.25 * self.ce_ratios1[k, 0] * self.ghostedge_length_2[k]
-            area_p0_q_q2 = \
-                0.25 * self.ce_ratios2[k, 0] * self.ghostedge_length_2[k]
-            area_p0_q1_em2 = 0.25 * self.ce_ratios1[k, 1] * e2_length2
-            area_p1_q1_em2 = area_p0_q1_em2
-            area_p0_q2_em1 = 0.25 * self.ce_ratios2[k, 1] * e1_length2
-            area_p2_q2_em1 = area_p0_q2_em1
+        # triangle areas
+        # TODO take from control volume contributions
+        area_p0_q_q1 = 0.25 * self.ce_ratios1[:, 0] * self.ghostedge_length_2
+        area_p0_q_q2 = 0.25 * self.ce_ratios2[:, 0] * self.ghostedge_length_2
+        area_p0_q1_em2 = 0.25 * self.ce_ratios1[:, 1] * e2_length2
+        area_p1_q1_em2 = area_p0_q1_em2
+        area_p0_q2_em1 = 0.25 * self.ce_ratios2[:, 1] * e1_length2
+        area_p2_q2_em1 = area_p0_q2_em1
 
-            # The integral of any linear function over a triangle is the
-            # average of the values of the function in each of the three
-            # corners, times the area of the triangle.
-            ids[k, 0] = [self.p0_id[k], self.p0_id[k]]
-            ids[k, 1] = [self.p0_id[k], self.p1_id[k]]
-            ids[k, 2] = [self.p0_id[k], self.p2_id[k]]
+        # The integral of any linear function over a triangle is the average of
+        # the values of the function in each of the three corners, times the
+        # area of the triangle.
+        ids = numpy.stack([
+                numpy.c_[self.p0_id, self.p0_id],
+                numpy.c_[self.p0_id, self.p1_id],
+                numpy.c_[self.p0_id, self.p2_id]
+                ], axis=1)
 
-            vals[k, 0] = [
-                    area_p0_q_q1 * (self.p0[k] + self.q[k] + q1) / 3.0,
-                    area_p0_q_q2 * (self.p0[k] + self.q[k] + q2) / 3.0
-                    ]
-            vals[k, 1] = [
-                    area_p0_q1_em2 * (self.p0[k] + q1 + em2) / 3.0,
-                    area_p1_q1_em2 * (self.p1[k] + q1 + em2) / 3.0
-                    ]
-            vals[k, 2] = [
-                    area_p0_q2_em1 * (self.p0[k] + em1 + q2) / 3.0,
-                    area_p2_q2_em1 * (self.p2[k] + em1 + q2) / 3.0
-                    ]
+        vals = numpy.stack([
+            numpy.stack([
+                area_p0_q_q1[:, None] * (self.p0 + self.q + q1) / 3.0,
+                area_p0_q_q2[:, None] * (self.p0 + self.q + q2) / 3.0
+            ], axis=1),
+            numpy.stack([
+                area_p0_q1_em2[:, None] * (self.p0 + q1 + em2) / 3.0,
+                area_p1_q1_em2[:, None] * (self.p1 + q1 + em2) / 3.0
+            ], axis=1),
+            numpy.stack([
+                area_p0_q2_em1[:, None] * (self.p0 + q2 + em1) / 3.0,
+                area_p2_q2_em1[:, None] * (self.p2 + q2 + em1) / 3.0
+            ], axis=1),
+            ], axis=1)
 
         return ids, vals
 
