@@ -100,13 +100,7 @@ class TestVolumes(unittest.TestCase):
 
         # edge_cells
         edge_cells = mesh.compute_edge_cells()
-        self.assertEqual(len(edge_cells), 3)
-        self.assertEqual(len(edge_cells[0]), 1)
-        self.assertEqual(edge_cells[0][0], 0)
-        self.assertEqual(len(edge_cells[1]), 1)
-        self.assertEqual(edge_cells[1][0], 0)
-        self.assertEqual(len(edge_cells[2]), 1)
-        self.assertEqual(edge_cells[2][0], 0)
+        self.assertEqual(edge_cells, [[0], [0], [0]])
 
         return
 
@@ -333,18 +327,7 @@ class TestVolumes(unittest.TestCase):
 
         # edge_cells
         edge_cells = mesh.compute_edge_cells()
-        self.assertEqual(len(edge_cells), 5)
-        self.assertEqual(len(edge_cells[0]), 2)
-        self.assertEqual(edge_cells[0][0], 0)
-        self.assertEqual(edge_cells[0][1], 1)
-        self.assertEqual(len(edge_cells[1]), 1)
-        self.assertEqual(edge_cells[1][0], 0)
-        self.assertEqual(len(edge_cells[2]), 1)
-        self.assertEqual(edge_cells[2][0], 1)
-        self.assertEqual(len(edge_cells[3]), 1)
-        self.assertEqual(edge_cells[3][0], 0)
-        self.assertEqual(len(edge_cells[4]), 1)
-        self.assertEqual(edge_cells[4][0], 1)
+        self.assertEqual(edge_cells, [[0, 1], [0], [1], [0], [1]])
 
         return
 
