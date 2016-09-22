@@ -238,25 +238,21 @@ class FlatBoundaryCorrector(object):
         e1_length2 = _row_dot(e1, e1)
         e2_length2 = _row_dot(e2, e2)
 
-        ids = numpy.stack([
-            numpy.c_[self.p0_id, self.p0_id],
-            numpy.c_[self.p0_id, self.p1_id],
-            numpy.c_[self.p0_id, self.p2_id]
-            ], axis=1)
-        vals = numpy.stack([
-            numpy.c_[
-               0.25 * self.ce_ratios1[:, 0] * self.ghostedge_length_2,
-               0.25 * self.ce_ratios2[:, 0] * self.ghostedge_length_2
-               ],
-            numpy.c_[
-                0.25 * self.ce_ratios1[:, 1] * e2_length2,
-                0.25 * self.ce_ratios1[:, 1] * e2_length2
-                ],
-            numpy.c_[
-                0.25 * self.ce_ratios2[:, 1] * e1_length2,
-                0.25 * self.ce_ratios2[:, 1] * e1_length2
-                ],
-            ], axis=1)
+        ids = numpy.r_[
+            numpy.concatenate([self.p0_id, self.p0_id]),
+            numpy.concatenate([self.p0_id, self.p1_id]),
+            numpy.concatenate([self.p0_id, self.p2_id])
+            ]
+
+        a = 0.25 * self.ce_ratios1[:, 0] * self.ghostedge_length_2
+        b = 0.25 * self.ce_ratios2[:, 0] * self.ghostedge_length_2
+        c = 0.25 * self.ce_ratios1[:, 1] * e2_length2
+        d = 0.25 * self.ce_ratios2[:, 1] * e1_length2
+        vals = numpy.r_[
+            numpy.concatenate([a, b]),
+            numpy.concatenate([c, c]),
+            numpy.concatenate([d, d])
+            ]
 
         return ids, vals
 
@@ -291,8 +287,8 @@ class FlatBoundaryCorrector(object):
                 numpy.linalg.norm(self.q - self.p2) - cv2
                 ]
 
-        ids = numpy.r_[ids0, ids1]
-        vals = numpy.r_[vals0, vals1]
+        ids = numpy.vstack((ids0, ids1))
+        vals = numpy.vstack((vals0, vals1))
         return ids, vals
 
     def integral_x(self):
@@ -445,11 +441,9 @@ class MeshTri(_base_mesh):
         fb_ids, fb_vals = fbc.control_volumes()
         # add it all up
         self.control_volumes = numpy.zeros(len(self.node_coords), dtype=float)
-        numpy.add.at(
-                self.control_volumes,
-                numpy.r_[ids, fb_ids],
-                numpy.r_[vals, fb_vals]
-                )
+        # TODO reduce to one add.at
+        numpy.add.at(self.control_volumes, ids, vals)
+        numpy.add.at(self.control_volumes, fb_ids, fb_vals)
 
         # surface areas
         ids0, vals0 = self.compute_surface_areas(
