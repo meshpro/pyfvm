@@ -238,21 +238,21 @@ class FlatBoundaryCorrector(object):
         e1_length2 = _row_dot(e1, e1)
         e2_length2 = _row_dot(e2, e2)
 
-        ids = numpy.r_[
-            numpy.concatenate([self.p0_id, self.p0_id]),
-            numpy.concatenate([self.p0_id, self.p1_id]),
-            numpy.concatenate([self.p0_id, self.p2_id])
-            ]
+        ids = numpy.stack([
+            numpy.column_stack([self.p0_id, self.p0_id]),
+            numpy.column_stack([self.p0_id, self.p1_id]),
+            numpy.column_stack([self.p0_id, self.p2_id])
+            ], axis=1)
 
         a = 0.25 * self.ce_ratios1[:, 0] * self.ghostedge_length_2
         b = 0.25 * self.ce_ratios2[:, 0] * self.ghostedge_length_2
         c = 0.25 * self.ce_ratios1[:, 1] * e2_length2
         d = 0.25 * self.ce_ratios2[:, 1] * e1_length2
-        vals = numpy.r_[
-            numpy.concatenate([a, b]),
-            numpy.concatenate([c, c]),
-            numpy.concatenate([d, d])
-            ]
+        vals = numpy.stack([
+            numpy.column_stack([a, b]),
+            numpy.column_stack([c, c]),
+            numpy.column_stack([d, d])
+            ], axis=1)
 
         return ids, vals
 
@@ -442,8 +442,11 @@ class MeshTri(_base_mesh):
         # add it all up
         self.control_volumes = numpy.zeros(len(self.node_coords), dtype=float)
         # TODO reduce to one add.at
-        numpy.add.at(self.control_volumes, ids, vals)
-        numpy.add.at(self.control_volumes, fb_ids, fb_vals)
+        numpy.add.at(
+            self.control_volumes,
+            numpy.concatenate([ids, fb_ids]),
+            numpy.concatenate([vals, fb_vals])
+            )
 
         # surface areas
         ids0, vals0 = self.compute_surface_areas(
