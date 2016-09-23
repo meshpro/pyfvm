@@ -10,6 +10,11 @@ from pyfvm.base import \
 __all__ = ['MeshTri']
 
 
+def _column_stack(a, b):
+    # http://stackoverflow.com/a/39638773/353337
+    return numpy.concatenate([a[:, None], b[:, None]], axis=1)
+
+
 def _flip_edges(mesh, is_flip_edge):
     '''Takes a mesh and flips some edges. Note that each cell can have at most
     one flip edge.
@@ -239,9 +244,9 @@ class FlatBoundaryCorrector(object):
         e2_length2 = _row_dot(e2, e2)
 
         ids = numpy.stack([
-            numpy.column_stack([self.p0_id, self.p0_id]),
-            numpy.column_stack([self.p0_id, self.p1_id]),
-            numpy.column_stack([self.p0_id, self.p2_id])
+            _column_stack(self.p0_id, self.p0_id),
+            _column_stack(self.p0_id, self.p1_id),
+            _column_stack(self.p0_id, self.p2_id)
             ], axis=1)
 
         a = 0.25 * self.ce_ratios1[:, 0] * self.ghostedge_length_2
@@ -249,9 +254,9 @@ class FlatBoundaryCorrector(object):
         c = 0.25 * self.ce_ratios1[:, 1] * e2_length2
         d = 0.25 * self.ce_ratios2[:, 1] * e1_length2
         vals = numpy.stack([
-            numpy.column_stack([a, b]),
-            numpy.column_stack([c, c]),
-            numpy.column_stack([d, d])
+            _column_stack(a, b),
+            _column_stack(c, c),
+            _column_stack(d, d)
             ], axis=1)
 
         return ids, vals
@@ -278,14 +283,14 @@ class FlatBoundaryCorrector(object):
         cv1 = self.ce_ratios1[:, 0] * ghostedge_length
         cv2 = self.ce_ratios2[:, 0] * ghostedge_length
 
-        ids0 = numpy.column_stack([self.p0_id, self.p0_id])
-        vals0 = numpy.column_stack([cv1, cv2])
+        ids0 = _column_stack(self.p0_id, self.p0_id)
+        vals0 = _column_stack(cv1, cv2)
 
-        ids1 = numpy.column_stack([self.p1_id, self.p2_id])
-        vals1 = numpy.column_stack([
+        ids1 = _column_stack(self.p1_id, self.p2_id)
+        vals1 = _column_stack(
                 numpy.linalg.norm(self.q - self.p1) - cv1,
                 numpy.linalg.norm(self.q - self.p2) - cv2
-                ])
+                )
 
         ids = numpy.vstack((ids0, ids1))
         vals = numpy.vstack((vals0, vals1))
