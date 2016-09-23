@@ -278,14 +278,14 @@ class FlatBoundaryCorrector(object):
         cv1 = self.ce_ratios1[:, 0] * ghostedge_length
         cv2 = self.ce_ratios2[:, 0] * ghostedge_length
 
-        ids0 = numpy.c_[self.p0_id, self.p0_id]
-        vals0 = numpy.c_[cv1, cv2]
+        ids0 = numpy.column_stack([self.p0_id, self.p0_id])
+        vals0 = numpy.column_stack([cv1, cv2])
 
-        ids1 = numpy.c_[self.p1_id, self.p2_id]
-        vals1 = numpy.c_[
+        ids1 = numpy.column_stack([self.p1_id, self.p2_id])
+        vals1 = numpy.column_stack([
                 numpy.linalg.norm(self.q - self.p1) - cv1,
                 numpy.linalg.norm(self.q - self.p2) - cv2
-                ]
+                ])
 
         ids = numpy.vstack((ids0, ids1))
         vals = numpy.vstack((vals0, vals1))
