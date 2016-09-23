@@ -115,7 +115,7 @@ class _base_mesh(object):
         if self.node_coords.shape[1] == 2:
             n = len(self.node_coords)
             a = numpy.ascontiguousarray(
-                numpy.c_[self.node_coords, numpy.zeros(n)]
+                numpy.column_stack([self.node_coords, numpy.zeros(n)])
                 )
         else:
             a = self.node_coords

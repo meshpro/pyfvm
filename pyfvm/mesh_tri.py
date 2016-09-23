@@ -642,10 +642,10 @@ class MeshTri(_base_mesh):
         edge_ids = \
             self.cells['edges'][regular_boundary_cell_ids, local_edge_ids]
         ids = self.edges['nodes'][edge_ids]
-        vals = numpy.c_[
+        vals = _column_stack(
                 0.5 * self.edge_lengths[edge_ids],
                 0.5 * self.edge_lengths[edge_ids]
-                ]
+                )
         return ids, vals
 
     def compute_gradient(self, u):
@@ -663,7 +663,7 @@ class MeshTri(_base_mesh):
             self.cell_circumcenters = self.compute_triangle_circumcenters(X)
 
         if 'cells' not in self.edges:
-            self.create_edge_cells()
+            self.edges['cells'] = self.compute_edge_cells()
 
         # This only works for flat meshes.
         assert (abs(self.node_coords[:, 2]) < 1.0e-10).all()
@@ -919,15 +919,15 @@ class MeshTri(_base_mesh):
                             self.node_coords[node_ids[0]] +
                             self.node_coords[node_ids[1]]
                             )
-                    p = numpy.c_[
+                    p = _column_stack(
                         self.cell_circumcenters[cell_id],
                         edge_midpoint
-                        ]
-                    q = numpy.c_[
+                        )
+                    q = numpy.column_stack([
                         self.cell_circumcenters[cell_id],
                         edge_midpoint,
                         self.node_coords[node_id]
-                        ]
+                        ])
                     ax.fill(q[0], q[1], color='0.5')
                     ax.plot(p[0], p[1], color='0.7')
         return
