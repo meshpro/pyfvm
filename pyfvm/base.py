@@ -35,50 +35,50 @@ def compute_tri_areas_and_ce_ratios(e0, e1, e2):
     #  x_1 = <e_2, e_3> / <e1 x e2, e1 x e3> * |simplex|;
     #
     # see <http://math.stackexchange.com/a/1855380/36678>.
-
-    e0_cross_e1 = numpy.cross(e0, e1)
-    e1_cross_e2 = numpy.cross(e1, e2)
-    e2_cross_e0 = numpy.cross(e2, e0)
-    cell_volumes = 0.5 * numpy.sqrt(
-            _row_dot(e0_cross_e1, e0_cross_e1)
-            )
-
-    a = _row_dot(e1, e2) / _row_dot(e0_cross_e1, -e2_cross_e0)
-    b = _row_dot(e2, e0) / _row_dot(e1_cross_e2, -e0_cross_e1)
-    c = _row_dot(e0, e1) / _row_dot(e2_cross_e0, -e1_cross_e2)
-
-    # Note
-    # ----
     #
-    # There is an alternative formulation in terms of dot-products via
+    # e0_cross_e1 = numpy.cross(e0, e1)
+    # e1_cross_e2 = numpy.cross(e1, e2)
+    # e2_cross_e0 = numpy.cross(e2, e0)
+    # cell_volumes = 0.5 * numpy.sqrt(
+    #         _row_dot(e0_cross_e1, e0_cross_e1)
+    #         )
+    # a = _row_dot(e1, e2) / _row_dot(e0_cross_e1, -e2_cross_e0)
+    # b = _row_dot(e2, e0) / _row_dot(e1_cross_e2, -e0_cross_e1)
+    # c = _row_dot(e0, e1) / _row_dot(e2_cross_e0, -e1_cross_e2)
+    #
+    # With
     #
     #   <e1 x e2, e1 x e3> = <e1, e1> <e2, e3> - <e1, e2> <e1, e3>.
     #
+    # we can rewrite the term without cross-products which are less favorable
+    # computationally (see, e.g. <http://stackoverflow.com/q/39662540/353337>).
     # With this, the solution can be expressed as
     #
     #  x_1 / |simplex| * <e1, e1>
     #    = <e1, e1> <e_2, e_3> / (<e1, e1> <e2, e3> - <e1, e2> <e1, e3>)
     #
-    # It doesn't matter much which cross product we take for computing the
-    # cell volume.
-    # However, this approach is less favorable in terms of round-off
-    # errors: For almost degenerate triangles, the difference in the
-    # denominator is small, but the two values are large. This will lead to
-    # significant round-off in the denominator.
+    # Note that the cross-product formulation turns out to be more favorable in
+    # terms of round-off errors sometimes:
+    # For almost degenerate triangles, the difference in the denominator is
+    # small, but the two values are large. This might lead to significant
+    # round-off in the denominator.
     #
-    # e0_dot_e0 = _row_dot(cells_edges[:, 0, :], cells_edges[:, 0, :])
-    # e0_dot_e1 = _row_dot(cells_edges[:, 0, :], cells_edges[:, 1, :])
-    # e0_dot_e2 = _row_dot(cells_edges[:, 0, :], cells_edges[:, 2, :])
-    # e1_dot_e1 = _row_dot(cells_edges[:, 1, :], cells_edges[:, 1, :])
-    # e1_dot_e2 = _row_dot(cells_edges[:, 1, :], cells_edges[:, 2, :])
-    # e2_dot_e2 = _row_dot(cells_edges[:, 2, :], cells_edges[:, 2, :])
+    e0_dot_e0 = _row_dot(e0, e0)
+    e0_dot_e1 = _row_dot(e0, e1)
+    e0_dot_e2 = _row_dot(e0, e2)
+    e1_dot_e1 = _row_dot(e1, e1)
+    e1_dot_e2 = _row_dot(e1, e2)
+    e2_dot_e2 = _row_dot(e2, e2)
+    # It doesn't matter much which cross product we take for computing the cell
+    # volumes; deliberately take
     #
-    # a00 = e0_dot_e0 * e1_dot_e2
-    # a = e1_dot_e2 / (a00 - (e0_dot_e1 * e0_dot_e2))
-    # b00 = e1_dot_e1 * e0_dot_e2
-    # b = e0_dot_e2 / (b00 - (e0_dot_e1 * e1_dot_e2))
-    # c00 = e2_dot_e2 * e0_dot_e1
-    # c = e0_dot_e1 / (c00 - (e0_dot_e2 * e1_dot_e2))
+    #   <e0 x e1, e0 x e1> = <e0, e0> <e1, e1> - <e0, e1>^2.
+    #
+    cell_volumes = 0.5 * numpy.sqrt(e0_dot_e0 * e1_dot_e1 - e0_dot_e1**2)
+
+    a = e1_dot_e2 / (e0_dot_e0 * e1_dot_e2 - e0_dot_e1 * e0_dot_e2)
+    b = e0_dot_e2 / (e1_dot_e1 * e0_dot_e2 - e0_dot_e1 * e1_dot_e2)
+    c = e0_dot_e1 / (e2_dot_e2 * e0_dot_e1 - e0_dot_e2 * e1_dot_e2)
 
     sol = numpy.column_stack((a, b, c)) * cell_volumes[:, None]
 
