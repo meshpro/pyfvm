@@ -92,12 +92,17 @@ def compute_triangle_circumcenters(X):
     a = X[:, 0, :] - X[:, 2, :]
     b = X[:, 1, :] - X[:, 2, :]
     a_dot_a = _row_dot(a, a)
-    a2_b = b * a_dot_a[..., None]
     b_dot_b = _row_dot(b, b)
-    b2_a = a * b_dot_b[..., None]
-    a_cross_b = numpy.cross(a, b)
-    N = numpy.cross(a2_b - b2_a, a_cross_b)
-    a_cross_b2 = _row_dot(a_cross_b, a_cross_b)
+    a_dot_b = _row_dot(a, b)
+    # N = (<a,a> b - <b,b> a) x (a x b)
+    #   = <a,a> (b x (a x b)) - <b,b> (a x (a x b))
+    #   = <a,a> (a <b,b> - b <b,a>) - <b,b> (a <a,b> - b <a,a>)
+    #   = a <b,b> (<a,a> - <a,b>) + b <a,a> (<b,b> - <b,a>)
+    alpha = b_dot_b * (a_dot_a - a_dot_b)
+    beta = a_dot_a * (b_dot_b - a_dot_b)
+    N = a * alpha[..., None] + b * beta[..., None]
+    # <a x b, a x b> = <a, a> <b, b> - <a, b>^2
+    a_cross_b2 = a_dot_a * b_dot_b - a_dot_b**2
     return 0.5 * N / a_cross_b2[..., None] + X[:, 2, :]
 
 
