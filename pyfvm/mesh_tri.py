@@ -103,7 +103,7 @@ def lloyd_smoothing(mesh, tol, verbose=True):
             print('step: %d,  maximum move: %.15e' % (k, max_move))
 
         # create new mesh and flip edges if necessary
-        mesh = MeshTri(new_points, mesh.cells['nodes'])
+        mesh.reset_vertex_coords(new_points)
         if any(mesh.ce_ratios < 0.0):
             pts, cells = _flip_edges(mesh, mesh.ce_ratios < 0.0)
             mesh = MeshTri(pts, cells)
@@ -406,8 +406,19 @@ class MeshTri(_base_mesh):
         self.cells['nodes'] = cells
 
         self.create_edges()
-        self.compute_edge_lengths()
         self.mark_default_subdomains()
+
+        self.compute_data()
+        return
+
+    def reset_vertex_coords(self, new_coords):
+        assert self.node_coords.shape == new_coords.shape
+        self.node_coords = new_coords
+        self.compute_data()
+        return
+
+    def compute_data(self):
+        self.compute_edge_lengths()
 
         self.cell_circumcenters = compute_triangle_circumcenters(
                 self.node_coords[self.cells['nodes']]
@@ -452,7 +463,6 @@ class MeshTri(_base_mesh):
         fb_ids, fb_vals = fbc.control_volumes()
         # add it all up
         self.control_volumes = numpy.zeros(len(self.node_coords), dtype=float)
-        # TODO reduce to one add.at
         numpy.add.at(
             self.control_volumes,
             numpy.concatenate([ids, fb_ids]),
