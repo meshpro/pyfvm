@@ -299,7 +299,7 @@ class TestVolumes(unittest.TestCase):
                 cells
                 )
 
-        tol = 1.0e-14
+        tol = 1.0e-12
 
         # ce_ratios
         alpha = h - 1.0 / (4*h)
