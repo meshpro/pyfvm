@@ -200,8 +200,14 @@ class FlatBoundaryCorrector(object):
 
         ghost, self.q = _mirror_point(self.p0, self.p1, self.p2)
 
-        self.ce_ratios1 = _isosceles_ce_ratios(self.p1, self.p0, ghost)
-        self.ce_ratios2 = _isosceles_ce_ratios(self.p2, self.p0, ghost)
+        ce = _isosceles_ce_ratios(
+                numpy.concatenate([self.p1, self.p2]),
+                numpy.concatenate([self.p0, self.p0]),
+                numpy.concatenate([ghost, ghost])
+                )
+        n = len(self.p0)
+        self.ce_ratios1 = ce[:n]
+        self.ce_ratios2 = ce[n:]
 
         # The ce_ratios should all be greater than 0, but due to round-off
         # errors can be slightly smaller sometimes.
