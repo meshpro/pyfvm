@@ -2,13 +2,17 @@
 #
 import meshio
 import numpy
+from numpy.core.umath_tests import inner1d
 
 __all__ = []
 
 
 def _row_dot(a, b):
     # http://stackoverflow.com/a/26168677/353337
-    return numpy.einsum('ij, ij->i', a, b)
+    # return numpy.einsum('ij, ij->i', a, b)
+    #
+    # http://stackoverflow.com/a/39657905/353337
+    return inner1d(a, b)
 
 
 def compute_tri_areas_and_ce_ratios(e0, e1, e2):
