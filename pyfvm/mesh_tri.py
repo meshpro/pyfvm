@@ -356,24 +356,24 @@ class FlatBoundaryCorrector(object):
         # the values of the function in each of the three corners, times the
         # area of the triangle.
         ids = numpy.stack([
-                numpy.c_[self.p0_id, self.p0_id],
-                numpy.c_[self.p0_id, self.p1_id],
-                numpy.c_[self.p0_id, self.p2_id]
+                _column_stack(self.p0_id, self.p0_id),
+                _column_stack(self.p0_id, self.p1_id),
+                _column_stack(self.p0_id, self.p2_id)
                 ], axis=1)
 
         vals = numpy.stack([
-            numpy.stack([
+            _column_stack(
                 area_p0_q_q1[:, None] * (self.p0 + self.q + q1) / 3.0,
                 area_p0_q_q2[:, None] * (self.p0 + self.q + q2) / 3.0
-            ], axis=1),
-            numpy.stack([
+                ),
+            _column_stack(
                 area_p0_q1_em2[:, None] * (self.p0 + q1 + em2) / 3.0,
                 area_p1_q1_em2[:, None] * (self.p1 + q1 + em2) / 3.0
-            ], axis=1),
-            numpy.stack([
+                ),
+            _column_stack(
                 area_p0_q2_em1[:, None] * (self.p0 + q2 + em1) / 3.0,
                 area_p2_q2_em1[:, None] * (self.p2 + q2 + em1) / 3.0
-            ], axis=1),
+                ),
             ], axis=1)
 
         return ids, vals
