@@ -65,11 +65,11 @@ def _flip_edges(mesh, is_flip_edge):
             axis=1
             )
 
-    cells = numpy.r_[
+    cells = numpy.concatenate([
         mesh.cells['nodes'][is_good_cell],
         new_cells[:, 0, :],
         new_cells[:, 1, :]
-        ]
+        ])
 
     return mesh.node_coords, cells
 
@@ -108,6 +108,8 @@ def lloyd_smoothing(mesh, tol, verbose=True):
             pts, cells = _flip_edges(mesh, mesh.ce_ratios < 0.0)
             mesh = MeshTri(pts, cells)
         assert all(mesh.ce_ratios >= 0.0)
+
+        # mesh.write('out%04d.vtu' % k)
 
     return mesh
 
@@ -480,8 +482,8 @@ class MeshTri(_base_mesh):
         self.surface_areas = numpy.zeros(len(self.node_coords))
         numpy.add.at(
                 self.surface_areas,
-                numpy.r_[ids0, ids1],
-                numpy.r_[vals0, vals1]
+                numpy.concatenate([ids0, ids1]),
+                numpy.concatenate([vals0, vals1])
                 )
 
         # Compute the control volume centroids.
@@ -876,7 +878,7 @@ class MeshTri(_base_mesh):
                     ], axis=1)
 
             line_segments = LineCollection(
-                numpy.r_[a, b, c],
+                numpy.concatenate([a, b, c]),
                 color=[0.8, 0.8, 0.8]
                 )
             ax.add_collection(line_segments)
