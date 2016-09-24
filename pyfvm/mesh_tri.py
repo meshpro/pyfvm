@@ -300,8 +300,8 @@ class FlatBoundaryCorrector(object):
                 numpy.linalg.norm(self.q - self.p2) - cv2
                 )
 
-        ids = numpy.vstack((ids0, ids1))
-        vals = numpy.vstack((vals0, vals1))
+        ids = numpy.concatenate([ids0, ids1])
+        vals = numpy.concatenate([vals0, vals1])
         return ids, vals
 
     def integral_x(self):
@@ -505,8 +505,8 @@ class MeshTri(_base_mesh):
         self.centroids = numpy.zeros((len(self.node_coords), 3))
         numpy.add.at(
             self.centroids,
-            numpy.vstack([ids0, ids1]),
-            numpy.vstack([vals0, vals1])
+            numpy.concatenate([ids0, ids1]),
+            numpy.concatenate([vals0, vals1])
             )
         # Don't forget to divide by the control volume for the centroids
         self.centroids /= self.control_volumes[:, None]
@@ -539,7 +539,7 @@ class MeshTri(_base_mesh):
         self.cells['nodes'].sort(axis=1)
         # Order the edges such that node 0 doesn't occur in edge 0 etc., i.e.,
         # node k is opposite of edge k.
-        a = numpy.vstack([
+        a = numpy.concatenate([
             self.cells['nodes'][:, [1, 2]],
             self.cells['nodes'][:, [0, 2]],
             self.cells['nodes'][:, [0, 1]]
