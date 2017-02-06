@@ -8,3 +8,4 @@ dist/
 *.prof
 *.e
 *.msh
+.cache/
