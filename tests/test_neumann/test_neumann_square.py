@@ -7,6 +7,7 @@ import meshzoo
 import pyamg
 from sympy import sin, pi
 import unittest
+import voropy
 
 
 def exact_sol(x):

@@ -9,6 +9,7 @@ from pyfvm.form_language import integrate, n_dot_grad, \
         dS, dGamma, dV, Subdomain
 from sympy import pi, sin, cos, sqrt
 import unittest
+import voropy
 
 
 def exact_sol(x):
