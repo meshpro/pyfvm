@@ -23,4 +23,6 @@ upload: setup.py README.rst
 publish: tag upload
 
 clean:
-	rm -f README.rst
+	rm -rf README.rst \
+	  *.egg-info \
+	  dist
