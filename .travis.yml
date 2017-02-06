@@ -27,7 +27,7 @@ before_install:
   # <https://github.com/sympy/sympy/issues/12132>.
   - sudo -H pip install sympy==0.7.6.1
   # PyAMG 3.* can't cope with nightly NumPy
-  - sudo -H pip install pyamg<3
+  - sudo -H pip install "pyamg<3"
 
 install:
   # Work around travis bug <https://github.com/travis-ci/travis-ci/issues/4948>
