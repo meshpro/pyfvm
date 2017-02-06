@@ -4,3 +4,4 @@ doc/build/
 README.rst
 pyfvm.egg-info/
 dist/
+*.vtu
