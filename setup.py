@@ -30,7 +30,16 @@ setup(
     download_url='https://github.com/nschloe/pyfvm/releases',
     license='License :: OSI Approved :: MIT License',
     platforms='any',
-    requires=['numpy', 'scipy', 'sympy', 'vtk'],
+    install_requires=[
+        'sphinxcontrib-bibtex',
+        'matplotlib',
+        'meshio',
+        'meshzoo',
+        'numpy',
+        'pyamg',
+        'scipy',
+        'sympy',
+        ],
     classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Science/Research',
