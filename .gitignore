@@ -5,3 +5,6 @@ README.rst
 pyfvm.egg-info/
 dist/
 *.vtu
+*.prof
+*.e
+*.msh
