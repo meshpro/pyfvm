@@ -21,11 +21,23 @@ def split(expr, variables):
     # See <https://github.com/sympy/sympy/issues/11475> on why we need expand()
     # here.
     expr = expr.expand()
+
+    # Get the affine part by removing all terms with any of the variables.
     affine = expr
+    for var in variables:
+        affine = affine.coeff(var, n=0)
+
+    # Extract the linear coefficients by extracting the affine parts of the
+    # derivatives.
     linear = []
     for var in variables:
-        linear.append(sympy.diff(expr, var).coeff(var, 0))
-        affine = affine.coeff(var, n=0)
+        d = sympy.diff(expr, var)
+        for var2 in variables:
+            # watch out! a sympy regression
+            # <https://github.com/sympy/sympy/issues/12132> prevents this from
+            # working correctly
+            d = d.coeff(var2, n=0)
+        linear.append(d)
 
     # The rest is nonlinear
     nonlinear = expr - affine
