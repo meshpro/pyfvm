@@ -2,9 +2,6 @@
 #
 from . import fvm_problem
 from . import linear_fvm_problem
-from . import mesh_tri
-from . import mesh_tetra
-from .reader import read
 
 from .discretize_linear import *
 from .discretize import *
@@ -13,10 +10,7 @@ from .fvm_matrix import *
 
 __all__ = [
     'fvm_problem',
-    'linear_fvm_problem',
-    'mesh_tri',
-    'mesh_tetra',
-    'reader'
+    'linear_fvm_problem'
     ]
 
 __version__ = '0.1.0'
