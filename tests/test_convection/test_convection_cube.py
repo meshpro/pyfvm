@@ -3,31 +3,31 @@ import helpers
 import pyamg
 import pyfvm
 from pyfvm.form_language import integrate, n_dot_grad, dS, dV, dot, n
-import mshr
-import dolfin
-import numpy
+import meshzoo
 from sympy import pi, sin, cos, Matrix
 import unittest
+import voropy
 
 
 def exact_sol(x):
-    return cos(pi/2 * (x[0]**2 + x[1]**2))
+    return sin(pi*x[0]) * sin(pi*x[1]) * sin(pi*x[2])
 
 
 class Convection(object):
     def apply(self, u):
         a0 = 2
         a1 = 1
-        a = Matrix([a0, a1, 0])
-
-        def rhs(x):
-            z = pi/2 * (x[0]**2 + x[1]**2)
-            return 2*pi * (sin(z) + z * cos(z)) - \
-                a0 * pi * x[0] * sin(z) - \
-                a1 * pi * x[1] * sin(z)
-
+        a2 = 3
+        a = Matrix([a0, a1, a2])
         return integrate(lambda x: -n_dot_grad(u(x)) + dot(a.T, n)*u(x), dS) \
-            - integrate(rhs, dV)
+            - integrate(
+                  lambda x:
+                  3*pi**2 * sin(pi*x[0]) * sin(pi*x[1]) * sin(pi*x[2]) +
+                  a0 * pi * cos(pi*x[0]) * sin(pi*x[1]) * sin(pi*x[2]) +
+                  a1 * pi * sin(pi*x[0]) * cos(pi*x[1]) * sin(pi*x[2]) +
+                  a2 * pi * sin(pi*x[0]) * sin(pi*x[1]) * cos(pi*x[2]),
+                  dV
+                  )
 
     def dirichlet(self, u):
         return [
@@ -36,17 +36,17 @@ class Convection(object):
 
 
 def get_mesh(k):
-    h = 0.5**k
-    # cell_size = 2 * pi / num_boundary_points
-    c = mshr.Circle(dolfin.Point(0., 0., 0.), 1, int(2*pi / h))
-    # cell_size = 2 * bounding_box_radius / res
-    m = mshr.generate_mesh(c, 2.0 / h)
-    coords = m.coordinates()
-    coords = numpy.c_[coords, numpy.zeros(len(coords))]
-    return pyfvm.mesh_tri.MeshTri(coords, m.cells())
+    n = 2**(k+1)
+    vertices, cells = meshzoo.cube(
+            0.0, 1.0,
+            0.0, 1.0,
+            0.0, 1.0,
+            n+1, n+1, n+1
+            )
+    return voropy.mesh_tetra.MeshTetra(vertices, cells, mode='algebraic')
 
 
-class ConvergenceConvection2dCircleTest(unittest.TestCase):
+class ConvergenceConvection3dCubeTest(unittest.TestCase):
 
     def setUp(self):
         return
@@ -63,7 +63,7 @@ class ConvergenceConvection2dCircleTest(unittest.TestCase):
             solver,
             exact_sol,
             get_mesh,
-            range(7),
+            range(4),
             verbose=verbose
             )
 
@@ -82,7 +82,7 @@ if __name__ == '__main__':
     from matplotlib import pyplot as plt
 
     H, error_norm_1, error_norm_inf, order_1, order_inf = \
-        ConvergenceConvection2dCircleTest.solve(verbose=True)
+        ConvergenceConvection3dCubeTest.solve(verbose=True)
 
     helpers.plot_error_data(H, error_norm_1, error_norm_inf)
     plt.show()

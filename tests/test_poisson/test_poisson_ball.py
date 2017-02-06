@@ -2,26 +2,26 @@
 import dolfin
 import mshr
 import helpers
-import numpy
+import pyamg
 import pyfvm
 from pyfvm.form_language import integrate, n_dot_grad, dS, dV
-from sympy import pi, sin, cos, exp
+from sympy import pi, sin, cos
 import unittest
+import voropy
 
 
 def exact_sol(x):
     return cos(pi/2 * (x[0]**2 + x[1]**2 + x[2]**2))
 
 
-class Bratu(object):
+class Poisson(object):
     def apply(self, u):
         def rhs(x):
             z = pi/2 * (x[0]**2 + x[1]**2 + x[2]**2)
-            return 2*pi * (1.5 * sin(z) + z * cos(z)) - 2.0 * exp(cos(z))
+            return 2*pi * (1.5 * sin(z) + z * cos(z))
 
-        return integrate(lambda x: -n_dot_grad(u(x)), dS) \
-            - integrate(lambda x: 2.0 * exp(u(x)), dV) \
-            - integrate(rhs, dV)
+        return integrate(lambda x: -n_dot_grad(u(x)), dS) - \
+            integrate(rhs, dV)
 
     def dirichlet(self, u):
         return [
@@ -33,14 +33,14 @@ def get_mesh(k):
     h = 0.5**(k+2)
     c = mshr.Sphere(dolfin.Point(0., 0., 0.), 1.0, int(2*pi / h))
     m = mshr.generate_mesh(c, 2.0 / h)
-    return pyfvm.mesh_tetra.MeshTetra(
+    return voropy.mesh_tetra.MeshTetra(
             m.coordinates(),
             m.cells(),
             mode='geometric'
             )
 
 
-class ConvergenceBratu3dBallTest(unittest.TestCase):
+class ConvergencePoisson3dBallTest(unittest.TestCase):
 
     def setUp(self):
         return
@@ -48,15 +48,9 @@ class ConvergenceBratu3dBallTest(unittest.TestCase):
     @staticmethod
     def solve(verbose=False):
         def solver(mesh):
-            f, jacobian = pyfvm.discretize(Bratu(), mesh)
-
-            def jacobian_solver(u0, rhs):
-                from scipy.sparse import linalg
-                jac = jacobian.get_linear_operator(u0)
-                return linalg.spsolve(jac, rhs)
-
-            u0 = numpy.zeros(len(mesh.node_coords))
-            u = pyfvm.newton(f.eval, jacobian_solver, u0, verbose=True)
+            matrix, rhs = pyfvm.discretize_linear(Poisson(), mesh)
+            ml = pyamg.smoothed_aggregation_solver(matrix)
+            u = ml.solve(rhs, tol=1e-10)
             return u
 
         return helpers.perform_convergence_tests(
@@ -82,7 +76,7 @@ if __name__ == '__main__':
     from matplotlib import pyplot as plt
 
     H, error_norm_1, error_norm_inf, order_1, order_inf = \
-        ConvergenceBratu3dBallTest.solve(verbose=True)
+        ConvergencePoisson3dBallTest.solve(verbose=True)
 
     helpers.plot_error_data(H, error_norm_1, error_norm_inf)
     plt.show()

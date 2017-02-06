@@ -2,20 +2,30 @@
 import helpers
 import pyamg
 import pyfvm
-from pyfvm.form_language import integrate, n_dot_grad, dS, dV
+from pyfvm.form_language import integrate, n_dot_grad, dS, dV, dot, n
 import meshzoo
-from sympy import pi, sin
+from sympy import pi, sin, cos, Matrix
 import unittest
+import voropy
 
 
 def exact_sol(x):
     return sin(pi*x[0]) * sin(pi*x[1])
 
 
-class Poisson(object):
+class Convection(object):
     def apply(self, u):
-        return integrate(lambda x: -n_dot_grad(u(x)), dS) \
-            - integrate(lambda x: 2*pi**2 * sin(pi*x[0]) * sin(pi*x[1]), dV)
+        a0 = 2
+        a1 = 1
+        a = Matrix([a0, a1, 0])
+        return integrate(lambda x: -n_dot_grad(u(x)) + dot(a.T, n)*u(x), dS) \
+            - integrate(
+                lambda x:
+                    2*pi**2 * sin(pi*x[0]) * sin(pi*x[1]) +
+                    a0 * pi * cos(pi*x[0]) * sin(pi*x[1]) +
+                    a1 * pi * sin(pi*x[0]) * cos(pi*x[1]),
+                dV
+                )
 
     def dirichlet(self, u):
         return [
@@ -25,16 +35,16 @@ class Poisson(object):
 
 def get_mesh(k):
     n = 2**(k+1)
-    vertices, cells = meshzoo.rectangle.create_mesh(
+    vertices, cells = meshzoo.rectangle(
             0.0, 1.0,
             0.0, 1.0,
             n+1, n+1,
             zigzag=True
             )
-    return pyfvm.mesh_tri.MeshTri(vertices, cells)
+    return voropy.mesh_tri.MeshTri(vertices, cells)
 
 
-class ConvergencePoisson2dSquareTest(unittest.TestCase):
+class ConvergenceConvection2dSquareTest(unittest.TestCase):
 
     def setUp(self):
         return
@@ -42,7 +52,7 @@ class ConvergencePoisson2dSquareTest(unittest.TestCase):
     @staticmethod
     def solve(verbose=False):
         def solver(mesh):
-            matrix, rhs = pyfvm.discretize_linear(Poisson(), mesh)
+            matrix, rhs = pyfvm.discretize_linear(Convection(), mesh)
             ml = pyamg.smoothed_aggregation_solver(matrix)
             u = ml.solve(rhs, tol=1e-10)
             return u
@@ -70,7 +80,7 @@ if __name__ == '__main__':
     from matplotlib import pyplot as plt
 
     H, error_norm_1, error_norm_inf, order_1, order_inf = \
-        ConvergencePoisson2dSquareTest.solve(verbose=True)
+        ConvergenceConvection2dSquareTest.solve(verbose=True)
 
     helpers.plot_error_data(H, error_norm_1, error_norm_inf)
     plt.show()

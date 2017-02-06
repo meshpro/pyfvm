@@ -1,27 +1,28 @@
 # -*- coding: utf-8 -*-
-import mshr
 import dolfin
 import helpers
+import numpy
+import mshr
 import pyamg
 import pyfvm
 from pyfvm.form_language import integrate, n_dot_grad, dS, dV
 from sympy import pi, sin, cos
 import unittest
+import voropy
 
 
 def exact_sol(x):
-    return cos(pi/2 * (x[0]**2 + x[1]**2 + x[2]**2))
+    return cos(pi/2 * (x[0]**2 + x[1]**2))
 
 
-class Reaction(object):
+class Poisson(object):
     def apply(self, u):
         def rhs(x):
-            z = pi/2 * (x[0]**2 + x[1]**2 + x[2]**2)
-            return 2*pi * (1.5 * sin(z) + z * cos(z)) + cos(z)
+            z = pi/2 * (x[0]**2 + x[1]**2)
+            return 2*pi * (sin(z) + z * cos(z))
 
-        return integrate(lambda x: -n_dot_grad(u(x)), dS) \
-            + integrate(lambda x: u(x), dV) \
-            - integrate(rhs, dV)
+        return integrate(lambda x: -n_dot_grad(u(x)), dS) - \
+            integrate(rhs, dV)
 
     def dirichlet(self, u):
         return [
@@ -30,17 +31,17 @@ class Reaction(object):
 
 
 def get_mesh(k):
-    h = 0.5**(k+2)
-    c = mshr.Sphere(dolfin.Point(0., 0., 0.), 1.0, int(2*pi / h))
+    h = 0.5**k
+    # cell_size = 2 * pi / num_boundary_points
+    c = mshr.Circle(dolfin.Point(0., 0., 0.), 1, int(2*pi / h))
+    # cell_size = 2 * bounding_box_radius / res
     m = mshr.generate_mesh(c, 2.0 / h)
-    return pyfvm.mesh_tetra.MeshTetra(
-            m.coordinates(),
-            m.cells(),
-            mode='geometric'
-            )
+    coords = m.coordinates()
+    coords = numpy.c_[coords, numpy.zeros(len(coords))]
+    return voropy.mesh_tri.MeshTri(coords, m.cells())
 
 
-class ConvergenceReaction3dBallTest(unittest.TestCase):
+class ConvergencePoisson2dCircleTest(unittest.TestCase):
 
     def setUp(self):
         return
@@ -48,7 +49,7 @@ class ConvergenceReaction3dBallTest(unittest.TestCase):
     @staticmethod
     def solve(verbose=False):
         def solver(mesh):
-            matrix, rhs = pyfvm.discretize_linear(Reaction(), mesh)
+            matrix, rhs = pyfvm.discretize_linear(Poisson(), mesh)
             ml = pyamg.smoothed_aggregation_solver(matrix)
             u = ml.solve(rhs, tol=1e-10)
             return u
@@ -57,7 +58,7 @@ class ConvergenceReaction3dBallTest(unittest.TestCase):
             solver,
             exact_sol,
             get_mesh,
-            range(3),
+            range(6),
             verbose=verbose
             )
 
@@ -65,7 +66,7 @@ class ConvergenceReaction3dBallTest(unittest.TestCase):
         H, error_norm_1, error_norm_inf, order_1, order_inf = self.solve()
 
         expected_order = 2
-        tol = 0.2
+        tol = 1.5e-1
         self.assertGreater(order_1[-1], expected_order - tol)
         self.assertGreater(order_inf[-1], expected_order - tol)
 
@@ -76,7 +77,7 @@ if __name__ == '__main__':
     from matplotlib import pyplot as plt
 
     H, error_norm_1, error_norm_inf, order_1, order_inf = \
-        ConvergenceReaction3dBallTest.solve(verbose=True)
+        ConvergencePoisson2dCircleTest.solve(verbose=True)
 
     helpers.plot_error_data(H, error_norm_1, error_norm_inf)
     plt.show()
