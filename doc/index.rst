@@ -11,8 +11,8 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
-   pyfvm.meshTri
-   pyfvm.meshTetra
+   pyfvm.mesh_tri
+   pyfvm.mesh_tetra
    pyfvm.reader
 
 

@@ -4,57 +4,63 @@ import numpy
 from scipy import sparse
 
 
-def get_linear_fvm_problem(
-        mesh,
-        edge_kernels, vertex_kernels, boundary_kernels, dirichlets
-        ):
-        V, I, J, rhs = _get_VIJ(
-                mesh,
-                edge_kernels,
-                vertex_kernels,
-                boundary_kernels
+class Jacobian(object):
+    def __init__(
+            self,
+            mesh,
+            edge_kernels, vertex_kernels, boundary_kernels, dirichlets
+            ):
+        self.mesh = mesh
+        self.edge_kernels = edge_kernels
+        self.vertex_kernels = vertex_kernels
+        self.boundary_kernels = boundary_kernels
+        self.dirichlets = dirichlets
+        return
+
+    def get_linear_operator(self, u):
+        V, I, J = _get_VIJ(
+                self.mesh,
+                u,
+                self.edge_kernels, self.vertex_kernels, self.boundary_kernels
                 )
 
         # One unknown per vertex
-        n = len(mesh.node_coords)
+        n = len(self.mesh.node_coords)
         matrix = sparse.coo_matrix((V, (I, J)), shape=(n, n))
         # Transform to CSR format for efficiency
         matrix = matrix.tocsr()
 
         # Apply Dirichlet conditions.
         d = matrix.diagonal()
-        for dirichlet in dirichlets:
-            verts = mesh.get_vertices(dirichlet.subdomain)
+        for dirichlet in self.dirichlets:
+            verts = self.mesh.get_vertices(dirichlet.subdomain)
             # Set all Dirichlet rows to 0.
             for i in verts:
                 matrix.data[matrix.indptr[i]:matrix.indptr[i+1]] = 0.0
 
-            # Set the diagonal and RHS.
-            coeff, rhs_vals = dirichlet.eval(verts)
-            d[verts] = coeff
-            rhs[verts] = rhs_vals
+            # Set the diagonal.
+            d[verts] = dirichlet.eval(u[verts], self.mesh, verts)
 
         matrix.setdiag(d)
 
-        return matrix, rhs
+        return matrix
 
 
 def _get_VIJ(
         mesh,
+        u,
         edge_kernels, vertex_kernels, boundary_kernels
         ):
     V = []
     I = []
     J = []
-    rhs_V = []
-    rhs_I = []
 
     for edge_kernel in edge_kernels:
         for subdomain in edge_kernel.subdomains:
             edges = mesh.get_edges(subdomain)
             edge_nodes = mesh.edges['nodes'][edges]
 
-            v_matrix, v_rhs = edge_kernel.eval(mesh, edges)
+            v_matrix = edge_kernel.eval(u, mesh, edges)
 
             # if dot() is used in the expression, the shape of of v_matrix will
             # be (2, 2, 1, k) instead of (2, 2, k).
@@ -80,54 +86,27 @@ def _get_VIJ(
             J.append(edge_nodes[:, 0])
             J.append(edge_nodes[:, 1])
 
-            rhs_V.append(v_rhs[0])
-            rhs_V.append(v_rhs[1])
-            rhs_I.append(edge_nodes[:, 0])
-            rhs_I.append(edge_nodes[:, 1])
-
-            # # TODO fix those
-            # for k in mesh.get_half_edges(subdomain):
-            #     k0, k1 = mesh.get_vertices(k)
-            #     val = edge_kernel.eval(k)
-            #     V += [vals]
-            #     I += [k0, k1]
-            #     J += [k0, k1]
-
     for vertex_kernel in vertex_kernels:
         for subdomain in vertex_kernel.subdomains:
             verts = mesh.get_vertices(subdomain)
-            vals_matrix, vals_rhs = vertex_kernel.eval(verts)
+            vals_matrix = vertex_kernel.eval(u, mesh, verts)
 
             V.append(vals_matrix)
             I.append(verts)
             J.append(verts)
-
-            rhs_V.append(vals_rhs)
-            rhs_I.append(verts)
 
     for boundary_kernel in boundary_kernels:
         for subdomain in boundary_kernel.subdomains:
             verts = mesh.get_vertices(subdomain)
-            vals_matrix, vals_rhs = boundary_kernel.eval(verts)
+            vals_matrix = boundary_kernel.eval(u, mesh, verts)
 
             V.append(vals_matrix)
             I.append(verts)
             J.append(verts)
-
-            rhs_V.append(vals_rhs)
-            rhs_I.append(verts)
 
     # Finally, make V, I, J into 1D-arrays.
     V = numpy.concatenate(V)
     I = numpy.concatenate(I)
     J = numpy.concatenate(J)
 
-    # Assemble rhs
-    rhs = numpy.zeros(len(mesh.node_coords))
-    numpy.subtract.at(
-            rhs,
-            numpy.concatenate(rhs_I),
-            numpy.concatenate(rhs_V)
-            )
-
-    return V, I, J, rhs
+    return V, I, J

@@ -1,19 +1,20 @@
 # -*- coding: utf-8 -*-
 #
+from . import fvm_problem
 from . import linear_fvm_problem
-from . import meshTri
-from . import meshTetra
-from . import reader
 
+from .discretize_linear import *
 from .discretize import *
+from .nonlinear_methods import *
+from .fvm_matrix import *
+
+from pyfvm.__about__ import (
+    __version__,
+    __author__,
+    __author_email__,
+    )
 
 __all__ = [
-    'linear_fvm_problem',
-    'meshTri',
-    'meshTetra',
-    'reader'
+    'fvm_problem',
+    'linear_fvm_problem'
     ]
-
-__version__ = '0.1.0'
-__author__ = 'Nico Schlömer'
-__author_email__ = 'nico.schloemer@gmail.com'

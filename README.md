@@ -1,10 +1,10 @@
 # PyFVM
 
 [![Build Status](https://travis-ci.org/nschloe/pyfvm.svg?branch=master)](https://travis-ci.org/nschloe/pyfvm)
-[![Requirements Status](https://requires.io/github/nschloe/pyfvm/requirements.svg?branch=master)](https://requires.io/github/nschloe/pyfvm/requirements/?branch=master)
 [![Code Health](https://landscape.io/github/nschloe/pyfvm/master/landscape.png)](https://landscape.io/github/nschloe/pyfvm/master)
 [![codecov](https://codecov.io/gh/nschloe/pyfvm/branch/master/graph/badge.svg)](https://codecov.io/gh/nschloe/pyfvm)
 [![PyPi Version](https://img.shields.io/pypi/v/pyfvm.svg)](https://pypi.python.org/pypi/pyfvm)
+[![GitHub stars](https://img.shields.io/github/stars/nschloe/pyfvm.svg?style=social&label=Star&maxAge=2592000)](https://github.com/nschloe/pyfvm)
 
 Creating finite volume equation systems with ease.
 
@@ -18,42 +18,32 @@ construct FVM systems.
 
 #### Linear equation systems
 
-##### Poisson's equation
-
-For solving Poisson's equation with Dirichlet boundary conditions, simply do
-From the configuration file
+PyFVM works by specifying the residuals, so for solving Poisson's equation with
+Dirichlet boundary conditions, simply do
 ```python
 import pyfvm
 from pyfvm.form_language import *
+import meshzoo
 from scipy.sparse import linalg
-from sympy import sin, pi
 
 
-class Poisson(LinearFvmProblem):
+class Poisson(FvmProblem):
     def apply(self, u):
         return integrate(lambda x: -n_dot_grad(u(x)), dS) \
-             - integrate(lambda x: 10 * sin(2*pi*x[0]), dV)
+             - integrate(lambda x: 1.0, dV)
 
     def dirichlet(self, u):
-        return [
-            (lambda x: u(x) - 0.0, Gamma0()),
-            (lambda x: u(x) - 1.0, Gamma1())
-            ]
+        return [(lambda x: u(x) - 0.0, 'boundary')]
 
 # Create mesh using meshzoo
-vertices, cells = meshzoo.rectangle.create_mesh(
-        0.0, 2.0,
-        0.0, 1.0,
-        401, 201,
-        zigzag=True
-        )
-mesh = pyfvm.meshTri.meshTri(vertices, cells)
+vertices, cells = meshzoo.rectangle.create_mesh(0.0, 2.0, 0.0, 1.0, 401, 201)
+mesh = pyfvm.mesh_tri.MeshTri(vertices, cells)
 
-linear_system = pyfvm.discretize(Poisson(), mesh)
+linear_system = pyfvm.discretize_linear(Poisson(), mesh)
 
-x = linalg.spsolve(linear_system.matrix, linear_system.rhs)
+u = linalg.spsolve(linear_system.matrix, linear_system.rhs)
 
-mesh.write('out.vtu', point_data={'x': x})
+mesh.write('out.vtu', point_data={'u': u})
 ```
 This example uses [meshzoo](https://pypi.python.org/pypi/meshzoo) for creating
 a simple mesh, but anything else that provides vertices and cells works as
@@ -62,10 +52,53 @@ well. For example, reading from a wide variety of mesh files is supported
 ```python
 mesh, _, _ = pyfvm.reader.read('pacman.e')
 ```
+Likewise, [PyAMG](https://github.com/pyamg/pyamg) is a much faster solver
+for this problem
+```
+import pyamg
+ml = pyamg.smoothed_aggregation_solver(linear_system.matrix)
+u = ml.solve(linear_system.rhs, tol=1e-10)
+```
 
-##### Singular perturbation
+More examples are contained in the [examples directory](examples/).
 
 #### Nonlinear equation systems
+Nonlinear systems are treated almost equally; only the discretization and
+obviously the solver call is different. For Bratu's problem:
+```python
+import pyfvm
+from pyfvm.form_language import *
+import meshzoo
+import numpy
+from sympy import exp
+
+
+class Bratu(FvmProblem):
+    def apply(self, u):
+        return integrate(lambda x: -n_dot_grad(u(x)), dS) \
+             - integrate(lambda x: 2.0 * exp(u(x)), dV)
+
+    def dirichlet(self, u):
+        return [(u, 'boundary')]
+
+vertices, cells = meshzoo.rectangle.create_mesh(0.0, 2.0, 0.0, 1.0, 101, 51)
+mesh = pyfvm.mesh_tri.MeshTri(vertices, cells)
+
+f, jacobian = pyfvm.discretize(Bratu(), mesh)
+
+u0 = numpy.zeros(len(vertices))
+u = pyfvm.newton(f.eval, jacobian.get_linear_operator, u0)
+
+mesh.write('out.vtu', point_data={'u': u})
+```
+Note that the Jacobian is computed symbolically from the `Bratu` class.
+
+Instead of `pyfvm.newton`, you can use any solver that accepts the residual
+computation `f.eval`, e.g.,
+```
+import scipy.optimize
+u = scipy.optimize.newton_krylov(f.eval, u0)
+```
 
 ### Installation
 
@@ -96,7 +129,7 @@ To create a new release
 
 2. publish to PyPi and GitHub:
     ```
-    $ make publish
+    make publish
     ```
 
 ### License

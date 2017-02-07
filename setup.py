@@ -1,11 +1,14 @@
 # -*- coding: utf-8 -*-
 #
-#from distutils.core import setup
 from setuptools import setup, find_packages
 import os
 import codecs
 
-from pyfvm import __version__, __author__, __author_email__
+# https://packaging.python.org/single_source_version/
+base_dir = os.path.abspath(os.path.dirname(__file__))
+about = {}
+with open(os.path.join(base_dir, 'pyfvm', '__about__.py')) as f:
+    exec(f.read(), about)
 
 
 def read(fname):
@@ -18,11 +21,12 @@ def read(fname):
         content = ''
     return content
 
+
 setup(
     name='PyFVM',
-    version=__version__,
-    author=__author__,
-    author_email=__author_email__,
+    version=about['__version__'],
+    author=about['__author__'],
+    author_email=about['__author_email__'],
     packages=find_packages(),
     description='Finite Volume Discretizations for Python',
     long_description=read('README.rst'),
@@ -30,7 +34,15 @@ setup(
     download_url='https://github.com/nschloe/pyfvm/releases',
     license='License :: OSI Approved :: MIT License',
     platforms='any',
-    requires=['numpy', 'scipy', 'sympy', 'vtk'],
+    install_requires=[
+        'sphinxcontrib-bibtex',
+        'meshzoo',
+        'numpy',
+        'pyamg',
+        'scipy',
+        'sympy',
+        'voropy',
+        ],
     classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Science/Research',

@@ -3,7 +3,8 @@ import numpy
 from numpy import pi
 import pyamg
 import pyfvm
-from pyfvm.form_language import *
+from pyfvm.form_language import integrate, Subdomain, FvmProblem, \
+        dS, dV, n_dot_grad
 from sympy import sin
 
 
@@ -17,7 +18,7 @@ class Gamma1(Subdomain):
     is_boundary_only = True
 
 
-class Poisson(LinearFvmProblem):
+class Poisson(FvmProblem):
     def apply(self, u):
         return integrate(lambda x: -n_dot_grad(u(x)), dS) \
              - integrate(lambda x: 10 * sin(2*pi*x[0]), dV)
@@ -29,7 +30,6 @@ class Poisson(LinearFvmProblem):
             ]
 
 
-
 # # Read the mesh from file
 # mesh, _, _ = pyfvm.reader.read('circle.vtu')
 
@@ -39,14 +39,14 @@ class Poisson(LinearFvmProblem):
 #         0.0, 1.0, 0.0, 1.0, 0.0, 1.0,
 #         25, 25, 25
 #         )
-# mesh = pyfvm.meshTetra.meshTetra(vertices, cells)
+# mesh = pyfvm.mesh_tetra.MeshTetra(vertices, cells)
 # vertices, cells = meshzoo.rectangle.create_mesh(
 #         0.0, 2.0,
 #         0.0, 1.0,
 #         401, 201,
 #         zigzag=True
 #         )
-# mesh = pyfvm.meshTri.meshTri(vertices, cells)
+# mesh = pyfvm.mesh_tri.MeshTri(vertices, cells)
 
 import mshr
 import dolfin
@@ -57,13 +57,13 @@ c = mshr.Circle(dolfin.Point(0., 0., 0.), 1, int(2*pi / h))
 m = mshr.generate_mesh(c, 2.0 / h)
 coords = m.coordinates()
 coords = numpy.c_[coords, numpy.zeros(len(coords))]
-mesh = pyfvm.meshTri.meshTri(coords, m.cells())
+mesh = pyfvm.mesh_tri.MeshTri(coords, m.cells())
 
-linear_system = pyfvm.discretize(Poisson(), mesh)
+matrix, rhs = pyfvm.discretize_linear(Poisson(), mesh)
 
-ml = pyamg.ruge_stuben_solver(linear_system.matrix)
-x = ml.solve(linear_system.rhs, tol=1e-10)
+ml = pyamg.smoothed_aggregation_solver(matrix)
+u = ml.solve(rhs, tol=1e-10)
 # from scipy.sparse import linalg
-# x = linalg.spsolve(linear_system.matrix, linear_system.rhs)
+# u = linalg.spsolve(linear_system.matrix, linear_system.rhs)
 
-mesh.write('out.vtu', point_data={'x': x})
+mesh.write('out.vtu', point_data={'u': u})
