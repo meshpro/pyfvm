@@ -24,6 +24,8 @@ def get_linear_fvm_problem(
         # Apply Dirichlet conditions.
         d = matrix.diagonal()
         for dirichlet in dirichlets:
+            print(dirichlet.subdomain)
+            print(type(dirichlet.subdomain))
             verts = mesh.get_vertices(dirichlet.subdomain)
             # Set all Dirichlet rows to 0.
             for i in verts:
@@ -51,39 +53,41 @@ def _get_VIJ(
 
     for edge_kernel in edge_kernels:
         for subdomain in edge_kernel.subdomains:
-            edges = mesh.get_edges(subdomain)
-            edge_nodes = mesh.edges['nodes'][edges]
+            if subdomain == 'everywhere':
+                cell_ids = mesh.get_cells()
+            else:
+                cell_ids = mesh.get_cells(subdomain)
 
-            v_matrix, v_rhs = edge_kernel.eval(mesh, edges)
+            v_matrix, v_rhs, cell_edge_nodes = edge_kernel.eval(mesh, cell_ids)
 
             # if dot() is used in the expression, the shape of of v_matrix will
-            # be (2, 2, 1, k) instead of (2, 2, k).
-            if len(v_matrix.shape) == 4:
+            # be (2, 2, 1, k) instead of (2, 2, 871, k).
+            if len(v_matrix.shape) == 5:
                 assert v_matrix.shape[2] == 1
-                V.append(v_matrix[0, 0, 0, :])
-                V.append(v_matrix[0, 1, 0, :])
-                V.append(v_matrix[1, 0, 0, :])
-                V.append(v_matrix[1, 1, 0, :])
+                V.append(v_matrix[0, 0, 0])
+                V.append(v_matrix[0, 1, 0])
+                V.append(v_matrix[1, 0, 0])
+                V.append(v_matrix[1, 1, 0])
             else:
-                V.append(v_matrix[0, 0, :])
-                V.append(v_matrix[0, 1, :])
-                V.append(v_matrix[1, 0, :])
-                V.append(v_matrix[1, 1, :])
+                V.append(v_matrix[0, 0])
+                V.append(v_matrix[0, 1])
+                V.append(v_matrix[1, 0])
+                V.append(v_matrix[1, 1])
 
-            I.append(edge_nodes[:, 0])
-            I.append(edge_nodes[:, 0])
-            I.append(edge_nodes[:, 1])
-            I.append(edge_nodes[:, 1])
+            I.append(cell_edge_nodes[0])
+            I.append(cell_edge_nodes[0])
+            I.append(cell_edge_nodes[1])
+            I.append(cell_edge_nodes[1])
 
-            J.append(edge_nodes[:, 0])
-            J.append(edge_nodes[:, 1])
-            J.append(edge_nodes[:, 0])
-            J.append(edge_nodes[:, 1])
+            J.append(cell_edge_nodes[0])
+            J.append(cell_edge_nodes[1])
+            J.append(cell_edge_nodes[0])
+            J.append(cell_edge_nodes[1])
 
             rhs_V.append(v_rhs[0])
             rhs_V.append(v_rhs[1])
-            rhs_I.append(edge_nodes[:, 0])
-            rhs_I.append(edge_nodes[:, 1])
+            rhs_I.append(cell_edge_nodes[0])
+            rhs_I.append(cell_edge_nodes[1])
 
             # # TODO fix those
             # for k in mesh.get_half_edges(subdomain):
@@ -95,7 +99,11 @@ def _get_VIJ(
 
     for vertex_kernel in vertex_kernels:
         for subdomain in vertex_kernel.subdomains:
-            verts = mesh.get_vertices(subdomain)
+            if subdomain == 'everywhere':
+                verts = numpy.array(mesh.get_vertices())
+            else:
+                verts = mesh.get_vertices(subdomain)
+
             vals_matrix, vals_rhs = vertex_kernel.eval(verts)
 
             V.append(vals_matrix)
@@ -118,16 +126,13 @@ def _get_VIJ(
             rhs_I.append(verts)
 
     # Finally, make V, I, J into 1D-arrays.
-    V = numpy.concatenate(V)
-    I = numpy.concatenate(I)
-    J = numpy.concatenate(J)
+    V = numpy.concatenate([v.flat for v in V])
+    I = numpy.concatenate([i.flat for i in I])
+    J = numpy.concatenate([j.flat for j in J])
 
     # Assemble rhs
     rhs = numpy.zeros(len(mesh.node_coords))
-    numpy.subtract.at(
-            rhs,
-            numpy.concatenate(rhs_I),
-            numpy.concatenate(rhs_V)
-            )
+    for i, v in zip(rhs_I, rhs_V):
+        numpy.subtract.at(rhs, i, v)
 
     return V, I, J, rhs

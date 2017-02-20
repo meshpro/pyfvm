@@ -56,10 +56,11 @@ def _get_VIJ(
 
     for edge_kernel in edge_kernels:
         for subdomain in edge_kernel.subdomains:
-            edges = mesh.get_edges(subdomain)
-            edge_nodes = mesh.edges['nodes'][edges]
+            cell_ids = mesh.get_cells(subdomain)
+            cells_edges = mesh.cells_edges[cell_ids]
+            # edge_nodes = mesh.edges['nodes'][edges]
 
-            v_matrix = edge_kernel.eval(mesh, edges)
+            v_matrix = edge_kernel.eval(mesh, cells_edges)
 
             # if dot() is used in the expression, the shape of of v_matrix will
             # be (2, 2, 1, k) instead of (2, 2, k).

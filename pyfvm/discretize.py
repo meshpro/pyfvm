@@ -15,16 +15,17 @@ class EdgeKernel(object):
         self.subdomains = ['everywhere']
         return
 
-    def eval(self, u, mesh, edge_ids):
-        edge_nodes = mesh.edges['nodes'][edge_ids]
-        X = mesh.node_coords[edge_nodes]
+    def eval(self, u, mesh, cell_ids):
+        # edge_nodes = mesh.edges['nodes'][edge_ids]
+        cell_edge_nodes = mesh.cell_edge_nodes[cell_ids]
+        X = mesh.node_coords[cell_edge_nodes]
         x0 = X[:, 0, :].T
         x1 = X[:, 1, :].T
-        edge_ce_ratio = mesh.ce_ratios[edge_ids]
-        edge_length = mesh.edge_lengths[edge_ids]
-        zero = numpy.zeros((2, len(edge_ids)))
+        edge_ce_ratio = mesh.get_ce_ratios(cell_ids)
+        edge_length = mesh.get_edge_lengths(cell_ids)
+        zero = numpy.zeros(cell_edge_nodes.shape)
         return numpy.array(self.val(
-            u[edge_nodes[:, 0]], u[edge_nodes[:, 1]],
+            u[cell_edge_nodes[..., 0]], u[cell_edge_nodes[..., 1]],
             x0, x1, edge_ce_ratio, edge_length
             )) + zero
 
@@ -36,23 +37,23 @@ class VertexKernel(object):
         return
 
     def eval(self, u, mesh, vertex_ids):
-        control_volumes = mesh.control_volumes[vertex_ids]
+        control_volumes = mesh.get_control_volumes(vertex_ids)
         X = mesh.node_coords[vertex_ids].T
         zero = numpy.zeros(len(vertex_ids))
         return self.val(u, control_volumes, X) + zero
 
 
-class BoundaryKernel(object):
+class FaceKernel(object):
     def __init__(self, val):
         self.val = val
         self.subdomains = ['everywhere']
         return
 
-    def eval(self, u, mesh, vertex_ids):
-        surface_areas = mesh.surface_areas[vertex_ids]
-        X = mesh.node_coords[vertex_ids].T
-        zero = numpy.zeros(len(vertex_ids))
-        return self.val(u, surface_areas, X) + zero
+    def eval(self, u, mesh, cell_face_nodes):
+        face_areas = mesh.get_face_areas(cell_face_nodes)
+        X = mesh.node_coords[cell_face_nodes].T
+        zero = numpy.zeros(len(cell_face_nodes))
+        return self.val(u, face_areas, X) + zero
 
 
 class DirichletKernel(object):
@@ -161,19 +162,19 @@ def discretize(obj, mesh):
                 expr = fx.subs(u(x), uk0)
             except AttributeError:  # 'float' object has no
                 expr = fx
-            surface_area = sympy.Symbol('surface_area')
-            expr *= surface_area
+            face_area = sympy.Symbol('face_area')
+            expr *= face_area
 
-            val = sympy.lambdify((uk0, surface_area, x), expr, modules=a2a)
+            val = sympy.lambdify((uk0, face_area, x), expr, modules=a2a)
 
-            boundary_kernels.add(BoundaryKernel(val))
+            boundary_kernels.add(FaceKernel(val))
 
             # Linearization
             expr_lin = sympy.diff(expr, uk0)
             val_lin = sympy.lambdify(
-                (uk0, surface_area, x), expr_lin, modules=a2a
+                (uk0, face_area, x), expr_lin, modules=a2a
                 )
-            jacobian_boundary_kernels.add(BoundaryKernel(val_lin))
+            jacobian_boundary_kernels.add(FaceKernel(val_lin))
 
         else:
             raise RuntimeError(

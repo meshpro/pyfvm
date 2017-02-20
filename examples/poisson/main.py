@@ -6,6 +6,7 @@ import pyfvm
 from pyfvm.form_language import integrate, Subdomain, FvmProblem, \
         dS, dV, n_dot_grad
 from sympy import sin
+import voropy
 
 
 class Gamma0(Subdomain):
@@ -33,31 +34,31 @@ class Poisson(FvmProblem):
 # # Read the mesh from file
 # mesh, _, _ = pyfvm.reader.read('circle.vtu')
 
-# # Create mesh using meshzoo
-# import meshzoo
-# vertices, cells = meshzoo.cube.create_mesh(
+# Create mesh using meshzoo
+import meshzoo
+# vertices, cells = meshzoo.cube(
 #         0.0, 1.0, 0.0, 1.0, 0.0, 1.0,
-#         25, 25, 25
+#         50, 50, 50
 #         )
-# mesh = pyfvm.mesh_tetra.MeshTetra(vertices, cells)
-# vertices, cells = meshzoo.rectangle.create_mesh(
-#         0.0, 2.0,
-#         0.0, 1.0,
-#         401, 201,
-#         zigzag=True
-#         )
-# mesh = pyfvm.mesh_tri.MeshTri(vertices, cells)
+# mesh = voropy.mesh_tetra.MeshTetra(vertices, cells)
+vertices, cells = meshzoo.rectangle(
+        0.0, 2.0,
+        0.0, 1.0,
+        401, 201
+        )
+mesh = voropy.mesh_tri.MeshTri(vertices, cells)
 
-import mshr
-import dolfin
-h = 2.5e-2
-# cell_size = 2 * pi / num_boundary_points
-c = mshr.Circle(dolfin.Point(0., 0., 0.), 1, int(2*pi / h))
-# cell_size = 2 * bounding_box_radius / res
-m = mshr.generate_mesh(c, 2.0 / h)
-coords = m.coordinates()
-coords = numpy.c_[coords, numpy.zeros(len(coords))]
-mesh = pyfvm.mesh_tri.MeshTri(coords, m.cells())
+# import mshr
+# import dolfin
+# # h = 2.5e-3
+# h = 1.e-1
+# # cell_size = 2 * pi / num_boundary_points
+# c = mshr.Circle(dolfin.Point(0., 0., 0.), 1, int(2*pi / h))
+# # cell_size = 2 * bounding_box_radius / res
+# m = mshr.generate_mesh(c, 2.0 / h)
+# coords = m.coordinates()
+# coords = numpy.c_[coords, numpy.zeros(len(coords))]
+# mesh = voropy.mesh_tri.MeshTri(coords, m.cells())
 
 matrix, rhs = pyfvm.discretize_linear(Poisson(), mesh)
 

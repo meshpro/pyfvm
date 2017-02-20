@@ -20,7 +20,8 @@ class Poisson(object):
     def dirichlet(self, u):
         return [(u, D1())]
 
-vertices, cells = meshzoo.rectangle.create_mesh(0.0, 1.0, 0.0, 1.0, 51, 51)
+
+vertices, cells = meshzoo.rectangle(0.0, 1.0, 0.0, 1.0, 51, 51)
 mesh = pyfvm.mesh_tri.MeshTri(vertices, cells)
 
 matrix, rhs = pyfvm.discretize_linear(Poisson(), mesh)

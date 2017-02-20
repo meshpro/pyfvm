@@ -59,30 +59,29 @@ class EdgeLinearKernel(object):
         self.subdomains = ['everywhere']
         return
 
-    def eval(self, mesh, edge_ids):
-        X = mesh.node_coords[mesh.edges['nodes'][edge_ids]]
-        x0 = X[:, 0, :].T
-        x1 = X[:, 1, :].T
-        edge_ce_ratio = mesh.ce_ratios[edge_ids]
-        edge_length = mesh.edge_lengths[edge_ids]
-        # Add "zero" to all entities. This later gets translated into
-        # np.zeros with the appropriate length, making sure that scalar
-        # terms in the lambda expression correctly return np.arrays.
-        zero = numpy.zeros(len(edge_ids))
+    def eval(self, mesh, cell_ids):
+        cen = mesh.node_edge_cells[..., cell_ids]
+        X = mesh.node_coords[cen]
+        edge_ce_ratio = mesh.get_ce_ratios()[..., cell_ids]
+        edge_length = mesh.get_edge_lengths()[..., cell_ids]
+        # Add "zero" to all entities. This later gets translated into np.zeros
+        # with the appropriate length, making sure that scalar terms in the
+        # lambda expression correctly return np.arrays.
+        zero = numpy.zeros(cen.shape[1:3])
 
-        val = self.linear(x0, x1, edge_ce_ratio, edge_length)
+        val = self.linear(X[0], X[1], edge_ce_ratio, edge_length)
         val[0][0] += zero
         val[0][1] += zero
         val[1][0] += zero
         val[1][1] += zero
         val = numpy.array(val)
 
-        rhs = self.affine(x0, x1, edge_ce_ratio, edge_length)
+        rhs = self.affine(X[0], X[1], edge_ce_ratio, edge_length)
         rhs[0] += zero
         rhs[1] += zero
         rhs = numpy.array(rhs)
 
-        return (val, rhs)
+        return (val, rhs, cen)
 
 
 class VertexLinearKernel(object):
@@ -94,7 +93,7 @@ class VertexLinearKernel(object):
         return
 
     def eval(self, vertex_ids):
-        control_volumes = self.mesh.control_volumes[vertex_ids]
+        control_volumes = self.mesh.get_control_volumes()[vertex_ids]
         X = self.mesh.node_coords[vertex_ids].T
         zero = numpy.zeros(len(vertex_ids))
         return (
@@ -103,7 +102,7 @@ class VertexLinearKernel(object):
             )
 
 
-class BoundaryLinearKernel(object):
+class FaceLinearKernel(object):
     def __init__(self, mesh, coeff, affine):
         self.mesh = mesh
         self.coeff = coeff
@@ -111,13 +110,13 @@ class BoundaryLinearKernel(object):
         self.subdomains = ['everywhere']
         return
 
-    def eval(self, vertex_ids):
-        surface_areas = self.mesh.surface_areas[vertex_ids]
-        X = self.mesh.node_coords[vertex_ids].T
-        zero = numpy.zeros(len(vertex_ids))
+    def eval(self, cell_face_nodes):
+        face_areas = self.mesh.get_face_areas(cell_face_nodes)
+        X = self.mesh.node_coords(cell_face_nodes).T
+        zero = numpy.zeros(cell_face_nodes.shape)
         return (
-            self.coeff(surface_areas, X) + zero,
-            self.affine(surface_areas, X) + zero
+            self.coeff(face_areas, X) + zero,
+            self.affine(face_areas, X) + zero
             )
 
 
@@ -268,7 +267,7 @@ def discretize_linear(obj, mesh):
 
     edge_kernels = set()
     vertex_kernels = set()
-    boundary_kernels = set()
+    face_kernels = set()
     for integral in res.integrals:
         if isinstance(integral.measure, form_language.ControlVolumeSurface):
             # discretization
@@ -343,7 +342,9 @@ def discretize_linear(obj, mesh):
             l_eval = sympy.lambdify((surface_area, x), linear, modules=a2a)
             a_eval = sympy.lambdify((surface_area, x), affine, modules=a2a)
 
-            boundary_kernels.add(BoundaryLinearKernel(mesh, l_eval, a_eval))
+            face_kernels.add(
+                    FaceLinearKernel(mesh, l_eval, a_eval)
+                    )
 
         else:
             raise RuntimeError(
@@ -374,5 +375,5 @@ def discretize_linear(obj, mesh):
 
     return get_linear_fvm_problem(
             mesh,
-            edge_kernels, vertex_kernels, boundary_kernels, dirichlet_kernels
+            edge_kernels, vertex_kernels, face_kernels, dirichlet_kernels
             )
