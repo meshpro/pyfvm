@@ -60,14 +60,15 @@ class EdgeLinearKernel(object):
         return
 
     def eval(self, mesh, cell_ids):
-        cen = mesh.node_edge_cells[..., cell_ids]
-        X = mesh.node_coords[cen]
         edge_ce_ratio = mesh.get_ce_ratios()[..., cell_ids]
         edge_length = mesh.get_edge_lengths()[..., cell_ids]
+
+        cen = mesh.idx_hierarchy[..., cell_ids]
+        X = mesh.node_coords[cen]
         # Add "zero" to all entities. This later gets translated into np.zeros
         # with the appropriate length, making sure that scalar terms in the
         # lambda expression correctly return np.arrays.
-        zero = numpy.zeros(cen.shape[1:3])
+        zero = numpy.zeros(cen.shape[1:])
 
         val = self.linear(X[0], X[1], edge_ce_ratio, edge_length)
         val[0][0] += zero

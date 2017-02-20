@@ -38,14 +38,15 @@ class Poisson(FvmProblem):
 import meshzoo
 # vertices, cells = meshzoo.cube(
 #         0.0, 1.0, 0.0, 1.0, 0.0, 1.0,
-#         50, 50, 50
+#         20, 20, 20
 #         )
 # mesh = voropy.mesh_tetra.MeshTetra(vertices, cells)
 vertices, cells = meshzoo.rectangle(
         0.0, 2.0,
         0.0, 1.0,
-        401, 201
+        1601, 801,
         )
+print(len(vertices))
 mesh = voropy.mesh_tri.MeshTri(vertices, cells)
 
 # import mshr
@@ -59,12 +60,13 @@ mesh = voropy.mesh_tri.MeshTri(vertices, cells)
 # coords = m.coordinates()
 # coords = numpy.c_[coords, numpy.zeros(len(coords))]
 # mesh = voropy.mesh_tri.MeshTri(coords, m.cells())
+# # mesh = voropy.mesh_tri.lloyd_smoothing(mesh, 1.0e-4)
 
 matrix, rhs = pyfvm.discretize_linear(Poisson(), mesh)
 
 ml = pyamg.smoothed_aggregation_solver(matrix)
 u = ml.solve(rhs, tol=1e-10)
 # from scipy.sparse import linalg
-# u = linalg.spsolve(linear_system.matrix, linear_system.rhs)
+# u = linalg.spsolve(matrix, rhs)
 
-mesh.write('out.vtu', point_data={'u': u})
+# mesh.write('out.vtu', point_data={'u': u})

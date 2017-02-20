@@ -78,14 +78,14 @@ def discretize(obj, mesh):
 
     edge_kernels = set()
     vertex_kernels = set()
-    boundary_kernels = set()
+    face_kernels = set()
     edge_matrix_kernels = set()
     # vertex_matrix_kernels = set()
     # boundary_matrix_kernels = set()
 
     jacobian_edge_kernels = set()
     jacobian_vertex_kernels = set()
-    jacobian_boundary_kernels = set()
+    jacobian_face_kernels = set()
 
     for kernel in res.kernels:
         if isinstance(kernel, fvm_matrix.EdgeMatrixKernel):
@@ -167,14 +167,14 @@ def discretize(obj, mesh):
 
             val = sympy.lambdify((uk0, face_area, x), expr, modules=a2a)
 
-            boundary_kernels.add(FaceKernel(val))
+            face_kernels.add(FaceKernel(val))
 
             # Linearization
             expr_lin = sympy.diff(expr, uk0)
             val_lin = sympy.lambdify(
                 (uk0, face_area, x), expr_lin, modules=a2a
                 )
-            jacobian_boundary_kernels.add(FaceKernel(val_lin))
+            jacobian_face_kernels.add(FaceKernel(val_lin))
 
         else:
             raise RuntimeError(
@@ -207,7 +207,7 @@ def discretize(obj, mesh):
 
     residual = fvm_problem.FvmProblem(
             mesh,
-            edge_kernels, vertex_kernels, boundary_kernels, dirichlet_kernels,
+            edge_kernels, vertex_kernels, face_kernels, dirichlet_kernels,
             edge_matrix_kernels, [], []
             )
 
@@ -215,7 +215,7 @@ def discretize(obj, mesh):
             mesh,
             jacobian_edge_kernels,
             jacobian_vertex_kernels,
-            jacobian_boundary_kernels,
+            jacobian_face_kernels,
             jacobian_dirichlet_kernels
             )
 

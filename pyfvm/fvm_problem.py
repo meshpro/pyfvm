@@ -8,23 +8,23 @@ class FvmProblem(object):
     def __init__(
             self,
             mesh,
-            edge_kernels, vertex_kernels, boundary_kernels, dirichlets,
-            edge_matrix_kernels, vertex_matrix_kernels, boundary_matrix_kernels
+            edge_kernels, vertex_kernels, face_kernels, dirichlets,
+            edge_matrix_kernels, vertex_matrix_kernels, face_matrix_kernels
             ):
         self.mesh = mesh
         self.edge_kernels = edge_kernels
         self.vertex_kernels = vertex_kernels
-        self.boundary_kernels = boundary_kernels
+        self.face_kernels = face_kernels
         self.dirichlets = dirichlets
 
         if edge_matrix_kernels or \
            vertex_matrix_kernels or \
-           boundary_matrix_kernels:
+           face_matrix_kernels:
             self.matrix = fvm_matrix.get_fvm_matrix(
                 mesh,
                 edge_matrix_kernels,
                 vertex_matrix_kernels,
-                boundary_matrix_kernels,
+                face_matrix_kernels,
                 []  # dirichlets
                 )
         else:
@@ -53,10 +53,10 @@ class FvmProblem(object):
                 verts = self.mesh.get_vertices(subdomain)
                 out[verts] += vertex_kernel.eval(u, self.mesh, verts)
 
-        for boundary_kernel in self.boundary_kernels:
-            for subdomain in boundary_kernel.subdomains:
+        for face_kernel in self.face_kernels:
+            for subdomain in face_kernel.subdomains:
                 verts = self.mesh.get_vertices(subdomain)
-                out[verts] += boundary_kernel.eval(u, self.mesh, verts)
+                out[verts] += face_kernel.eval(u, self.mesh, verts)
 
         for dirichlet in self.dirichlets:
             verts = self.mesh.get_vertices(dirichlet.subdomain)

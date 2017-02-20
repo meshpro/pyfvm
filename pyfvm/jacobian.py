@@ -8,12 +8,12 @@ class Jacobian(object):
     def __init__(
             self,
             mesh,
-            edge_kernels, vertex_kernels, boundary_kernels, dirichlets
+            edge_kernels, vertex_kernels, face_kernels, dirichlets
             ):
         self.mesh = mesh
         self.edge_kernels = edge_kernels
         self.vertex_kernels = vertex_kernels
-        self.boundary_kernels = boundary_kernels
+        self.face_kernels = face_kernels
         self.dirichlets = dirichlets
         return
 
@@ -21,7 +21,7 @@ class Jacobian(object):
         V, I, J = _get_VIJ(
                 self.mesh,
                 u,
-                self.edge_kernels, self.vertex_kernels, self.boundary_kernels
+                self.edge_kernels, self.vertex_kernels, self.face_kernels
                 )
 
         # One unknown per vertex
@@ -49,7 +49,7 @@ class Jacobian(object):
 def _get_VIJ(
         mesh,
         u,
-        edge_kernels, vertex_kernels, boundary_kernels
+        edge_kernels, vertex_kernels, face_kernels
         ):
     V = []
     I = []
@@ -95,10 +95,10 @@ def _get_VIJ(
             I.append(verts)
             J.append(verts)
 
-    for boundary_kernel in boundary_kernels:
-        for subdomain in boundary_kernel.subdomains:
+    for face_kernel in face_kernels:
+        for subdomain in face_kernel.subdomains:
             verts = mesh.get_vertices(subdomain)
-            vals_matrix = boundary_kernel.eval(u, mesh, verts)
+            vals_matrix = face_kernel.eval(u, mesh, verts)
 
             V.append(vals_matrix)
             I.append(verts)

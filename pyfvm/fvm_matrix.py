@@ -14,14 +14,14 @@ class EdgeMatrixKernel(form_language.KernelList):
 
 def get_fvm_matrix(
             mesh,
-            edge_kernels, vertex_kernels, boundary_kernels, dirichlets
+            edge_kernels, vertex_kernels, face_kernels, dirichlets
             ):
 
         V, I, J = _get_VIJ(
                 mesh,
                 edge_kernels,
                 vertex_kernels,
-                boundary_kernels
+                face_kernels
                 )
 
         # One unknown per vertex
@@ -48,7 +48,7 @@ def get_fvm_matrix(
 
 def _get_VIJ(
         mesh,
-        edge_kernels, vertex_kernels, boundary_kernels
+        edge_kernels, vertex_kernels, face_kernels
         ):
     V = []
     I = []
@@ -95,10 +95,10 @@ def _get_VIJ(
             I.append(verts)
             J.append(verts)
 
-    for boundary_kernel in boundary_kernels:
-        for subdomain in boundary_kernel.subdomains:
+    for face_kernel in face_kernels:
+        for subdomain in face_kernel.subdomains:
             verts = mesh.get_vertices(subdomain)
-            vals_matrix = boundary_kernel.eval(mesh, verts)
+            vals_matrix = face_kernel.eval(mesh, verts)
 
             V.append(vals_matrix)
             I.append(verts)
