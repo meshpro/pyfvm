@@ -4,20 +4,6 @@ import numpy
 from scipy import sparse
 
 
-def tocsr(I, J, E, N):
-    import numpy as np
-    n = len(I)
-    K = np.empty((n,), dtype=np.int64)
-    K.view(np.int32).reshape(n, 2).T[...] = J, I
-    S = np.argsort(K)
-    KS = K[S]
-    steps = np.flatnonzero(np.r_[1, np.diff(KS)])
-    ED = np.add.reduceat(E[S], steps)
-    JD, ID = KS[steps].view(np.int32).reshape(-1, 2).T
-    ID = np.searchsorted(ID, np.arange(N+1))
-    return sparse.csr_matrix((ED, JD, ID), (N, N))
-
-
 def get_linear_fvm_problem(
         mesh,
         edge_kernels, vertex_kernels, face_kernels, dirichlets
@@ -31,10 +17,9 @@ def get_linear_fvm_problem(
 
         # One unknown per vertex
         n = len(mesh.node_coords)
-        # matrix = sparse.coo_matrix((V, (I, J)), shape=(n, n))
         # Transform to CSR format for efficiency
-        # matrix = matrix.tocsr()
-        matrix = tocsr(I, J, V, n)
+        matrix = sparse.coo_matrix((V, (I, J)), shape=(n, n))
+        matrix = matrix.tocsr()
 
         # Apply Dirichlet conditions.
         d = matrix.diagonal()
@@ -61,13 +46,12 @@ def _get_VIJ(
     V = []
     I = []
     J = []
-    rhs_V = []
-    rhs_I = []
-
+    n = len(mesh.node_coords)
     # Treating the diagonal explicitly makes tocsr() faster at the cost of a
     # bunch of numpy.add.at().
-    n = len(mesh.node_coords)
     diag = numpy.zeros(n)
+    #
+    rhs = numpy.zeros(n)
 
     for edge_kernel in edge_kernels:
         for subdomain in edge_kernel.subdomains:
@@ -118,12 +102,9 @@ def _get_VIJ(
             # rhs_I.append(node_edge_cells[0])
             # rhs_I.append(node_edge_cells[1])
 
-            rhs_V.append(v_rhs[0, 0] + v_rhs[1, 2])
-            rhs_V.append(v_rhs[0, 1] + v_rhs[1, 0])
-            rhs_V.append(v_rhs[0, 2] + v_rhs[1, 1])
-            rhs_I.append(nec[0, 0])
-            rhs_I.append(nec[0, 1])
-            rhs_I.append(nec[0, 2])
+            numpy.subtract.at(rhs, nec[0, 0], v_rhs[0, 0] + v_rhs[1, 2])
+            numpy.subtract.at(rhs, nec[0, 1], v_rhs[0, 1] + v_rhs[1, 0])
+            numpy.subtract.at(rhs, nec[0, 2], v_rhs[0, 2] + v_rhs[1, 1])
 
             # if dot() is used in the expression, the shape of of v_matrix will
             # be (2, 2, 1, k) instead of (2, 2, 871, k).
@@ -144,12 +125,12 @@ def _get_VIJ(
 
             vals_matrix, vals_rhs = vertex_kernel.eval(verts)
 
-            V.append(vals_matrix)
-            I.append(verts)
-            J.append(verts)
-
-            rhs_V.append(vals_rhs)
-            rhs_I.append(verts)
+            if verts == Ellipsis:
+                diag += vals_matrix
+                rhs -= vals_rhs
+            else:
+                numpy.add.at(diag, verts, vals_matrix)
+                numpy.subtract.at(rhs, verts, vals_rhs)
 
     for face_kernel in face_kernels:
         for subdomain in face_kernel.subdomains:
@@ -160,8 +141,10 @@ def _get_VIJ(
             I.append(verts)
             J.append(verts)
 
-            rhs_V.append(vals_rhs)
-            rhs_I.append(verts)
+            if verts == Ellipsis:
+                rhs -= vals_rhs
+            else:
+                numpy.subtract.at(rhs, verts, vals_rhs)
 
     # add diagonal
     I.append(numpy.arange(n))
@@ -172,10 +155,5 @@ def _get_VIJ(
     V = numpy.concatenate([v.flat for v in V])
     I = numpy.concatenate([i.flat for i in I])
     J = numpy.concatenate([j.flat for j in J])
-
-    # Assemble rhs
-    rhs = numpy.zeros(len(mesh.node_coords))
-    for i, v in zip(rhs_I, rhs_V):
-        numpy.subtract.at(rhs, i, v)
 
     return V, I, J, rhs

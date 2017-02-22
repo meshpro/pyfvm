@@ -60,10 +60,18 @@ class EdgeLinearKernel(object):
         return
 
     def eval(self, mesh, cell_ids):
-        edge_ce_ratio = mesh.get_ce_ratios()[..., cell_ids]
-        edge_length = mesh.get_edge_lengths()[..., cell_ids]
+        if cell_ids == Ellipsis:
+            # Avoiding
+            #   edge_ce_ratio = mesh.get_ce_ratios()[..., cell_ids]
+            #   IndexError: an index can only have a single ellipsis ('...')
+            edge_ce_ratio = mesh.get_ce_ratios()
+            edge_length = mesh.get_edge_lengths()
+            cen = mesh.idx_hierarchy
+        else:
+            edge_ce_ratio = mesh.get_ce_ratios()[..., cell_ids]
+            edge_length = mesh.get_edge_lengths()[..., cell_ids]
+            cen = mesh.idx_hierarchy[..., cell_ids]
 
-        cen = mesh.idx_hierarchy[..., cell_ids]
         X = mesh.node_coords[cen]
         # Add "zero" to all entities. This later gets translated into np.zeros
         # with the appropriate length, making sure that scalar terms in the
@@ -94,9 +102,13 @@ class VertexLinearKernel(object):
         return
 
     def eval(self, vertex_ids):
-        control_volumes = self.mesh.get_control_volumes()[vertex_ids]
-        X = self.mesh.node_coords[vertex_ids].T
-        zero = numpy.zeros(len(vertex_ids))
+        if vertex_ids == Ellipsis:
+            control_volumes = self.mesh.get_control_volumes()
+            X = self.mesh.node_coords.T
+        else:
+            control_volumes = self.mesh.get_control_volumes()[vertex_ids]
+            X = self.mesh.node_coords[vertex_ids].T
+        zero = numpy.zeros(len(control_volumes))
         return (
             self.linear(control_volumes, X) + zero,
             self.affine(control_volumes, X) + zero

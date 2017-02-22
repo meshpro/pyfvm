@@ -44,7 +44,7 @@ import meshzoo
 vertices, cells = meshzoo.rectangle(
         0.0, 2.0,
         0.0, 1.0,
-        1601, 801,
+        1801, 901,
         )
 print(len(vertices))
 mesh = voropy.mesh_tri.MeshTri(vertices, cells)
