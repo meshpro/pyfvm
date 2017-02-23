@@ -68,16 +68,16 @@ class EdgeLinearKernel(object):
 
         val = self.linear(X[0], X[1], edge_ce_ratio, edge_length)
         ones = numpy.ones(cen.shape[1:])
-        if not isinstance(val[0][0], numpy.ndarray):
-            val = [
-                [val[0][0] * ones, val[0][1] * ones],
-                [val[1][0] * ones, val[1][1] * ones],
-                ]
+        for i in [0, 1]:
+            for j in [0, 1]:
+                if not isinstance(val[i][j], numpy.ndarray):
+                    val[i][j] = val[i][j] * ones
         val = numpy.array(val)
 
         rhs = self.affine(X[0], X[1], edge_ce_ratio, edge_length)
-        if not isinstance(rhs[0], numpy.ndarray):
-            rhs = [rhs[0] * ones, rhs[1] * ones]
+        for i in [0, 1]:
+            if not isinstance(rhs[i], numpy.ndarray):
+                rhs[i] = rhs[i] * ones
         rhs = numpy.array(rhs)
 
         return (val, rhs, cen)
