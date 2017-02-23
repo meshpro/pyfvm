@@ -67,7 +67,6 @@ def _get_VIJ(
             assert (nec[0, 1] == nec[1, 0]).all()
             assert (nec[0, 2] == nec[1, 1]).all()
 
-            print(nec[0, 0].shape)
             # diagonal entries
             numpy.add.at(diag, nec[0, 0], v_mtx[0, 0, 0] + v_mtx[1, 1, 2])
             numpy.add.at(diag, nec[0, 1], v_mtx[0, 0, 1] + v_mtx[1, 1, 0])
@@ -119,18 +118,20 @@ def _get_VIJ(
     for vertex_kernel in vertex_kernels:
         for subdomain in vertex_kernel.subdomains:
             if subdomain == 'everywhere':
-                verts = numpy.array(mesh.get_vertices())
+                verts = mesh.get_vertices()
             else:
                 verts = mesh.get_vertices(subdomain)
 
             vals_matrix, vals_rhs = vertex_kernel.eval(verts)
 
-            if verts == Ellipsis:
+            if verts == numpy.s_[:]:
                 diag += vals_matrix
                 rhs -= vals_rhs
             else:
-                numpy.add.at(diag, verts, vals_matrix)
-                numpy.subtract.at(rhs, verts, vals_rhs)
+                # numpy.add.at(diag, verts, vals_matrix)
+                # numpy.subtract.at(rhs, verts, vals_rhs)
+                diag[verts] += vals_matrix
+                rhs[verts] -= vals_rhs
 
     for face_kernel in face_kernels:
         for subdomain in face_kernel.subdomains:
@@ -141,7 +142,7 @@ def _get_VIJ(
             I.append(verts)
             J.append(verts)
 
-            if verts == Ellipsis:
+            if verts == numpy.s_[:]:
                 rhs -= vals_rhs
             else:
                 numpy.subtract.at(rhs, verts, vals_rhs)

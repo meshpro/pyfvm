@@ -59,12 +59,13 @@ mesh = voropy.mesh_tri.MeshTri(vertices, cells)
 # m = mshr.generate_mesh(c, 2.0 / h)
 # coords = m.coordinates()
 # coords = numpy.c_[coords, numpy.zeros(len(coords))]
-# mesh = voropy.mesh_tri.MeshTri(coords, m.cells())
+# mesh = voropy.mesh_tri.MeshTri(coords, m.cells().copy())
 # # mesh = voropy.mesh_tri.lloyd_smoothing(mesh, 1.0e-4)
 
 matrix, rhs = pyfvm.discretize_linear(Poisson(), mesh)
 
-ml = pyamg.smoothed_aggregation_solver(matrix)
+#ml = pyamg.smoothed_aggregation_solver(matrix)
+ml = pyamg.ruge_stuben_solver(matrix)
 u = ml.solve(rhs, tol=1e-10)
 # from scipy.sparse import linalg
 # u = linalg.spsolve(matrix, rhs)

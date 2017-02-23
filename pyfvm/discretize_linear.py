@@ -60,34 +60,24 @@ class EdgeLinearKernel(object):
         return
 
     def eval(self, mesh, cell_ids):
-        if cell_ids == Ellipsis:
-            # Avoiding
-            #   edge_ce_ratio = mesh.get_ce_ratios()[..., cell_ids]
-            #   IndexError: an index can only have a single ellipsis ('...')
-            edge_ce_ratio = mesh.get_ce_ratios()
-            edge_length = mesh.get_edge_lengths()
-            cen = mesh.idx_hierarchy
-        else:
-            edge_ce_ratio = mesh.get_ce_ratios()[..., cell_ids]
-            edge_length = mesh.get_edge_lengths()[..., cell_ids]
-            cen = mesh.idx_hierarchy[..., cell_ids]
+        edge_ce_ratio = mesh.get_ce_ratios()[..., cell_ids]
+        edge_length = mesh.get_edge_lengths()[..., cell_ids]
+        cen = mesh.idx_hierarchy[..., cell_ids]
 
         X = mesh.node_coords[cen]
-        # Add "zero" to all entities. This later gets translated into np.zeros
-        # with the appropriate length, making sure that scalar terms in the
-        # lambda expression correctly return np.arrays.
-        zero = numpy.zeros(cen.shape[1:])
 
         val = self.linear(X[0], X[1], edge_ce_ratio, edge_length)
-        val[0][0] += zero
-        val[0][1] += zero
-        val[1][0] += zero
-        val[1][1] += zero
+        ones = numpy.ones(cen.shape[1:])
+        if not isinstance(val[0][0], numpy.ndarray):
+            val = [
+                [val[0][0] * ones, val[0][1] * ones],
+                [val[1][0] * ones, val[1][1] * ones],
+                ]
         val = numpy.array(val)
 
         rhs = self.affine(X[0], X[1], edge_ce_ratio, edge_length)
-        rhs[0] += zero
-        rhs[1] += zero
+        if not isinstance(rhs[0], numpy.ndarray):
+            rhs = [rhs[0] * ones, rhs[1] * ones]
         rhs = numpy.array(rhs)
 
         return (val, rhs, cen)
@@ -102,17 +92,19 @@ class VertexLinearKernel(object):
         return
 
     def eval(self, vertex_ids):
-        if vertex_ids == Ellipsis:
-            control_volumes = self.mesh.get_control_volumes()
-            X = self.mesh.node_coords.T
-        else:
-            control_volumes = self.mesh.get_control_volumes()[vertex_ids]
-            X = self.mesh.node_coords[vertex_ids].T
-        zero = numpy.zeros(len(control_volumes))
-        return (
-            self.linear(control_volumes, X) + zero,
-            self.affine(control_volumes, X) + zero
-            )
+        control_volumes = self.mesh.get_control_volumes()[vertex_ids]
+        X = self.mesh.node_coords[vertex_ids].T
+
+        res0 = self.linear(control_volumes, X)
+        res1 = self.affine(control_volumes, X)
+
+        n = len(control_volumes)
+        if isinstance(res0, float):
+            res0 *= numpy.ones(n)
+        if isinstance(res1, float):
+            res1 *= numpy.ones(n)
+
+        return (res0, res1)
 
 
 class FaceLinearKernel(object):
