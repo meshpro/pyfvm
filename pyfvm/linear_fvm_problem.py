@@ -68,16 +68,16 @@ def _get_VIJ(
             assert (nec[0, 2] == nec[1, 1]).all()
 
             # diagonal entries
-            numpy.add.at(diag, nec[0, 0], v_mtx[0, 0, 0] + v_mtx[1, 1, 2])
-            numpy.add.at(diag, nec[0, 1], v_mtx[0, 0, 1] + v_mtx[1, 1, 0])
-            numpy.add.at(diag, nec[0, 2], v_mtx[0, 0, 2] + v_mtx[1, 1, 1])
+            numpy.add.at(diag, nec[0, 0], v_mtx[0][0][0] + v_mtx[1][1][2])
+            numpy.add.at(diag, nec[0, 1], v_mtx[0][0][1] + v_mtx[1][1][0])
+            numpy.add.at(diag, nec[0, 2], v_mtx[0][0][2] + v_mtx[1][1][1])
 
             # offdiagonal entries
-            V.append(v_mtx[0, 1])
+            V.append(v_mtx[0][1])
             I.append(nec[0])
             J.append(nec[1])
             #
-            V.append(v_mtx[1, 0])
+            V.append(v_mtx[1][0])
             I.append(nec[1])
             J.append(nec[0])
 
@@ -101,9 +101,9 @@ def _get_VIJ(
             # rhs_I.append(node_edge_cells[0])
             # rhs_I.append(node_edge_cells[1])
 
-            numpy.subtract.at(rhs, nec[0, 0], v_rhs[0, 0] + v_rhs[1, 2])
-            numpy.subtract.at(rhs, nec[0, 1], v_rhs[0, 1] + v_rhs[1, 0])
-            numpy.subtract.at(rhs, nec[0, 2], v_rhs[0, 2] + v_rhs[1, 1])
+            numpy.subtract.at(rhs, nec[0, 0], v_rhs[0][0] + v_rhs[1][2])
+            numpy.subtract.at(rhs, nec[0, 1], v_rhs[0][1] + v_rhs[1][0])
+            numpy.subtract.at(rhs, nec[0, 2], v_rhs[0][2] + v_rhs[1][1])
 
             # if dot() is used in the expression, the shape of of v_matrix will
             # be (2, 2, 1, k) instead of (2, 2, 871, k).

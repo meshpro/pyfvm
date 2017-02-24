@@ -22,7 +22,7 @@ class Gamma1(Subdomain):
 class Poisson(FvmProblem):
     def apply(self, u):
         return integrate(lambda x: -n_dot_grad(u(x)), dS) \
-             - integrate(lambda x: 10 * sin(2*pi*x[0]), dV)
+             - integrate(lambda x: 50 * sin(2*pi*x[0]), dV)
 
     def dirichlet(self, u):
         return [
@@ -36,18 +36,18 @@ class Poisson(FvmProblem):
 
 # Create mesh using meshzoo
 import meshzoo
-# vertices, cells = meshzoo.cube(
-#         0.0, 1.0, 0.0, 1.0, 0.0, 1.0,
-#         20, 20, 20
-#         )
-# mesh = voropy.mesh_tetra.MeshTetra(vertices, cells)
-vertices, cells = meshzoo.rectangle(
-        0.0, 2.0,
-        0.0, 1.0,
-        1801, 901,
+vertices, cells = meshzoo.cube(
+        0.0, 1.0, 0.0, 1.0, 0.0, 1.0,
+        70, 70, 70
         )
 print(len(vertices))
-mesh = voropy.mesh_tri.MeshTri(vertices, cells)
+mesh = voropy.mesh_tetra.MeshTetra(vertices, cells)
+# vertices, cells = meshzoo.rectangle(
+#         0.0, 2.0,
+#         0.0, 1.0,
+#         1801, 901,
+#         )
+# mesh = voropy.mesh_tri.MeshTri(vertices, cells)
 
 # import mshr
 # import dolfin
@@ -59,7 +59,8 @@ mesh = voropy.mesh_tri.MeshTri(vertices, cells)
 # m = mshr.generate_mesh(c, 2.0 / h)
 # coords = m.coordinates()
 # coords = numpy.c_[coords, numpy.zeros(len(coords))]
-# mesh = voropy.mesh_tri.MeshTri(coords, m.cells().copy())
+# cells = m.cells().copy()
+# mesh = voropy.mesh_tri.MeshTri(coords, cells)
 # # mesh = voropy.mesh_tri.lloyd_smoothing(mesh, 1.0e-4)
 
 matrix, rhs = pyfvm.discretize_linear(Poisson(), mesh)
