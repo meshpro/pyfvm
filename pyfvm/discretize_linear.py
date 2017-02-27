@@ -62,23 +62,20 @@ class EdgeLinearKernel(object):
     def eval(self, mesh, cell_ids):
         edge_ce_ratio = mesh.get_ce_ratios()[..., cell_ids]
         edge_length = mesh.get_edge_lengths()[..., cell_ids]
-        cen = mesh.idx_hierarchy[..., cell_ids]
+        nec = mesh.idx_hierarchy[..., cell_ids]
 
-        X = mesh.node_coords[cen]
+        X = mesh.node_coords[nec]
 
         val = self.linear(X[0], X[1], edge_ce_ratio, edge_length)
-        ones = numpy.ones(cen.shape[1:])
+        ones = numpy.ones(nec.shape[1:])
         for i in [0, 1]:
             for j in [0, 1]:
                 if not isinstance(val[i][j], numpy.ndarray):
-                    val[i][j] = val[i][j] * ones
+                    val[i][j] *= ones
 
         rhs = self.affine(X[0], X[1], edge_ce_ratio, edge_length)
-        for i in [0, 1]:
-            if not isinstance(rhs[i], numpy.ndarray):
-                rhs[i] = rhs[i] * ones
 
-        return (val, rhs, cen)
+        return val, rhs, nec
 
 
 class VertexLinearKernel(object):

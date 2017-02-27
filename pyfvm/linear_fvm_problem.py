@@ -62,15 +62,14 @@ def _get_VIJ(
 
             v_mtx, v_rhs, nec = edge_kernel.eval(mesh, cell_ids)
 
-            # assert symmetry in node-edge-cells
-            assert (nec[0, 0] == nec[1, 2]).all()
-            assert (nec[0, 1] == nec[1, 0]).all()
-            assert (nec[0, 2] == nec[1, 1]).all()
-
-            # diagonal entries
-            numpy.add.at(diag, nec[0, 0], v_mtx[0][0][0] + v_mtx[1][1][2])
-            numpy.add.at(diag, nec[0, 1], v_mtx[0][0][1] + v_mtx[1][1][0])
-            numpy.add.at(diag, nec[0, 2], v_mtx[0][0][2] + v_mtx[1][1][1])
+            # Diagonal entries.
+            # Manually sum up the entries corresponding to the same i, j first.
+            for c, i in zip(mesh.cells['nodes'].T, mesh.local_idx_inv):
+                numpy.add.at(
+                    diag,
+                    c,
+                    sum([v_mtx[t[0]][t[0]][t[1:]] for t in i])
+                    )
 
             # offdiagonal entries
             V.append(v_mtx[0][1])
@@ -81,29 +80,22 @@ def _get_VIJ(
             I.append(nec[1])
             J.append(nec[0])
 
-            # V.append(v_matrix[0, 0])
-            # V.append(v_matrix[0, 1])
-            # V.append(v_matrix[1, 0])
-            # V.append(v_matrix[1, 1])
-            #
-            # I.append(nec[0])
-            # I.append(nec[0])
-            # I.append(nec[1])
-            # I.append(nec[1])
-            #
-            # J.append(nec[0])
-            # J.append(nec[1])
-            # J.append(nec[0])
-            # J.append(nec[1])
-            #
-            # rhs_V.append(v_rhs[0])
-            # rhs_V.append(v_rhs[1])
-            # rhs_I.append(node_edge_cells[0])
-            # rhs_I.append(node_edge_cells[1])
-
-            numpy.subtract.at(rhs, nec[0, 0], v_rhs[0][0] + v_rhs[1][2])
-            numpy.subtract.at(rhs, nec[0, 1], v_rhs[0][1] + v_rhs[1][0])
-            numpy.subtract.at(rhs, nec[0, 2], v_rhs[0][2] + v_rhs[1][1])
+            # Right-hand side.
+            try:
+                for c, i in zip(mesh.cells['nodes'].T, mesh.local_idx_inv):
+                    numpy.subtract.at(
+                        rhs,
+                        c,
+                        sum([v_rhs[t[0]][t[1:]] for t in i])
+                        )
+            except TypeError:
+                # v_rhs probably integers/floats
+                if v_rhs[0] != 0:
+                    # FIXME these at operations seem really slow with v_rhs
+                    #       not being of type numpy.ndarray
+                    numpy.subtract.at(rhs, nec[0], v_rhs[0])
+                if v_rhs[1] != 0:
+                    numpy.subtract.at(rhs, nec[1], v_rhs[1])
 
             # if dot() is used in the expression, the shape of of v_matrix will
             # be (2, 2, 1, k) instead of (2, 2, 871, k).
