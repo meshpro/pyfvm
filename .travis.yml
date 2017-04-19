@@ -40,4 +40,7 @@ script:
   - cd tests && pytest --cov pyfvm
 
 after_success:
+  - ls -al
+  - cat .coverage
+  - coverage xml
   - bash <(curl -s https://codecov.io/bash)
