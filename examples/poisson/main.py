@@ -36,7 +36,7 @@ class Poisson(FvmProblem):
 
 # Create mesh using meshzoo
 import meshzoo
-vertices, cells = meshzoo.cube(0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 50, 50, 50)
+vertices, cells = meshzoo.cube(0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 60, 60, 60)
 mesh = voropy.mesh_tetra.MeshTetra(vertices, cells)
 # vertices, cells = meshzoo.rectangle(0.0, 2.0, 0.0, 1.0, 401, 201)
 # mesh = voropy.mesh_tri.MeshTri(vertices, cells)

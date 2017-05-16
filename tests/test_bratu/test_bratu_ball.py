@@ -4,7 +4,7 @@ import helpers
 import mshr
 import numpy
 import pyfvm
-from pyfvm.form_language import integrate, n_dot_grad, dS, dV
+from pyfvm.form_language import integrate, n_dot_grad, dS, dV, Boundary
 from sympy import pi, sin, cos, exp
 import unittest
 import voropy
@@ -26,7 +26,7 @@ class Bratu(object):
 
     def dirichlet(self, u):
         return [
-            (lambda x: u(x) - exact_sol(x), 'boundary')
+            (lambda x: u(x) - exact_sol(x), Boundary())
             ]
 
 

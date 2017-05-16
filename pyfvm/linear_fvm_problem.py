@@ -55,10 +55,10 @@ def _get_VIJ(
 
     for edge_kernel in edge_kernels:
         for subdomain in edge_kernel.subdomains:
-            if subdomain == 'everywhere':
-                cell_ids = mesh.get_cells()
-            else:
+            if subdomain:
                 cell_ids = mesh.get_cells(subdomain)
+            else:
+                cell_ids = mesh.get_cells()
 
             v_mtx, v_rhs, nec = edge_kernel.eval(mesh, cell_ids)
 
@@ -109,19 +109,19 @@ def _get_VIJ(
 
     for vertex_kernel in vertex_kernels:
         for subdomain in vertex_kernel.subdomains:
-            if subdomain == 'everywhere':
-                verts = mesh.get_vertices()
-            else:
+            if subdomain:
                 verts = mesh.get_vertices(subdomain)
+            else:
+                verts = mesh.get_vertices()
 
             vals_matrix, vals_rhs = vertex_kernel.eval(verts)
 
+            # numpy.add.at(diag, verts, vals_matrix)
+            # numpy.subtract.at(rhs, verts, vals_rhs)
             if verts == numpy.s_[:]:
                 diag += vals_matrix
                 rhs -= vals_rhs
             else:
-                # numpy.add.at(diag, verts, vals_matrix)
-                # numpy.subtract.at(rhs, verts, vals_rhs)
                 diag[verts] += vals_matrix
                 rhs[verts] -= vals_rhs
 

@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from matplotlib import pyplot as plt
 import numpy
-import pyfvm
 import sympy
 
 
@@ -34,7 +33,8 @@ def perform_convergence_tests(
 
     for k in rng:
         mesh = get_mesh(k)
-        H[k] = max(mesh.edge_lengths)
+        # get max edge length
+        H[k] = numpy.sqrt(mesh.ei_dot_ei.max())
 
         u = discrete_solver(mesh)
 
@@ -48,7 +48,7 @@ def perform_convergence_tests(
         #     point_data={'x': x, 'error': error},
         #     )
 
-        error_norm_1[k] = numpy.sum(abs(mesh.control_volumes * error))
+        error_norm_1[k] = numpy.sum(abs(mesh.get_control_volumes() * error))
         error_norm_inf[k] = max(abs(error))
 
         # numerical orders of convergence

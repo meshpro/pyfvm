@@ -4,7 +4,7 @@ import mshr
 import helpers
 import pyamg
 import pyfvm
-from pyfvm.form_language import integrate, n_dot_grad, dS, dV
+from pyfvm.form_language import integrate, n_dot_grad, dS, dV, Boundary
 from sympy import pi, sin, cos
 import unittest
 import voropy
@@ -25,7 +25,7 @@ class Poisson(object):
 
     def dirichlet(self, u):
         return [
-            (lambda x: u(x) - exact_sol(x), 'boundary')
+            (lambda x: u(x) - exact_sol(x), Boundary())
             ]
 
 

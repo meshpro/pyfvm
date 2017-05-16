@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 #
+import numpy
 import sympy
 
 
@@ -21,7 +22,12 @@ class Subdomain(object):
 
 
 class Boundary(Subdomain):
-    pass
+    def __init__(self):
+        self.is_boundary_only = True
+        return
+
+    def is_inside(self, x):
+        return numpy.ones(x.shape[1], dtype=bool)
 
 
 class Callable(object):
@@ -105,17 +111,20 @@ class Measure(object):
 class ControlVolume(Measure):
     pass
 
+
 dV = ControlVolume()
 
 
 class ControlVolumeSurface(Measure):
     pass
 
+
 dS = ControlVolumeSurface()
 
 
 class BoundarySurface(Measure):
     pass
+
 
 dGamma = BoundarySurface()
 
@@ -158,6 +167,7 @@ class dot(sympy.Function):
 
 class n_dot_grad(sympy.Function):
     pass
+
 
 n = sympy.MatrixSymbol('n', 3, 1)
 neg_n = sympy.MatrixSymbol('neg_n', 3, 1)

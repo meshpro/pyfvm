@@ -14,7 +14,7 @@ def exact_sol(x):
     return sin(pi*x[0]) * sin(pi*x[1])
 
 
-# Everything except the north boundary
+# Everything except the north Boundary()
 class Gamma1(Subdomain):
     def is_inside(self, x):
         return x[1] < 1.0 - 1.0e-10

@@ -1,31 +1,31 @@
 # -*- coding: utf-8 -*-
 #
-import numpy
 from . import form_language
 from .discretize_linear import _discretize_edge_integral
-import fvm_problem
-import fvm_matrix
-import jacobian
+from . import fvm_problem
+from . import fvm_matrix
+from . import jacobian
+
+import numpy
 import sympy
 
 
 class EdgeKernel(object):
     def __init__(self, val):
         self.val = val
-        self.subdomains = ['everywhere']
+        self.subdomains = [None]
         return
 
     def eval(self, u, mesh, cell_ids):
-        # edge_nodes = mesh.edges['nodes'][edge_ids]
-        cell_edge_nodes = mesh.cell_edge_nodes[cell_ids]
-        X = mesh.node_coords[cell_edge_nodes]
-        x0 = X[:, 0, :].T
-        x1 = X[:, 1, :].T
-        edge_ce_ratio = mesh.get_ce_ratios(cell_ids)
-        edge_length = mesh.get_edge_lengths(cell_ids)
-        zero = numpy.zeros(cell_edge_nodes.shape)
+        node_edge_face_cells = mesh.idx_hierarchy[..., cell_ids]
+        X = mesh.node_coords[node_edge_face_cells]
+        x0 = X[..., 0]
+        x1 = X[..., 1]
+        edge_ce_ratio = mesh.get_ce_ratios()[..., cell_ids]
+        edge_length = numpy.sqrt(mesh.ei_dot_ei[..., cell_ids])
+        zero = numpy.zeros(node_edge_face_cells.shape)
         return numpy.array(self.val(
-            u[cell_edge_nodes[..., 0]], u[cell_edge_nodes[..., 1]],
+            u[node_edge_face_cells[0]], u[node_edge_face_cells[1]],
             x0, x1, edge_ce_ratio, edge_length
             )) + zero
 
@@ -33,20 +33,20 @@ class EdgeKernel(object):
 class VertexKernel(object):
     def __init__(self, val):
         self.val = val
-        self.subdomains = ['everywhere']
+        self.subdomains = [None]
         return
 
     def eval(self, u, mesh, vertex_ids):
-        control_volumes = mesh.get_control_volumes(vertex_ids)
+        control_volumes = mesh.get_control_volumes()[vertex_ids]
         X = mesh.node_coords[vertex_ids].T
-        zero = numpy.zeros(len(vertex_ids))
+        zero = numpy.zeros(len(control_volumes))
         return self.val(u, control_volumes, X) + zero
 
 
 class FaceKernel(object):
     def __init__(self, val):
         self.val = val
-        self.subdomains = ['everywhere']
+        self.subdomains = [None]
         return
 
     def eval(self, u, mesh, cell_face_nodes):

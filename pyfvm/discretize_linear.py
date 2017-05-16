@@ -2,7 +2,7 @@
 #
 import numpy
 from . import form_language
-from linear_fvm_problem import get_linear_fvm_problem
+from .linear_fvm_problem import get_linear_fvm_problem
 import sympy
 from sympy.matrices.expressions.matexpr import MatrixExpr, MatrixSymbol
 
@@ -56,7 +56,7 @@ class EdgeLinearKernel(object):
     def __init__(self, linear, affine):
         self.linear = linear
         self.affine = affine
-        self.subdomains = ['everywhere']
+        self.subdomains = [None]
         return
 
     def eval(self, mesh, cell_ids):
@@ -83,7 +83,7 @@ class VertexLinearKernel(object):
         self.mesh = mesh
         self.linear = linear
         self.affine = affine
-        self.subdomains = ['everywhere']
+        self.subdomains = [None]
         return
 
     def eval(self, vertex_ids):
@@ -107,7 +107,7 @@ class FaceLinearKernel(object):
         self.mesh = mesh
         self.coeff = coeff
         self.affine = affine
-        self.subdomains = ['everywhere']
+        self.subdomains = [None]
         return
 
     def eval(self, cell_face_nodes):
@@ -284,6 +284,7 @@ def discretize_linear(obj, mesh):
             uk1 = index_vars[0][1]
 
             affine0, linear0, nonlinear = split(expr, [uk0, uk1])
+            print(nonlinear)
             assert nonlinear == 0
 
             # Turn edge around

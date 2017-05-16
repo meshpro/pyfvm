@@ -44,7 +44,7 @@ class Neumann(object):
 
 def get_mesh(k):
     h = 0.5**k
-    # cell_size = 2 * pi / num_boundary_points
+    # cell_size = 2 * pi / num_Boundary()_points
     c = mshr.Circle(dolfin.Point(0., 0., 0.), 1, int(2*pi / h))
 
     # cell_size = 2 * bounding_box_radius / res

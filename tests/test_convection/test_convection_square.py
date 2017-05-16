@@ -2,7 +2,7 @@
 import helpers
 import pyamg
 import pyfvm
-from pyfvm.form_language import integrate, n_dot_grad, dS, dV, dot, n
+from pyfvm.form_language import integrate, n_dot_grad, dS, dV, dot, n, Boundary
 import meshzoo
 from sympy import pi, sin, cos, Matrix
 import unittest
@@ -29,7 +29,7 @@ class Convection(object):
 
     def dirichlet(self, u):
         return [
-            (lambda x: u(x) - exact_sol(x), 'boundary')
+            (lambda x: u(x) - exact_sol(x), Boundary())
             ]
 
 

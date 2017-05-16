@@ -40,12 +40,11 @@ class FvmProblem(object):
 
         for edge_kernel in self.edge_kernels:
             for subdomain in edge_kernel.subdomains:
-                edges = self.mesh.get_edges(subdomain)
-                edge_nodes = self.mesh.edges['nodes'][edges].T
+                cell_ids = self.mesh.get_cells(subdomain)
                 numpy.add.at(
                         out,
-                        edge_nodes,
-                        edge_kernel.eval(u, self.mesh, edges)
+                        self.mesh.idx_hierarchy,
+                        edge_kernel.eval(u, self.mesh, cell_ids)
                         )
 
         for vertex_kernel in self.vertex_kernels:
