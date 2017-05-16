@@ -121,6 +121,13 @@ Place PyFVM in a directory where Python can find it (e.g.,
 python setup.py install
 ```
 
+### Testing
+
+To run the tests, check out this repository and type
+```
+pytest
+```
+
 ### Distribution
 
 To create a new release
