@@ -3,7 +3,7 @@ import helpers
 import numpy
 import pyamg
 import pyfvm
-from pyfvm.form_language import integrate, n_dot_grad, dS, dV
+from pyfvm.form_language import integrate, n_dot_grad, dS, dV, Boundary
 import mshr
 import dolfin
 from sympy import pi, sin, cos

@@ -24,15 +24,16 @@ def get_linear_fvm_problem(
         # Apply Dirichlet conditions.
         d = matrix.diagonal()
         for dirichlet in dirichlets:
-            verts = mesh.get_vertices(dirichlet.subdomain)
+            is_node_inside = mesh.is_node_inside(dirichlet.subdomain)
+            ids = numpy.where(is_node_inside)[0]
             # Set all Dirichlet rows to 0.
-            for i in verts:
+            for i in ids:
                 matrix.data[matrix.indptr[i]:matrix.indptr[i+1]] = 0.0
 
             # Set the diagonal and RHS.
-            coeff, rhs_vals = dirichlet.eval(verts)
-            d[verts] = coeff
-            rhs[verts] = rhs_vals
+            coeff, rhs_vals = dirichlet.eval(ids)
+            d[ids] = coeff
+            rhs[ids] = rhs_vals
 
         matrix.setdiag(d)
 
@@ -109,35 +110,31 @@ def _get_VIJ(
 
     for vertex_kernel in vertex_kernels:
         for subdomain in vertex_kernel.subdomains:
-            if subdomain:
-                verts = mesh.get_vertices(subdomain)
-            else:
-                verts = mesh.get_vertices()
+            is_node_inside = mesh.is_node_inside()
 
-            vals_matrix, vals_rhs = vertex_kernel.eval(verts)
+            vals_matrix, vals_rhs = vertex_kernel.eval(is_node_inside)
 
             # numpy.add.at(diag, verts, vals_matrix)
             # numpy.subtract.at(rhs, verts, vals_rhs)
-            if verts == numpy.s_[:]:
+            if is_node_inside == numpy.s_[:]:
                 diag += vals_matrix
                 rhs -= vals_rhs
             else:
-                diag[verts] += vals_matrix
-                rhs[verts] -= vals_rhs
+                diag[is_node_inside] += vals_matrix
+                rhs[is_node_inside] -= vals_rhs
 
     for face_kernel in face_kernels:
         for subdomain in face_kernel.subdomains:
-            verts = mesh.get_vertices(subdomain)
-            vals_matrix, vals_rhs = face_kernel.eval(verts)
+            is_face_inside = mesh.is_face_inside(subdomain)
+            vals_matrix, vals_rhs = face_kernel.eval(is_face_inside)
+
+            ids = mesh.idx_hierarchy[..., is_face_inside]
 
             V.append(vals_matrix)
-            I.append(verts)
-            J.append(verts)
+            I.append(ids)
+            J.append(ids)
 
-            if verts == numpy.s_[:]:
-                rhs -= vals_rhs
-            else:
-                numpy.subtract.at(rhs, verts, vals_rhs)
+            numpy.subtract.at(rhs, ids, vals_rhs)
 
     # add diagonal
     I.append(numpy.arange(n))

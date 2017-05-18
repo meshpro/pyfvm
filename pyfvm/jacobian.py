@@ -60,19 +60,10 @@ def _get_VIJ(
             cell_ids = mesh.get_cells(subdomain)
             v_matrix = edge_kernel.eval(u, mesh, cell_ids)
 
-            # if dot() is used in the expression, the shape of of v_matrix will
-            # be (2, 2, 1, k) instead of (2, 2, k).
-            if len(v_matrix.shape) == 4:
-                assert v_matrix.shape[2] == 1
-                V.append(v_matrix[0, 0, 0, :].flatten())
-                V.append(v_matrix[0, 1, 0, :].flatten())
-                V.append(v_matrix[1, 0, 0, :].flatten())
-                V.append(v_matrix[1, 1, 0, :].flatten())
-            else:
-                V.append(v_matrix[0, 0, :].flatten())
-                V.append(v_matrix[0, 1, :].flatten())
-                V.append(v_matrix[1, 0, :].flatten())
-                V.append(v_matrix[1, 1, :].flatten())
+            V.append(v_matrix[0, 0].flatten())
+            V.append(v_matrix[0, 1].flatten())
+            V.append(v_matrix[1, 0].flatten())
+            V.append(v_matrix[1, 1].flatten())
 
             I.append(mesh.idx_hierarchy[0].flatten())
             I.append(mesh.idx_hierarchy[0].flatten())
@@ -97,12 +88,12 @@ def _get_VIJ(
 
     for face_kernel in face_kernels:
         for subdomain in face_kernel.subdomains:
-            verts = mesh.get_vertices(subdomain)
-            vals_matrix = face_kernel.eval(u, mesh, verts)
+            faces = mesh.get_vertices(subdomain)
+            vals_matrix = face_kernel.eval(u, mesh, faces)
 
             V.append(vals_matrix)
-            I.append(verts)
-            J.append(verts)
+            I.append(faces)
+            J.append(faces)
 
     # Finally, make V, I, J into 1D-arrays.
     V = numpy.concatenate(V)

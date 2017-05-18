@@ -44,9 +44,9 @@ class VertexKernel(object):
 
 
 class FaceKernel(object):
-    def __init__(self, val):
+    def __init__(self, val, subdomain=[None]):
         self.val = val
-        self.subdomains = [None]
+        self.subdomain = subdomain
         return
 
     def eval(self, u, mesh, cell_face_nodes):
@@ -152,7 +152,7 @@ def discretize(obj, mesh):
                 )
             jacobian_vertex_kernels.add(VertexKernel(val_lin))
 
-        elif isinstance(integral.measure, form_language.BoundarySurface):
+        elif isinstance(integral.measure, form_language.CellSurface):
             x = sympy.DeferredVector('x')
             fx = integral.integrand(x)
 

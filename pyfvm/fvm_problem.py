@@ -54,8 +54,12 @@ class FvmProblem(object):
 
         for face_kernel in self.face_kernels:
             for subdomain in face_kernel.subdomains:
-                verts = self.mesh.get_vertices(subdomain)
-                out[verts] += face_kernel.eval(u, self.mesh, verts)
+                faces = self.mesh.get_faces(subdomain)
+                numpy.add(
+                    out,
+                    faces,
+                    face_kernel.eval(u, self.mesh, faces)
+                    )
 
         for dirichlet in self.dirichlets:
             verts = self.mesh.get_vertices(dirichlet.subdomain)

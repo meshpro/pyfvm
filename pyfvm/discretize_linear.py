@@ -1,14 +1,16 @@
 # -*- coding: utf-8 -*-
 #
-import numpy
 from . import form_language
 from .linear_fvm_problem import get_linear_fvm_problem
+
+import numpy
 import sympy
 from sympy.matrices.expressions.matexpr import MatrixExpr, MatrixSymbol
+import voropy
 
 
 def split(expr, variables):
-    '''Split affine, linear, and nonlinear part of of expr w.r.t. variables.
+    '''Split affine, linear, and nonlinear part of expr w.r.t. variables.
     '''
     if isinstance(expr, float):
         return expr, 0, 0
@@ -107,16 +109,29 @@ class FaceLinearKernel(object):
         self.mesh = mesh
         self.coeff = coeff
         self.affine = affine
-        self.subdomains = [None]
+        self.subdomains = [form_language.Boundary()]
         return
 
-    def eval(self, cell_face_nodes):
-        face_areas = self.mesh.get_face_areas(cell_face_nodes)
-        X = self.mesh.node_coords(cell_face_nodes).T
-        zero = numpy.zeros(cell_face_nodes.shape)
+    def eval(self, face_cells_inside):
+        # TODO
+        # Every face can be divided into subregions, belonging to the adjacent
+        # nodes. The function that need to be integrated (self.coeff,
+        # self.affine), might have a part constant on each of the subregions
+        # (e.g., u(x)), and a part that varies (e.g., some explicitly defined
+        # function).
+        # Hence, for each of the subregions, do a numerical integration.
+        # For now, this only works with triangular meshes and linear faces.
+        ids = self.mesh.idx_hierarchy[..., face_cells_inside]
+        face_parts = self.mesh.get_face_partitions()[..., face_cells_inside]
+
+        X = self.mesh.node_coords[ids]
+
+        # Use +zero to make sure the output shape is correct. (The functions
+        # coeff and affine can return just a float, for example.)
+        zero = numpy.zeros(ids.shape).T
         return (
-            self.coeff(face_areas, X) + zero,
-            self.affine(face_areas, X) + zero
+            face_parts * (self.coeff(X.T) + zero).T,
+            face_parts * (self.affine(X.T) + zero).T
             )
 
 
@@ -284,7 +299,6 @@ def discretize_linear(obj, mesh):
             uk1 = index_vars[0][1]
 
             affine0, linear0, nonlinear = split(expr, [uk0, uk1])
-            print(nonlinear)
             assert nonlinear == 0
 
             # Turn edge around
@@ -324,24 +338,22 @@ def discretize_linear(obj, mesh):
 
             vertex_kernels.add(VertexLinearKernel(mesh, l_eval, a_eval))
 
-        elif isinstance(integral.measure, form_language.BoundarySurface):
+        elif isinstance(integral.measure, form_language.CellSurface):
             x = sympy.DeferredVector('x')
             fx = integral.integrand(x)
 
             # discretization
-            uk0 = sympy.Symbol('uk0')
+            uk = sympy.Symbol('uk')
             try:
-                expr = fx.subs(u(x), uk0)
-            except AttributeError:  # 'float' object has no
+                expr = fx.subs(u(x), uk)
+            except AttributeError:  # 'float' object has no subs()
                 expr = fx
-            surface_area = sympy.Symbol('surface_area')
-            expr *= surface_area
 
-            affine, linear, nonlinear = split(expr, uk0)
+            affine, linear, nonlinear = split(expr, uk)
             assert nonlinear == 0
 
-            l_eval = sympy.lambdify((surface_area, x), linear, modules=a2a)
-            a_eval = sympy.lambdify((surface_area, x), affine, modules=a2a)
+            l_eval = sympy.lambdify((x,), linear, modules=a2a)
+            a_eval = sympy.lambdify((x,), affine, modules=a2a)
 
             face_kernels.add(
                     FaceLinearKernel(mesh, l_eval, a_eval)

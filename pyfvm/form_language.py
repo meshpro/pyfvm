@@ -122,11 +122,11 @@ class ControlVolumeSurface(Measure):
 dS = ControlVolumeSurface()
 
 
-class BoundarySurface(Measure):
+class CellSurface(Measure):
     pass
 
 
-dGamma = BoundarySurface()
+dGamma = CellSurface()
 
 
 def integrate(integrand, measure, subdomains=None):
@@ -143,7 +143,7 @@ def integrate(integrand, measure, subdomains=None):
     assert(
         isinstance(measure, ControlVolumeSurface) or
         isinstance(measure, ControlVolume) or
-        isinstance(measure, BoundarySurface)
+        isinstance(measure, CellSurface)
         )
 
     return KernelList([Integral(integrand, measure, subdomains)])
