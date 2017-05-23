@@ -9,10 +9,6 @@ import voropy
 
 def test():
     class EnergyEdgeKernel(object):
-        def __init__(self):
-            self.subdomains = ['everywhere']
-            return
-
         def eval(self, mesh, edge_ids):
             edge_ce_ratio = mesh.ce_ratios[edge_ids]
             beta = 1.0

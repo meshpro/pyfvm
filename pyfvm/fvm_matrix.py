@@ -56,9 +56,9 @@ def _get_VIJ(
 
     for edge_kernel in edge_kernels:
         for subdomain in edge_kernel.subdomains:
-            cell_ids = mesh.get_cells(subdomain)
+            cell_mask = mesh.get_cell_mask(subdomain)
 
-            v_matrix = edge_kernel.eval(mesh, cell_ids)
+            v_matrix = edge_kernel.eval(mesh, cell_mask)
 
             V.append(v_matrix[0, 0].flatten())
             V.append(v_matrix[0, 1].flatten())
@@ -77,8 +77,8 @@ def _get_VIJ(
 
     for vertex_kernel in vertex_kernels:
         for subdomain in vertex_kernel.subdomains:
-            verts = mesh.get_vertices(subdomain)
-            vals_matrix = vertex_kernel.eval(mesh, verts)
+            vertex_mask = mesh.get_vertex_mask(subdomain)
+            vals_matrix = vertex_kernel.eval(mesh, vertex_mask)
 
             V.append(vals_matrix)
             I.append(verts)
@@ -86,12 +86,13 @@ def _get_VIJ(
 
     for face_kernel in face_kernels:
         for subdomain in face_kernel.subdomains:
-            faces = mesh.get_vertices(subdomain)
-            vals_matrix = face_kernel.eval(mesh, faces)
+            face_mask = mesh.get_face_mask(subdomain)
+            vals_matrix = face_kernel.eval(mesh, face_mask)
 
+            ids = mesh.idx_hierarchy[..., face_mask]
             V.append(vals_matrix)
-            I.append(faces)
-            J.append(faces)
+            I.append(ids)
+            J.append(ids)
 
     # Finally, make V, I, J into 1D-arrays.
     V = numpy.concatenate(V)
