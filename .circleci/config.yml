@@ -1,0 +1,23 @@
+version: 2
+
+jobs:
+  build:
+    working_directory: ~/pyamg/
+    docker:
+      - image: ubuntu:17.04
+    steps:
+      - run: apt-get update
+      - run: apt-get install -y software-properties-common
+      - run: LANG=C.UTF-8 apt-add-repository -y ppa:nschloe/vtk7-nightly
+      - run: LANG=C.UTF-8 apt-add-repository -y ppa:nschloe/sympy-nightly
+      - run: apt-get update
+      - run: apt-get -y install python-matplotlib python-mshr python-numpy python-scipy python-vtk python-sympy
+      - run: pip3 install -U pytest pytest-cov pyamg
+      - checkout
+      - run: LANG=C.UTF-8 pip3 install .
+      # The actual test
+      - run: cd ~/pyamg/examples/ && pytest
+      - run: cd ~/pyamg/tests/ && pytest --cov pyamg
+      # submit to codecov
+      - run: apt-get install -y curl
+      - run: bash <(curl -s https://codecov.io/bash)
