@@ -37,6 +37,7 @@ install:
   - sudo -H pip install .
 
 script:
+  - cd examples && pytest
   - cd tests && pytest --cov pyfvm
 
 after_success:
