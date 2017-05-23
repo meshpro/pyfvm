@@ -40,29 +40,31 @@ class FvmProblem(object):
 
         for edge_kernel in self.edge_kernels:
             for subdomain in edge_kernel.subdomains:
-                cell_ids = self.mesh.get_cells(subdomain)
+                cell_mask = self.mesh.get_cell_mask(subdomain)
                 numpy.add.at(
                         out,
                         self.mesh.idx_hierarchy,
-                        edge_kernel.eval(u, self.mesh, cell_ids)
+                        edge_kernel.eval(u, self.mesh, cell_mask)
                         )
 
         for vertex_kernel in self.vertex_kernels:
             for subdomain in vertex_kernel.subdomains:
-                verts = self.mesh.get_vertices(subdomain)
-                out[verts] += vertex_kernel.eval(u, self.mesh, verts)
+                vertex_mask = self.mesh.get_vertex_mask(subdomain)
+                out[vertex_mask] += \
+                    vertex_kernel.eval(u, self.mesh, vertex_mask)
 
         for face_kernel in self.face_kernels:
             for subdomain in face_kernel.subdomains:
-                faces = self.mesh.get_faces(subdomain)
+                face_mask = self.mesh.get_face_mask(subdomain)
                 numpy.add(
                     out,
-                    faces,
-                    face_kernel.eval(u, self.mesh, faces)
+                    face_mask,
+                    face_kernel.eval(u, self.mesh, face_mask)
                     )
 
         for dirichlet in self.dirichlets:
-            verts = self.mesh.get_vertices(dirichlet.subdomain)
-            out[verts] = dirichlet.eval(u[verts], self.mesh, verts)
+            vertex_mask = self.mesh.get_vertex_mask(dirichlet.subdomain)
+            out[vertex_mask] = \
+                dirichlet.eval(u[vertex_mask], self.mesh, vertex_mask)
 
         return out

@@ -2,7 +2,7 @@
 import helpers
 import pyamg
 import pyfvm
-from pyfvm.form_language import integrate, n_dot_grad, dS, dV, dot, n
+from pyfvm.form_language import integrate, n_dot, n_dot_grad, dS, dV, Boundary
 import meshzoo
 from sympy import pi, sin, cos, Matrix
 import unittest
@@ -19,7 +19,7 @@ class Convection(object):
         a1 = 1
         a2 = 3
         a = Matrix([a0, a1, a2])
-        return integrate(lambda x: -n_dot_grad(u(x)) + dot(a.T, n)*u(x), dS) \
+        return integrate(lambda x: -n_dot_grad(u(x)) + n_dot(a)*u(x), dS) \
             - integrate(
                   lambda x:
                   3*pi**2 * sin(pi*x[0]) * sin(pi*x[1]) * sin(pi*x[2]) +

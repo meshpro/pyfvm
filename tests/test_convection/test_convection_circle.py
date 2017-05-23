@@ -2,7 +2,7 @@
 import helpers
 import pyamg
 import pyfvm
-from pyfvm.form_language import integrate, n_dot_grad, dS, dV, dot, n, Boundary
+from pyfvm.form_language import integrate, n_dot, n_dot_grad, dS, dV, Boundary
 import mshr
 import dolfin
 import numpy
@@ -26,7 +26,7 @@ class Convection(object):
                 a0 * pi * x[0] * sin(z) - \
                 a1 * pi * x[1] * sin(z)
 
-        return integrate(lambda x: -n_dot_grad(u(x)) + dot(a.T, n)*u(x), dS) \
+        return integrate(lambda x: -n_dot_grad(u(x)) + n_dot(a)*u(x), dS) \
             - integrate(rhs, dV)
 
     def dirichlet(self, u):

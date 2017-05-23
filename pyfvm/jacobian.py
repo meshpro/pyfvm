@@ -33,13 +33,14 @@ class Jacobian(object):
         # Apply Dirichlet conditions.
         d = matrix.diagonal()
         for dirichlet in self.dirichlets:
-            verts = self.mesh.get_vertices(dirichlet.subdomain)
+            vertex_mask = self.mesh.get_vertex_mask(dirichlet.subdomain)
             # Set all Dirichlet rows to 0.
-            for i in verts:
+            for i in numpy.where(vertex_mask)[0]:
                 matrix.data[matrix.indptr[i]:matrix.indptr[i+1]] = 0.0
 
             # Set the diagonal.
-            d[verts] = dirichlet.eval(u[verts], self.mesh, verts)
+            d[vertex_mask] = \
+                dirichlet.eval(u[vertex_mask], self.mesh, vertex_mask)
 
         matrix.setdiag(d)
 
@@ -57,8 +58,8 @@ def _get_VIJ(
 
     for edge_kernel in edge_kernels:
         for subdomain in edge_kernel.subdomains:
-            cell_ids = mesh.get_cells(subdomain)
-            v_matrix = edge_kernel.eval(u, mesh, cell_ids)
+            cell_mask = mesh.get_cell_mask(subdomain)
+            v_matrix = edge_kernel.eval(u, mesh, cell_mask)
 
             V.append(v_matrix[0, 0].flatten())
             V.append(v_matrix[0, 1].flatten())
@@ -77,10 +78,10 @@ def _get_VIJ(
 
     for vertex_kernel in vertex_kernels:
         for subdomain in vertex_kernel.subdomains:
-            verts = mesh.get_vertices(subdomain)
-            vals_matrix = vertex_kernel.eval(u, mesh, verts)
+            vertex_mask = mesh.get_vertex_mask(subdomain)
+            vals_matrix = vertex_kernel.eval(u, mesh, vertex_mask)
 
-            if verts == slice(None, None, None):
+            if vertex_mask == numpy.s_[:]:
                 verts = numpy.arange(len(vals_matrix))
             V.append(vals_matrix)
             I.append(verts)
@@ -88,9 +89,9 @@ def _get_VIJ(
 
     for face_kernel in face_kernels:
         for subdomain in face_kernel.subdomains:
-            faces = mesh.get_vertices(subdomain)
-            vals_matrix = face_kernel.eval(u, mesh, faces)
-
+            face_mask = mesh.get_face_mask(subdomain)
+            vals_matrix = face_kernel.eval(u, mesh, face_mask)
+            faces = mesh.idx_hierarchy[face_mask]
             V.append(vals_matrix)
             I.append(faces)
             J.append(faces)

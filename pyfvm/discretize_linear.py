@@ -6,7 +6,6 @@ from .linear_fvm_problem import get_linear_fvm_problem
 import numpy
 import sympy
 from sympy.matrices.expressions.matexpr import MatrixExpr, MatrixSymbol
-import voropy
 
 
 def split(expr, variables):
@@ -61,21 +60,21 @@ class EdgeLinearKernel(object):
         self.subdomains = [None]
         return
 
-    def eval(self, mesh, cell_ids):
-        edge_ce_ratio = mesh.get_ce_ratios()[..., cell_ids]
-        edge_length = mesh.get_edge_lengths()[..., cell_ids]
-        nec = mesh.idx_hierarchy[..., cell_ids]
-
+    def eval(self, mesh, cell_mask):
+        edge_ce_ratio = mesh.get_ce_ratios()[..., cell_mask]
+        edge_length = mesh.get_edge_lengths()[..., cell_mask]
+        nec = mesh.idx_hierarchy[..., cell_mask]
         X = mesh.node_coords[nec]
 
         val = self.linear(X[0], X[1], edge_ce_ratio, edge_length)
+        rhs = self.affine(X[0], X[1], edge_ce_ratio, edge_length)
+
         ones = numpy.ones(nec.shape[1:])
         for i in [0, 1]:
+            rhs[i] *= ones
             for j in [0, 1]:
                 if not isinstance(val[i][j], numpy.ndarray):
                     val[i][j] *= ones
-
-        rhs = self.affine(X[0], X[1], edge_ce_ratio, edge_length)
 
         return val, rhs, nec
 
@@ -88,9 +87,9 @@ class VertexLinearKernel(object):
         self.subdomains = [None]
         return
 
-    def eval(self, vertex_ids):
-        control_volumes = self.mesh.get_control_volumes()[vertex_ids]
-        X = self.mesh.node_coords[vertex_ids].T
+    def eval(self, vertex_mask):
+        control_volumes = self.mesh.get_control_volumes()[vertex_mask]
+        X = self.mesh.node_coords[vertex_mask].T
 
         res0 = self.linear(control_volumes, X)
         res1 = self.affine(control_volumes, X)
@@ -105,11 +104,11 @@ class VertexLinearKernel(object):
 
 
 class FaceLinearKernel(object):
-    def __init__(self, mesh, coeff, affine):
+    def __init__(self, mesh, coeff, affine, subdomains):
         self.mesh = mesh
         self.coeff = coeff
         self.affine = affine
-        self.subdomains = [form_language.Boundary()]
+        self.subdomains = subdomains
         return
 
     def eval(self, face_cells_inside):
@@ -143,9 +142,9 @@ class DirichletLinearKernel(object):
         self.subdomain = subdomain
         return
 
-    def eval(self, vertex_ids):
-        X = self.mesh.node_coords[vertex_ids].T
-        zero = numpy.zeros(len(vertex_ids))
+    def eval(self, vertex_mask):
+        X = self.mesh.node_coords[vertex_mask].T
+        zero = numpy.zeros(sum(vertex_mask))
         return (
             self.coeff(X) + zero,
             self.rhs(X) + zero
@@ -161,6 +160,10 @@ def _discretize_edge_integral(
 
 
 class DiscretizeEdgeIntegral(object):
+    # https://stackoverflow.com/q/38061465/353337
+    class dot(sympy.Function):
+        pass
+
     def __init__(self, x0, x1, edge_length, edge_ce_ratio):
         self.arg_translate = {}
         self.x0 = x0
@@ -170,11 +173,7 @@ class DiscretizeEdgeIntegral(object):
         return
 
     def visit(self, node):
-        if isinstance(node, int):
-            return node
-        elif isinstance(node, float):
-            return node
-        elif isinstance(node, sympy.Basic):
+        if isinstance(node, sympy.Basic):
             if node.is_Add:
                 return self.visit_ChainOp(node, sympy.Add)
             elif node.is_Mul:
@@ -188,7 +187,15 @@ class DiscretizeEdgeIntegral(object):
             elif isinstance(node, MatrixExpr):
                 return node
 
-        raise RuntimeError('Unknown node type \"', type(node), '\".')
+        assert (
+            isinstance(node, int) or
+            isinstance(node, float) or
+            isinstance(
+                node,
+                sympy.tensor.array.dense_ndim_array.ImmutableDenseNDimArray
+                )
+            )
+        return node
 
     def generate(self, node, index_functions=None):
         '''Entrance point to this class.
@@ -216,9 +223,6 @@ class DiscretizeEdgeIntegral(object):
         # Replace x by 0.5*(x0 + x1) (the edge midpoint)
         out = out.subs(x, 0.5 * (self.x0 + self.x1))
 
-        # Replace n by the normalized edge
-        out = out.subs(form_language.n, (self.x1 - self.x0) / self.edge_length)
-
         return out, index_vars
 
     def generic_visit(self, node):
@@ -237,13 +241,10 @@ class DiscretizeEdgeIntegral(object):
         except AttributeError:
             ident = repr(node)
         # Handle special functions
-        if ident == 'dot':
-            assert len(node.args) == 2
-            assert isinstance(node.args[0], MatrixExpr)
-            assert isinstance(node.args[1], MatrixExpr)
+        if ident == 'n_dot':
+            assert len(node.args) == 1
             arg0 = self.visit(node.args[0])
-            arg1 = self.visit(node.args[1])
-            out = node.func(arg0, arg1)
+            out = self.dot(self.x1 - self.x0, arg0) / self.edge_length
         elif ident == 'n_dot_grad':
             assert len(node.args) == 1
             fx = node.args[0]
@@ -278,7 +279,20 @@ def discretize_linear(obj, mesh):
     res = obj.apply(u)
 
     # See <http://docs.sympy.org/dev/modules/utilities/lambdify.html>.
-    a2a = [{'ImmutableMatrix': numpy.array}, 'numpy']
+    # A sympy.Matrix _always_ has two dimensions, meaning that even if you
+    # seemingly create a vector 'a la `Matrix([1, 2, 3]), it'll have shape (3,
+    # 1). This makes it impossible to handle dot products correctly. To work
+    # around this, always cut off the last dimension of an ImmutableDenseMatrix
+    # if it is of size 1; see <https://github.com/sympy/sympy/issues/12666>.
+    def vector2vector(x):
+        out = numpy.array(x)
+        if len(out.shape) == 2 and out.shape[1] == 1:
+            out = out[:, 0]
+        return out
+    mods = [
+        {'ImmutableDenseMatrix': vector2vector},
+        'numpy'
+        ]
 
     edge_kernels = set()
     vertex_kernels = set()
@@ -312,8 +326,8 @@ def discretize_linear(obj, mesh):
             linear = [[linear0[0], linear0[1]], [linear1[0], linear1[1]]]
             affine = [affine0, affine1]
 
-            l_eval = sympy.lambdify((x0, x1, er, el), linear, modules=a2a)
-            a_eval = sympy.lambdify((x0, x1, er, el), affine, modules=a2a)
+            l_eval = sympy.lambdify((x0, x1, er, el), linear, modules=mods)
+            a_eval = sympy.lambdify((x0, x1, er, el), affine, modules=mods)
 
             edge_kernels.add(EdgeLinearKernel(l_eval, a_eval))
 
@@ -333,8 +347,8 @@ def discretize_linear(obj, mesh):
             affine, linear, nonlinear = split(expr, uk0)
             assert nonlinear == 0
 
-            l_eval = sympy.lambdify((control_volume, x), linear, modules=a2a)
-            a_eval = sympy.lambdify((control_volume, x), affine, modules=a2a)
+            l_eval = sympy.lambdify((control_volume, x), linear, modules=mods)
+            a_eval = sympy.lambdify((control_volume, x), affine, modules=mods)
 
             vertex_kernels.add(VertexLinearKernel(mesh, l_eval, a_eval))
 
@@ -352,11 +366,14 @@ def discretize_linear(obj, mesh):
             affine, linear, nonlinear = split(expr, uk)
             assert nonlinear == 0
 
-            l_eval = sympy.lambdify((x,), linear, modules=a2a)
-            a_eval = sympy.lambdify((x,), affine, modules=a2a)
+            l_eval = sympy.lambdify((x,), linear, modules=mods)
+            a_eval = sympy.lambdify((x,), affine, modules=mods)
 
             face_kernels.add(
-                    FaceLinearKernel(mesh, l_eval, a_eval)
+                    FaceLinearKernel(
+                        mesh, l_eval, a_eval,
+                        [form_language.Boundary()]
+                        )
                     )
 
         else:
@@ -379,8 +396,8 @@ def discretize_linear(obj, mesh):
             affine, coeff, nonlinear = split(expr, uk0)
             assert nonlinear == 0
 
-            coeff_eval = sympy.lambdify((x), coeff, modules=a2a)
-            rhs_eval = sympy.lambdify((x), -affine, modules=a2a)
+            coeff_eval = sympy.lambdify((x), coeff, modules=mods)
+            rhs_eval = sympy.lambdify((x), -affine, modules=mods)
 
             dirichlet_kernels.add(
                 DirichletLinearKernel(mesh, coeff_eval, rhs_eval, subdomain)

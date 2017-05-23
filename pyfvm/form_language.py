@@ -22,9 +22,7 @@ class Subdomain(object):
 
 
 class Boundary(Subdomain):
-    def __init__(self):
-        self.is_boundary_only = True
-        return
+    is_boundary_only = True
 
     def is_inside(self, x):
         return numpy.ones(x.shape[1], dtype=bool)
@@ -161,13 +159,9 @@ class EdgeKernel(object):
     pass
 
 
-class dot(sympy.Function):
-    pass
-
-
 class n_dot_grad(sympy.Function):
     pass
 
 
-n = sympy.MatrixSymbol('n', 3, 1)
-neg_n = sympy.MatrixSymbol('neg_n', 3, 1)
+class n_dot(sympy.Function):
+    pass

@@ -24,16 +24,15 @@ def get_linear_fvm_problem(
         # Apply Dirichlet conditions.
         d = matrix.diagonal()
         for dirichlet in dirichlets:
-            is_node_inside = mesh.is_node_inside(dirichlet.subdomain)
-            ids = numpy.where(is_node_inside)[0]
+            vertex_mask = mesh.get_vertex_mask(dirichlet.subdomain)
             # Set all Dirichlet rows to 0.
-            for i in ids:
+            for i in numpy.where(vertex_mask)[0]:
                 matrix.data[matrix.indptr[i]:matrix.indptr[i+1]] = 0.0
 
             # Set the diagonal and RHS.
-            coeff, rhs_vals = dirichlet.eval(ids)
-            d[ids] = coeff
-            rhs[ids] = rhs_vals
+            coeff, rhs_vals = dirichlet.eval(vertex_mask)
+            d[vertex_mask] = coeff
+            rhs[vertex_mask] = rhs_vals
 
         matrix.setdiag(d)
 
@@ -56,12 +55,9 @@ def _get_VIJ(
 
     for edge_kernel in edge_kernels:
         for subdomain in edge_kernel.subdomains:
-            if subdomain:
-                cell_ids = mesh.get_cells(subdomain)
-            else:
-                cell_ids = mesh.get_cells()
+            cell_mask = mesh.get_cell_mask(subdomain)
 
-            v_mtx, v_rhs, nec = edge_kernel.eval(mesh, cell_ids)
+            v_mtx, v_rhs, nec = edge_kernel.eval(mesh, cell_mask)
 
             # Diagonal entries.
             # Manually sum up the entries corresponding to the same i, j first.
@@ -110,25 +106,25 @@ def _get_VIJ(
 
     for vertex_kernel in vertex_kernels:
         for subdomain in vertex_kernel.subdomains:
-            is_node_inside = mesh.is_node_inside()
+            vertex_mask = mesh.get_vertex_mask(subdomain)
 
-            vals_matrix, vals_rhs = vertex_kernel.eval(is_node_inside)
+            vals_matrix, vals_rhs = vertex_kernel.eval(vertex_mask)
 
             # numpy.add.at(diag, verts, vals_matrix)
             # numpy.subtract.at(rhs, verts, vals_rhs)
-            if is_node_inside == numpy.s_[:]:
+            if vertex_mask == numpy.s_[:]:
                 diag += vals_matrix
                 rhs -= vals_rhs
             else:
-                diag[is_node_inside] += vals_matrix
-                rhs[is_node_inside] -= vals_rhs
+                diag[vertex_mask] += vals_matrix
+                rhs[vertex_mask] -= vals_rhs
 
     for face_kernel in face_kernels:
         for subdomain in face_kernel.subdomains:
-            is_face_inside = mesh.is_face_inside(subdomain)
-            vals_matrix, vals_rhs = face_kernel.eval(is_face_inside)
+            face_mask = mesh.get_face_mask(subdomain)
+            vals_matrix, vals_rhs = face_kernel.eval(face_mask)
 
-            ids = mesh.idx_hierarchy[..., is_face_inside]
+            ids = mesh.idx_hierarchy[..., face_mask]
 
             V.append(vals_matrix)
             I.append(ids)

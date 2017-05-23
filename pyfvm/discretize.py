@@ -44,7 +44,7 @@ class VertexKernel(object):
 
 
 class FaceKernel(object):
-    def __init__(self, val, subdomain=[None]):
+    def __init__(self, val, subdomain):
         self.val = val
         self.subdomain = subdomain
         return
@@ -62,10 +62,10 @@ class DirichletKernel(object):
         self.subdomain = subdomain
         return
 
-    def eval(self, u, mesh, vertex_ids):
-        assert len(u) == len(vertex_ids)
-        X = mesh.node_coords[vertex_ids].T
-        zero = numpy.zeros(len(vertex_ids))
+    def eval(self, u, mesh, vertex_mask):
+        assert len(u) == sum(vertex_mask)
+        X = mesh.node_coords[vertex_mask].T
+        zero = numpy.zeros(sum(vertex_mask))
         return self.val(u, X) + zero
 
 

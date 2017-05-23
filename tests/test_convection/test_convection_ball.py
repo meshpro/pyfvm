@@ -4,7 +4,7 @@ import dolfin
 import helpers
 import pyamg
 import pyfvm
-from pyfvm.form_language import integrate, n_dot_grad, dS, dV, dot, n, Boundary
+from pyfvm.form_language import integrate, n_dot_grad, n_dot, dS, dV, Boundary
 from sympy import pi, sin, cos, Matrix
 import voropy
 
@@ -29,7 +29,7 @@ class Convection(object):
                 - a2 * pi * x[2] * sin(z)
                 )
 
-        out = integrate(lambda x: -n_dot_grad(u(x)) + dot(a.T, n)*u(x), dS) \
+        out = integrate(lambda x: -n_dot_grad(u(x)) + n_dot(a)*u(x), dS) \
             - integrate(rhs, dV)
 
         return out
