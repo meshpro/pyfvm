@@ -1,13 +1,11 @@
 # -*- coding: utf-8 -*-
 import helpers
-import pyamg
+
 import pyfvm
 from pyfvm.form_language import integrate, n_dot, n_dot_grad, dS, dV, Boundary
-import mshr
-import dolfin
-import numpy
+
+import pyamg
 from sympy import pi, sin, cos, Matrix
-import voropy
 
 
 def exact_sol(x):
@@ -35,17 +33,6 @@ class Convection(object):
             ]
 
 
-def get_mesh(k):
-    h = 0.5**k
-    # cell_size = 2 * pi / num_Boundary()_points
-    c = mshr.Circle(dolfin.Point(0., 0., 0.), 1, int(2*pi / h))
-    # cell_size = 2 * bounding_box_radius / res
-    m = mshr.generate_mesh(c, 2.0 / h)
-    coords = m.coordinates()
-    coords = numpy.c_[coords, numpy.zeros(len(coords))]
-    return voropy.mesh_tri.MeshTri(coords, m.cells())
-
-
 def solve(verbose=False):
     def solver(mesh):
         matrix, rhs = pyfvm.discretize_linear(Convection(), mesh)
@@ -56,7 +43,7 @@ def solve(verbose=False):
     return helpers.perform_convergence_tests(
         solver,
         exact_sol,
-        get_mesh,
+        helpers.get_circle_mesh,
         range(7),
         verbose=verbose
         )

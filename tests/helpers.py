@@ -118,3 +118,17 @@ def get_ball_mesh(k):
     cells = uidx.reshape(cells.shape)
     points = points[uvertices]
     return voropy.mesh_tetra.MeshTetra(points, cells, mode='geometric')
+
+
+def get_circle_mesh(k):
+    import dolfin
+    import mshr
+    from numpy import pi
+    h = 0.5**k
+    # cell_size = 2 * pi / num_Boundary()_points
+    c = mshr.Circle(dolfin.Point(0., 0., 0.), 1, int(2*pi / h))
+    # cell_size = 2 * bounding_box_radius / res
+    m = mshr.generate_mesh(c, 2.0 / h)
+    coords = m.coordinates()
+    coords = numpy.c_[coords, numpy.zeros(len(coords))]
+    return voropy.mesh_tri.MeshTri(coords, m.cells())

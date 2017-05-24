@@ -30,17 +30,6 @@ class Bratu(object):
             ]
 
 
-def get_mesh(k):
-    h = 0.5**k
-    # cell_size = 2 * pi / num_Boundary()_points
-    c = mshr.Circle(dolfin.Point(0., 0., 0.), 1, int(2*pi / h))
-    # cell_size = 2 * bounding_box_radius / res
-    m = mshr.generate_mesh(c, 2.0 / h)
-    coords = m.coordinates()
-    coords = numpy.c_[coords, numpy.zeros(len(coords))]
-    return voropy.mesh_tri.MeshTri(coords, m.cells())
-
-
 class ConvergenceBratu2dCircleTest(unittest.TestCase):
 
     def setUp(self):
@@ -63,7 +52,7 @@ class ConvergenceBratu2dCircleTest(unittest.TestCase):
         return helpers.perform_convergence_tests(
             solver,
             exact_sol,
-            get_mesh,
+            helpers.get_circle_mesh,
             range(5),
             verbose=verbose
             )
