@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
-from matplotlib import pyplot as plt
+import matplotlib.pyplot as plt
 import numpy
 import sympy
+import voropy
 
 
 def perform_convergence_tests(
@@ -91,3 +92,29 @@ def plot_error_data(H, error_norm_1, error_norm_inf):
         )
 
     plt.legend(loc='upper left')
+
+
+# def get_ball_mesh(k):
+#     import dolfin
+#     import mshr
+#     h = 0.5**(k+2)
+#     c = mshr.Sphere(dolfin.Point(0., 0., 0.), 1.0, int(2*pi / h))
+#     m = mshr.generate_mesh(c, 2.0 / h)
+#     return voropy.mesh_tetra.MeshTetra(
+#             m.coordinates(),
+#             m.cells(),
+#             mode='geometric'
+#             )
+
+def get_ball_mesh(k):
+    import pygmsh
+    h = 0.5**(k+1)
+    geom = pygmsh.Geometry()
+    geom.add_ball([0.0, 0.0, 0.0], 1.0, h)
+    points, cells, _, _, _ = pygmsh.generate_mesh(geom, verbose=False)
+    cells = cells['tetra']
+    # toss away unused points
+    uvertices, uidx = numpy.unique(cells, return_inverse=True)
+    cells = uidx.reshape(cells.shape)
+    points = points[uvertices]
+    return voropy.mesh_tetra.MeshTetra(points, cells, mode='geometric')

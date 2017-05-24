@@ -7,7 +7,6 @@ from pyfvm.form_language import integrate, n_dot_grad, dS, dV, Boundary
 import numpy
 from sympy import pi, sin, cos, exp
 import unittest
-import voropy
 
 
 def exact_sol(x):
@@ -28,32 +27,6 @@ class Bratu(object):
         return [
             (lambda x: u(x) - exact_sol(x), Boundary())
             ]
-
-
-# def get_mesh(k):
-#     import dolfin
-#     import mshr
-#     h = 0.5**(k+2)
-#     c = mshr.Sphere(dolfin.Point(0., 0., 0.), 1.0, int(2*pi / h))
-#     m = mshr.generate_mesh(c, 2.0 / h)
-#     return voropy.mesh_tetra.MeshTetra(
-#             m.coordinates(),
-#             m.cells(),
-#             mode='geometric'
-#             )
-
-def get_mesh(k):
-    import pygmsh
-    h = 0.5**(k+1)
-    geom = pygmsh.Geometry()
-    geom.add_ball([0.0, 0.0, 0.0], 1.0, h)
-    points, cells, _, _, _ = pygmsh.generate_mesh(geom, verbose=False)
-    cells = cells['tetra']
-    # toss away unused points
-    uvertices, uidx = numpy.unique(cells, return_inverse=True)
-    cells = uidx.reshape(cells.shape)
-    points = points[uvertices]
-    return voropy.mesh_tetra.MeshTetra(points, cells, mode='geometric')
 
 
 class ConvergenceBratu3dBallTest(unittest.TestCase):
@@ -78,7 +51,7 @@ class ConvergenceBratu3dBallTest(unittest.TestCase):
         return helpers.perform_convergence_tests(
             solver,
             exact_sol,
-            get_mesh,
+            helpers.get_ball_mesh,
             range(3),
             verbose=verbose
             )
