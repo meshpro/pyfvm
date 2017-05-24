@@ -60,7 +60,5 @@ def test():
 
 
 if __name__ == '__main__':
-    from matplotlib import pyplot as plt
     H, error_norm_1, error_norm_inf, order_1, order_inf = solve(verbose=True)
-    helpers.plot_error_data(H, error_norm_1, error_norm_inf)
-    plt.show()
+    helpers.show_error_data(H, error_norm_1, error_norm_inf)
