@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-import dolfin
 import helpers
-import mshr
-import numpy
+
 import pyfvm
 from pyfvm.form_language import integrate, n_dot_grad, dS, dV, Boundary
+
+import numpy
 from sympy import pi, sin, cos, exp
 import unittest
 import voropy
@@ -30,15 +30,30 @@ class Bratu(object):
             ]
 
 
+# def get_mesh(k):
+#     import dolfin
+#     import mshr
+#     h = 0.5**(k+2)
+#     c = mshr.Sphere(dolfin.Point(0., 0., 0.), 1.0, int(2*pi / h))
+#     m = mshr.generate_mesh(c, 2.0 / h)
+#     return voropy.mesh_tetra.MeshTetra(
+#             m.coordinates(),
+#             m.cells(),
+#             mode='geometric'
+#             )
+
 def get_mesh(k):
-    h = 0.5**(k+2)
-    c = mshr.Sphere(dolfin.Point(0., 0., 0.), 1.0, int(2*pi / h))
-    m = mshr.generate_mesh(c, 2.0 / h)
-    return voropy.mesh_tetra.MeshTetra(
-            m.coordinates(),
-            m.cells(),
-            mode='geometric'
-            )
+    import pygmsh
+    h = 0.5**(k+1)
+    geom = pygmsh.Geometry()
+    geom.add_ball([0.0, 0.0, 0.0], 1.0, h)
+    points, cells, _, _, _ = pygmsh.generate_mesh(geom, verbose=False)
+    cells = cells['tetra']
+    # toss away unused points
+    uvertices, uidx = numpy.unique(cells, return_inverse=True)
+    cells = uidx.reshape(cells.shape)
+    points = points[uvertices]
+    return voropy.mesh_tetra.MeshTetra(points, cells, mode='geometric')
 
 
 class ConvergenceBratu3dBallTest(unittest.TestCase):
@@ -70,12 +85,10 @@ class ConvergenceBratu3dBallTest(unittest.TestCase):
 
     def test(self):
         H, error_norm_1, error_norm_inf, order_1, order_inf = self.solve()
-
         expected_order = 2
         tol = 2.0e-1
         self.assertGreater(order_1[-1], expected_order - tol)
         self.assertGreater(order_inf[-1], expected_order - tol)
-
         return
 
 

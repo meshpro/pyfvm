@@ -67,7 +67,7 @@ def perform_convergence_tests(
                 print
 
         if verbose:
-            num_nodes = len(mesh.control_volumes)
+            num_nodes = len(mesh.node_coords)
             print('%2d    %5.3e    %0.10e   %0.10e   %0.10e' %
                   (k, num_nodes, H[k], error_norm_1[k], error_norm_inf[k])
                   )
