@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 import helpers
-import pyamg
+
 import pyfvm
 from pyfvm.form_language import integrate, n_dot_grad, dS, dV, Boundary
+
+import pyamg
 import meshzoo
 from sympy import pi, sin
-import unittest
 import voropy
 
 
@@ -39,43 +40,31 @@ def get_mesh(k):
     return voropy.mesh_tetra.MeshTetra(vertices, cells, mode='geometric')
 
 
-class ConvergencePoisson3dCubeTest(unittest.TestCase):
+def solve(verbose=False):
+    def solver(mesh):
+        matrix, rhs = pyfvm.discretize_linear(Poisson(), mesh)
+        ml = pyamg.smoothed_aggregation_solver(matrix)
+        u = ml.solve(rhs, tol=1e-10)
+        return u
 
-    def setUp(self):
-        return
+    return helpers.perform_convergence_tests(
+        solver,
+        exact_sol,
+        get_mesh,
+        range(4),
+        verbose=verbose
+        )
 
-    @staticmethod
-    def solve(verbose=False):
-        def solver(mesh):
-            matrix, rhs = pyfvm.discretize_linear(Poisson(), mesh)
-            ml = pyamg.smoothed_aggregation_solver(matrix)
-            u = ml.solve(rhs, tol=1e-10)
-            return u
 
-        return helpers.perform_convergence_tests(
-            solver,
-            exact_sol,
-            get_mesh,
-            range(4),
-            verbose=verbose
-            )
-
-    def test(self):
-        H, error_norm_1, error_norm_inf, order_1, order_inf = self.solve()
-
-        expected_order = 2
-        tol = 1.0e-1
-        self.assertGreater(order_1[-1], expected_order - tol)
-        self.assertGreater(order_inf[-1], expected_order - tol)
-
-        return
+def test():
+    H, error_norm_1, error_norm_inf, order_1, order_inf = solve()
+    expected_order = 2
+    tol = 1.0e-1
+    assert order_1[-1] > expected_order - tol
+    assert order_inf[-1] > expected_order - tol
+    return
 
 
 if __name__ == '__main__':
-    from matplotlib import pyplot as plt
-
-    H, error_norm_1, error_norm_inf, order_1, order_inf = \
-        ConvergencePoisson3dCubeTest.solve(verbose=True)
-
-    helpers.plot_error_data(H, error_norm_1, error_norm_inf)
-    plt.show()
+    H, error_norm_1, error_norm_inf, order_1, order_inf = solve(verbose=True)
+    helpers.show_error_data(H, error_norm_1, error_norm_inf)
