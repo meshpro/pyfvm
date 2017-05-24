@@ -39,6 +39,7 @@ setup(
         'meshzoo',
         'numpy',
         'pyamg',
+        'pygmsh',
         'scipy',
         'sympy',
         'voropy',
