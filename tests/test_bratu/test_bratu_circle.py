@@ -1,13 +1,11 @@
 # -*- coding: utf-8 -*-
-import dolfin
 import helpers
-import numpy
-import mshr
+
 import pyfvm
 from pyfvm.form_language import integrate, n_dot_grad, dS, dV, Boundary
+
+import numpy
 from sympy import pi, sin, cos, exp
-import unittest
-import voropy
 
 
 def exact_sol(x):
@@ -30,49 +28,39 @@ class Bratu(object):
             ]
 
 
-class ConvergenceBratu2dCircleTest(unittest.TestCase):
+def solve(verbose=False):
+    def solver(mesh):
+        f, jacobian = pyfvm.discretize(Bratu(), mesh)
 
-    def setUp(self):
-        return
+        def jacobian_solver(u0, rhs):
+            from scipy.sparse import linalg
+            jac = jacobian.get_linear_operator(u0)
+            return linalg.spsolve(jac, rhs)
 
-    @staticmethod
-    def solve(verbose=False):
-        def solver(mesh):
-            f, jacobian = pyfvm.discretize(Bratu(), mesh)
+        u0 = numpy.zeros(len(mesh.node_coords))
+        u = pyfvm.newton(f.eval, jacobian_solver, u0, verbose=False)
+        return u
 
-            def jacobian_solver(u0, rhs):
-                from scipy.sparse import linalg
-                jac = jacobian.get_linear_operator(u0)
-                return linalg.spsolve(jac, rhs)
+    return helpers.perform_convergence_tests(
+        solver,
+        exact_sol,
+        helpers.get_circle_mesh,
+        range(5),
+        verbose=verbose
+        )
 
-            u0 = numpy.zeros(len(mesh.node_coords))
-            u = pyfvm.newton(f.eval, jacobian_solver, u0, verbose=False)
-            return u
 
-        return helpers.perform_convergence_tests(
-            solver,
-            exact_sol,
-            helpers.get_circle_mesh,
-            range(5),
-            verbose=verbose
-            )
-
-    def test(self):
-        H, error_norm_1, error_norm_inf, order_1, order_inf = self.solve()
-
-        expected_order = 2
-        tol = 1.5e-1
-        self.assertGreater(order_1[-1], expected_order - tol)
-        self.assertGreater(order_inf[-1], expected_order - tol)
-
-        return
+def test():
+    H, error_norm_1, error_norm_inf, order_1, order_inf = solve()
+    expected_order = 2
+    tol = 1.5e-1
+    assert order_1[-1] > expected_order - tol
+    assert order_inf[-1] > expected_order - tol
+    return
 
 
 if __name__ == '__main__':
     from matplotlib import pyplot as plt
-
-    H, error_norm_1, error_norm_inf, order_1, order_inf = \
-        ConvergenceBratu2dCircleTest.solve(verbose=True)
-
+    H, error_norm_1, error_norm_inf, order_1, order_inf = solve(verbose=True)
     helpers.plot_error_data(H, error_norm_1, error_norm_inf)
     plt.show()
