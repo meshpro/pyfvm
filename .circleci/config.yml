@@ -12,10 +12,8 @@ jobs:
       - run: LANG=C.UTF-8 apt-add-repository -y ppa:nschloe/vtk7-nightly
       # For various sympy bugs, e.g., <https://github.com/sympy/sympy/issues/12132>:
       - run: LANG=C.UTF-8 apt-add-repository -y ppa:nschloe/sympy-nightly
-      # for python3-mshr:
-      - run: LANG=C.UTF-8 apt-add-repository -y ppa:nschloe/fenics-nightly
       - run: apt-get update
-      - run: apt-get -y install python3-matplotlib python3-mshr python3-numpy python3-scipy python3-vtk7 python3-sympy python3-pip
+      - run: apt-get -y install python3-matplotlib python3-numpy python3-scipy python3-vtk7 python3-sympy python3-pip
       - run: pip3 install -U pytest pytest-cov pyamg
       - checkout
       - run: LANG=C.UTF-8 pip3 install .
