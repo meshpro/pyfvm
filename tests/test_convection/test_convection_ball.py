@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 import helpers
+
+from pyfvm.form_language import integrate, n_dot_grad, n_dot, dS, dV, Boundary
+
 import pyamg
 import pyfvm
-from pyfvm.form_language import integrate, n_dot_grad, n_dot, dS, dV, Boundary
 from sympy import pi, sin, cos, Matrix
 
 
@@ -63,9 +65,5 @@ def test():
 
 
 if __name__ == '__main__':
-    import matplotlib.pyplot as plt
-
     H, error_norm_1, error_norm_inf, order_1, order_inf = solve(verbose=True)
-
-    helpers.plot_error_data(H, error_norm_1, error_norm_inf)
-    plt.show()
+    helpers.show_error_data(H, error_norm_1, error_norm_inf)

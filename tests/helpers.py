@@ -76,6 +76,12 @@ def perform_convergence_tests(
     return H, error_norm_1, error_norm_inf, order_1, order_inf
 
 
+def show_error_data(*args, **kwargs):
+    plot_error_data(*args, **kwargs)
+    plt.show()
+    return
+
+
 def plot_error_data(H, error_norm_1, error_norm_inf):
     # plot error data
     plt.loglog(H, error_norm_1, 'xk', label='||error||_1')
@@ -92,6 +98,7 @@ def plot_error_data(H, error_norm_1, error_norm_inf):
         )
 
     plt.legend(loc='upper left')
+    return
 
 
 # def get_ball_mesh(k):
@@ -138,7 +145,7 @@ def get_circle_mesh(k):
     import pygmsh
     h = 0.5**k
     geom = pygmsh.Geometry()
-    geom.add_circle([0.0, 0.0], 1.0, h)
+    geom.add_circle([0.0, 0.0, 0.0], 1.0, lcar=h)
     points, cells, _, _, _ = pygmsh.generate_mesh(geom, verbose=False)
     cells = cells['triangle']
     # toss away unused points
