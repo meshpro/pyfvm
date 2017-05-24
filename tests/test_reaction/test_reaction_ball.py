@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
-import mshr
-import dolfin
 import helpers
+import numpy
 import pyamg
 import pyfvm
 from pyfvm.form_language import integrate, n_dot_grad, dS, dV, Boundary
@@ -29,16 +28,31 @@ class Reaction(object):
             (lambda x: u(x) - exact_sol(x), Boundary())
             ]
 
+# def get_mesh(k):
+#     import mshr
+#     import dolfin
+#     h = 0.5**(k+2)
+#     c = mshr.Sphere(dolfin.Point(0., 0., 0.), 1.0, int(2*pi / h))
+#     m = mshr.generate_mesh(c, 2.0 / h)
+#     return voropy.mesh_tetra.MeshTetra(
+#             m.coordinates(),
+#             m.cells(),
+#             mode='geometric'
+#             )
+
 
 def get_mesh(k):
-    h = 0.5**(k+2)
-    c = mshr.Sphere(dolfin.Point(0., 0., 0.), 1.0, int(2*pi / h))
-    m = mshr.generate_mesh(c, 2.0 / h)
-    return voropy.mesh_tetra.MeshTetra(
-            m.coordinates(),
-            m.cells(),
-            mode='geometric'
-            )
+    import pygmsh
+    h = 0.5**(k+1)
+    geom = pygmsh.Geometry()
+    geom.add_ball([0.0, 0.0, 0.0], 1.0, h)
+    points, cells, _, _, _ = pygmsh.generate_mesh(geom, verbose=False)
+    cells = cells['tetra']
+    # toss away unused points
+    uvertices, uidx = numpy.unique(cells, return_inverse=True)
+    cells = uidx.reshape(cells.shape)
+    points = points[uvertices]
+    return voropy.mesh_tetra.MeshTetra(points, cells, mode='geometric')
 
 
 class ConvergenceReaction3dBallTest(unittest.TestCase):
