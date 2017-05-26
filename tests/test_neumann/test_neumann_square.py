@@ -61,8 +61,8 @@ def solve(verbose=False):
         )
 
 
-def test(self):
-    H, error_norm_1, error_norm_inf, order_1, order_inf = self.solve()
+def test():
+    H, error_norm_1, error_norm_inf, order_1, order_inf = solve()
     expected_order = 2
     tol = 1.0e-2
     assert order_1[-1] > expected_order - tol

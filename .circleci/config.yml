@@ -17,7 +17,7 @@ jobs:
       - run: apt-get -y install python3-numpy
       - run: apt-get -y install python3-scipy
       - run: apt-get -y install python3-vtk7
-      - run: apt-get -y install python3-sympy
+      - run: apt-get -y install python3-sympy  # takes forever b/c of texlive
       - run: apt-get -y install python3-pip
       - run: apt-get -y install gmsh
       - run: pip3 install -U pytest pytest-cov pyamg
