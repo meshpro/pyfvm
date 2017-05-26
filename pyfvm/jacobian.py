@@ -8,12 +8,12 @@ class Jacobian(object):
     def __init__(
             self,
             mesh,
-            edge_kernels, vertex_kernels, boundary_kernels, dirichlets
+            edge_kernels, vertex_kernels, face_kernels, dirichlets
             ):
         self.mesh = mesh
         self.edge_kernels = edge_kernels
         self.vertex_kernels = vertex_kernels
-        self.boundary_kernels = boundary_kernels
+        self.face_kernels = face_kernels
         self.dirichlets = dirichlets
         return
 
@@ -21,7 +21,7 @@ class Jacobian(object):
         V, I, J = _get_VIJ(
                 self.mesh,
                 u,
-                self.edge_kernels, self.vertex_kernels, self.boundary_kernels
+                self.edge_kernels, self.vertex_kernels, self.face_kernels
                 )
 
         # One unknown per vertex
@@ -33,13 +33,14 @@ class Jacobian(object):
         # Apply Dirichlet conditions.
         d = matrix.diagonal()
         for dirichlet in self.dirichlets:
-            verts = self.mesh.get_vertices(dirichlet.subdomain)
+            vertex_mask = self.mesh.get_vertex_mask(dirichlet.subdomain)
             # Set all Dirichlet rows to 0.
-            for i in verts:
+            for i in numpy.where(vertex_mask)[0]:
                 matrix.data[matrix.indptr[i]:matrix.indptr[i+1]] = 0.0
 
             # Set the diagonal.
-            d[verts] = dirichlet.eval(u[verts], self.mesh, verts)
+            d[vertex_mask] = \
+                dirichlet.eval(u[vertex_mask], self.mesh, vertex_mask)
 
         matrix.setdiag(d)
 
@@ -49,7 +50,7 @@ class Jacobian(object):
 def _get_VIJ(
         mesh,
         u,
-        edge_kernels, vertex_kernels, boundary_kernels
+        edge_kernels, vertex_kernels, face_kernels
         ):
     V = []
     I = []
@@ -57,52 +58,43 @@ def _get_VIJ(
 
     for edge_kernel in edge_kernels:
         for subdomain in edge_kernel.subdomains:
-            edges = mesh.get_edges(subdomain)
-            edge_nodes = mesh.edges['nodes'][edges]
+            cell_mask = mesh.get_cell_mask(subdomain)
+            v_matrix = edge_kernel.eval(u, mesh, cell_mask)
 
-            v_matrix = edge_kernel.eval(u, mesh, edges)
+            V.append(v_matrix[0, 0].flatten())
+            V.append(v_matrix[0, 1].flatten())
+            V.append(v_matrix[1, 0].flatten())
+            V.append(v_matrix[1, 1].flatten())
 
-            # if dot() is used in the expression, the shape of of v_matrix will
-            # be (2, 2, 1, k) instead of (2, 2, k).
-            if len(v_matrix.shape) == 4:
-                assert v_matrix.shape[2] == 1
-                V.append(v_matrix[0, 0, 0, :])
-                V.append(v_matrix[0, 1, 0, :])
-                V.append(v_matrix[1, 0, 0, :])
-                V.append(v_matrix[1, 1, 0, :])
-            else:
-                V.append(v_matrix[0, 0, :])
-                V.append(v_matrix[0, 1, :])
-                V.append(v_matrix[1, 0, :])
-                V.append(v_matrix[1, 1, :])
+            I.append(mesh.idx_hierarchy[0].flatten())
+            I.append(mesh.idx_hierarchy[0].flatten())
+            I.append(mesh.idx_hierarchy[1].flatten())
+            I.append(mesh.idx_hierarchy[1].flatten())
 
-            I.append(edge_nodes[:, 0])
-            I.append(edge_nodes[:, 0])
-            I.append(edge_nodes[:, 1])
-            I.append(edge_nodes[:, 1])
-
-            J.append(edge_nodes[:, 0])
-            J.append(edge_nodes[:, 1])
-            J.append(edge_nodes[:, 0])
-            J.append(edge_nodes[:, 1])
+            J.append(mesh.idx_hierarchy[0].flatten())
+            J.append(mesh.idx_hierarchy[1].flatten())
+            J.append(mesh.idx_hierarchy[0].flatten())
+            J.append(mesh.idx_hierarchy[1].flatten())
 
     for vertex_kernel in vertex_kernels:
         for subdomain in vertex_kernel.subdomains:
-            verts = mesh.get_vertices(subdomain)
-            vals_matrix = vertex_kernel.eval(u, mesh, verts)
+            vertex_mask = mesh.get_vertex_mask(subdomain)
+            vals_matrix = vertex_kernel.eval(u, mesh, vertex_mask)
 
+            if vertex_mask == numpy.s_[:]:
+                verts = numpy.arange(len(vals_matrix))
             V.append(vals_matrix)
             I.append(verts)
             J.append(verts)
 
-    for boundary_kernel in boundary_kernels:
-        for subdomain in boundary_kernel.subdomains:
-            verts = mesh.get_vertices(subdomain)
-            vals_matrix = boundary_kernel.eval(u, mesh, verts)
-
+    for face_kernel in face_kernels:
+        for subdomain in face_kernel.subdomains:
+            face_mask = mesh.get_face_mask(subdomain)
+            vals_matrix = face_kernel.eval(u, mesh, face_mask)
+            faces = mesh.idx_hierarchy[face_mask]
             V.append(vals_matrix)
-            I.append(verts)
-            J.append(verts)
+            I.append(faces)
+            J.append(faces)
 
     # Finally, make V, I, J into 1D-arrays.
     V = numpy.concatenate(V)

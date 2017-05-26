@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-from matplotlib import pyplot as plt
+import matplotlib.pyplot as plt
 import numpy
-import pyfvm
 import sympy
+import voropy
 
 
 def perform_convergence_tests(
@@ -34,7 +34,8 @@ def perform_convergence_tests(
 
     for k in rng:
         mesh = get_mesh(k)
-        H[k] = max(mesh.edge_lengths)
+        # get max edge length
+        H[k] = numpy.sqrt(mesh.ei_dot_ei.max())
 
         u = discrete_solver(mesh)
 
@@ -48,7 +49,7 @@ def perform_convergence_tests(
         #     point_data={'x': x, 'error': error},
         #     )
 
-        error_norm_1[k] = numpy.sum(abs(mesh.control_volumes * error))
+        error_norm_1[k] = numpy.sum(abs(mesh.get_control_volumes() * error))
         error_norm_inf[k] = max(abs(error))
 
         # numerical orders of convergence
@@ -67,12 +68,18 @@ def perform_convergence_tests(
                 print
 
         if verbose:
-            num_nodes = len(mesh.control_volumes)
+            num_nodes = len(mesh.node_coords)
             print('%2d    %5.3e    %0.10e   %0.10e   %0.10e' %
                   (k, num_nodes, H[k], error_norm_1[k], error_norm_inf[k])
                   )
 
     return H, error_norm_1, error_norm_inf, order_1, order_inf
+
+
+def show_error_data(*args, **kwargs):
+    plot_error_data(*args, **kwargs)
+    plt.show()
+    return
 
 
 def plot_error_data(H, error_norm_1, error_norm_inf):
@@ -91,3 +98,58 @@ def plot_error_data(H, error_norm_1, error_norm_inf):
         )
 
     plt.legend(loc='upper left')
+    return
+
+
+# def get_ball_mesh(k):
+#     import dolfin
+#     import mshr
+#     h = 0.5**(k+2)
+#     c = mshr.Sphere(dolfin.Point(0., 0., 0.), 1.0, int(2*pi / h))
+#     m = mshr.generate_mesh(c, 2.0 / h)
+#     return voropy.mesh_tetra.MeshTetra(
+#             m.coordinates(),
+#             m.cells(),
+#             mode='geometric'
+#             )
+
+def get_ball_mesh(k):
+    import pygmsh
+    h = 0.5**(k+1)
+    geom = pygmsh.Geometry()
+    geom.add_ball([0.0, 0.0, 0.0], 1.0, h)
+    points, cells, _, _, _ = pygmsh.generate_mesh(geom, verbose=False)
+    cells = cells['tetra']
+    # toss away unused points
+    uvertices, uidx = numpy.unique(cells, return_inverse=True)
+    cells = uidx.reshape(cells.shape)
+    points = points[uvertices]
+    return voropy.mesh_tetra.MeshTetra(points, cells, mode='geometric')
+
+
+# def get_circle_mesh(k):
+#     import dolfin
+#     import mshr
+#     from numpy import pi
+#     h = 0.5**k
+#     # cell_size = 2 * pi / num_Boundary()_points
+#     c = mshr.Circle(dolfin.Point(0., 0., 0.), 1, int(2*pi / h))
+#     # cell_size = 2 * bounding_box_radius / res
+#     m = mshr.generate_mesh(c, 2.0 / h)
+#     coords = m.coordinates()
+#     coords = numpy.c_[coords, numpy.zeros(len(coords))]
+#     return voropy.mesh_tri.MeshTri(coords, m.cells())
+
+
+def get_circle_mesh(k):
+    import pygmsh
+    h = 0.5**k
+    geom = pygmsh.Geometry()
+    geom.add_circle([0.0, 0.0, 0.0], 1.0, lcar=h)
+    points, cells, _, _, _ = pygmsh.generate_mesh(geom, verbose=False)
+    cells = cells['triangle']
+    # toss away unused points
+    uvertices, uidx = numpy.unique(cells, return_inverse=True)
+    cells = uidx.reshape(cells.shape)
+    points = points[uvertices]
+    return voropy.mesh_tri.MeshTri(points, cells)

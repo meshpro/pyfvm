@@ -8,23 +8,23 @@ class FvmProblem(object):
     def __init__(
             self,
             mesh,
-            edge_kernels, vertex_kernels, boundary_kernels, dirichlets,
-            edge_matrix_kernels, vertex_matrix_kernels, boundary_matrix_kernels
+            edge_kernels, vertex_kernels, face_kernels, dirichlets,
+            edge_matrix_kernels, vertex_matrix_kernels, face_matrix_kernels
             ):
         self.mesh = mesh
         self.edge_kernels = edge_kernels
         self.vertex_kernels = vertex_kernels
-        self.boundary_kernels = boundary_kernels
+        self.face_kernels = face_kernels
         self.dirichlets = dirichlets
 
         if edge_matrix_kernels or \
            vertex_matrix_kernels or \
-           boundary_matrix_kernels:
+           face_matrix_kernels:
             self.matrix = fvm_matrix.get_fvm_matrix(
                 mesh,
                 edge_matrix_kernels,
                 vertex_matrix_kernels,
-                boundary_matrix_kernels,
+                face_matrix_kernels,
                 []  # dirichlets
                 )
         else:
@@ -40,26 +40,31 @@ class FvmProblem(object):
 
         for edge_kernel in self.edge_kernels:
             for subdomain in edge_kernel.subdomains:
-                edges = self.mesh.get_edges(subdomain)
-                edge_nodes = self.mesh.edges['nodes'][edges].T
+                cell_mask = self.mesh.get_cell_mask(subdomain)
                 numpy.add.at(
                         out,
-                        edge_nodes,
-                        edge_kernel.eval(u, self.mesh, edges)
+                        self.mesh.idx_hierarchy,
+                        edge_kernel.eval(u, self.mesh, cell_mask)
                         )
 
         for vertex_kernel in self.vertex_kernels:
             for subdomain in vertex_kernel.subdomains:
-                verts = self.mesh.get_vertices(subdomain)
-                out[verts] += vertex_kernel.eval(u, self.mesh, verts)
+                vertex_mask = self.mesh.get_vertex_mask(subdomain)
+                out[vertex_mask] += \
+                    vertex_kernel.eval(u, self.mesh, vertex_mask)
 
-        for boundary_kernel in self.boundary_kernels:
-            for subdomain in boundary_kernel.subdomains:
-                verts = self.mesh.get_vertices(subdomain)
-                out[verts] += boundary_kernel.eval(u, self.mesh, verts)
+        for face_kernel in self.face_kernels:
+            for subdomain in face_kernel.subdomains:
+                face_mask = self.mesh.get_face_mask(subdomain)
+                numpy.add(
+                    out,
+                    face_mask,
+                    face_kernel.eval(u, self.mesh, face_mask)
+                    )
 
         for dirichlet in self.dirichlets:
-            verts = self.mesh.get_vertices(dirichlet.subdomain)
-            out[verts] = dirichlet.eval(u[verts], self.mesh, verts)
+            vertex_mask = self.mesh.get_vertex_mask(dirichlet.subdomain)
+            out[vertex_mask] = \
+                dirichlet.eval(u[vertex_mask], self.mesh, vertex_mask)
 
         return out

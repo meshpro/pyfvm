@@ -1,30 +1,31 @@
 # -*- coding: utf-8 -*-
 #
-import numpy
 from . import form_language
 from .discretize_linear import _discretize_edge_integral
-import fvm_problem
-import fvm_matrix
-import jacobian
+from . import fvm_problem
+from . import fvm_matrix
+from . import jacobian
+
+import numpy
 import sympy
 
 
 class EdgeKernel(object):
     def __init__(self, val):
         self.val = val
-        self.subdomains = ['everywhere']
+        self.subdomains = [None]
         return
 
-    def eval(self, u, mesh, edge_ids):
-        edge_nodes = mesh.edges['nodes'][edge_ids]
-        X = mesh.node_coords[edge_nodes]
-        x0 = X[:, 0, :].T
-        x1 = X[:, 1, :].T
-        edge_ce_ratio = mesh.ce_ratios[edge_ids]
-        edge_length = mesh.edge_lengths[edge_ids]
-        zero = numpy.zeros((2, len(edge_ids)))
+    def eval(self, u, mesh, cell_ids):
+        node_edge_face_cells = mesh.idx_hierarchy[..., cell_ids]
+        X = mesh.node_coords[node_edge_face_cells]
+        x0 = X[..., 0]
+        x1 = X[..., 1]
+        edge_ce_ratio = mesh.get_ce_ratios()[..., cell_ids]
+        edge_length = numpy.sqrt(mesh.ei_dot_ei[..., cell_ids])
+        zero = numpy.zeros(node_edge_face_cells.shape)
         return numpy.array(self.val(
-            u[edge_nodes[:, 0]], u[edge_nodes[:, 1]],
+            u[node_edge_face_cells[0]], u[node_edge_face_cells[1]],
             x0, x1, edge_ce_ratio, edge_length
             )) + zero
 
@@ -32,27 +33,27 @@ class EdgeKernel(object):
 class VertexKernel(object):
     def __init__(self, val):
         self.val = val
-        self.subdomains = ['everywhere']
+        self.subdomains = [None]
         return
 
     def eval(self, u, mesh, vertex_ids):
-        control_volumes = mesh.control_volumes[vertex_ids]
+        control_volumes = mesh.get_control_volumes()[vertex_ids]
         X = mesh.node_coords[vertex_ids].T
-        zero = numpy.zeros(len(vertex_ids))
+        zero = numpy.zeros(len(control_volumes))
         return self.val(u, control_volumes, X) + zero
 
 
-class BoundaryKernel(object):
-    def __init__(self, val):
+class FaceKernel(object):
+    def __init__(self, val, subdomain):
         self.val = val
-        self.subdomains = ['everywhere']
+        self.subdomain = subdomain
         return
 
-    def eval(self, u, mesh, vertex_ids):
-        surface_areas = mesh.surface_areas[vertex_ids]
-        X = mesh.node_coords[vertex_ids].T
-        zero = numpy.zeros(len(vertex_ids))
-        return self.val(u, surface_areas, X) + zero
+    def eval(self, u, mesh, cell_face_nodes):
+        face_areas = mesh.get_face_areas(cell_face_nodes)
+        X = mesh.node_coords[cell_face_nodes].T
+        zero = numpy.zeros(len(cell_face_nodes))
+        return self.val(u, face_areas, X) + zero
 
 
 class DirichletKernel(object):
@@ -61,10 +62,10 @@ class DirichletKernel(object):
         self.subdomain = subdomain
         return
 
-    def eval(self, u, mesh, vertex_ids):
-        assert len(u) == len(vertex_ids)
-        X = mesh.node_coords[vertex_ids].T
-        zero = numpy.zeros(len(vertex_ids))
+    def eval(self, u, mesh, vertex_mask):
+        assert len(u) == sum(vertex_mask)
+        X = mesh.node_coords[vertex_mask].T
+        zero = numpy.zeros(sum(vertex_mask))
         return self.val(u, X) + zero
 
 
@@ -77,14 +78,14 @@ def discretize(obj, mesh):
 
     edge_kernels = set()
     vertex_kernels = set()
-    boundary_kernels = set()
+    face_kernels = set()
     edge_matrix_kernels = set()
     # vertex_matrix_kernels = set()
     # boundary_matrix_kernels = set()
 
     jacobian_edge_kernels = set()
     jacobian_vertex_kernels = set()
-    jacobian_boundary_kernels = set()
+    jacobian_face_kernels = set()
 
     for kernel in res.kernels:
         if isinstance(kernel, fvm_matrix.EdgeMatrixKernel):
@@ -151,7 +152,7 @@ def discretize(obj, mesh):
                 )
             jacobian_vertex_kernels.add(VertexKernel(val_lin))
 
-        elif isinstance(integral.measure, form_language.BoundarySurface):
+        elif isinstance(integral.measure, form_language.CellSurface):
             x = sympy.DeferredVector('x')
             fx = integral.integrand(x)
 
@@ -161,19 +162,19 @@ def discretize(obj, mesh):
                 expr = fx.subs(u(x), uk0)
             except AttributeError:  # 'float' object has no
                 expr = fx
-            surface_area = sympy.Symbol('surface_area')
-            expr *= surface_area
+            face_area = sympy.Symbol('face_area')
+            expr *= face_area
 
-            val = sympy.lambdify((uk0, surface_area, x), expr, modules=a2a)
+            val = sympy.lambdify((uk0, face_area, x), expr, modules=a2a)
 
-            boundary_kernels.add(BoundaryKernel(val))
+            face_kernels.add(FaceKernel(val))
 
             # Linearization
             expr_lin = sympy.diff(expr, uk0)
             val_lin = sympy.lambdify(
-                (uk0, surface_area, x), expr_lin, modules=a2a
+                (uk0, face_area, x), expr_lin, modules=a2a
                 )
-            jacobian_boundary_kernels.add(BoundaryKernel(val_lin))
+            jacobian_face_kernels.add(FaceKernel(val_lin))
 
         else:
             raise RuntimeError(
@@ -206,7 +207,7 @@ def discretize(obj, mesh):
 
     residual = fvm_problem.FvmProblem(
             mesh,
-            edge_kernels, vertex_kernels, boundary_kernels, dirichlet_kernels,
+            edge_kernels, vertex_kernels, face_kernels, dirichlet_kernels,
             edge_matrix_kernels, [], []
             )
 
@@ -214,7 +215,7 @@ def discretize(obj, mesh):
             mesh,
             jacobian_edge_kernels,
             jacobian_vertex_kernels,
-            jacobian_boundary_kernels,
+            jacobian_face_kernels,
             jacobian_dirichlet_kernels
             )
 

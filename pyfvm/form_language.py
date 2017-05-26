@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 #
+import numpy
 import sympy
 
 
@@ -21,7 +22,10 @@ class Subdomain(object):
 
 
 class Boundary(Subdomain):
-    pass
+    is_boundary_only = True
+
+    def is_inside(self, x):
+        return numpy.ones(x.shape[1], dtype=bool)
 
 
 class Callable(object):
@@ -105,19 +109,22 @@ class Measure(object):
 class ControlVolume(Measure):
     pass
 
+
 dV = ControlVolume()
 
 
 class ControlVolumeSurface(Measure):
     pass
 
+
 dS = ControlVolumeSurface()
 
 
-class BoundarySurface(Measure):
+class CellSurface(Measure):
     pass
 
-dGamma = BoundarySurface()
+
+dGamma = CellSurface()
 
 
 def integrate(integrand, measure, subdomains=None):
@@ -134,7 +141,7 @@ def integrate(integrand, measure, subdomains=None):
     assert(
         isinstance(measure, ControlVolumeSurface) or
         isinstance(measure, ControlVolume) or
-        isinstance(measure, BoundarySurface)
+        isinstance(measure, CellSurface)
         )
 
     return KernelList([Integral(integrand, measure, subdomains)])
@@ -152,12 +159,9 @@ class EdgeKernel(object):
     pass
 
 
-class dot(sympy.Function):
-    pass
-
-
 class n_dot_grad(sympy.Function):
     pass
 
-n = sympy.MatrixSymbol('n', 3, 1)
-neg_n = sympy.MatrixSymbol('neg_n', 3, 1)
+
+class n_dot(sympy.Function):
+    pass
