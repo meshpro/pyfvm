@@ -44,7 +44,7 @@ def solve(verbose=False):
         solver,
         exact_sol,
         helpers.get_circle_mesh,
-        range(7),
+        range(4),
         verbose=verbose
         )
 
