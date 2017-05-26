@@ -9,3 +9,4 @@ dist/
 *.e
 *.msh
 .cache/
+LloydInit.pos
