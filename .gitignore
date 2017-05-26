@@ -10,3 +10,4 @@ dist/
 *.msh
 .cache/
 LloydInit.pos
+PyFVM.egg-info/
