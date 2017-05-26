@@ -2,15 +2,15 @@
 import pyfvm
 from pyfvm.form_language import integrate, n_dot_grad, n_dot, dS, dV, Boundary
 import meshzoo
+import numpy
 from scipy.sparse import linalg
-import sympy
 import voropy
 
 
 def test():
     class DC(object):
         def apply(self, u):
-            a = sympy.Matrix([2, 1, 0])
+            a = numpy.array([2, 1, 0])
             return (
                 integrate(lambda x: -n_dot_grad(u(x)) + n_dot(a) * u(x), dS)
                 - integrate(lambda x: 1.0, dV)
