@@ -36,6 +36,7 @@ setup(
     platforms='any',
     install_requires=[
         'sphinxcontrib-bibtex',
+        'krypy',
         'meshzoo',
         'numpy',
         'pyamg',

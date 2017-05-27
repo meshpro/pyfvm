@@ -26,7 +26,7 @@ jobs:
       # The actual test
       # OMPI doesn't work in chroot by default, cf.
       # <https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=494046>
-      - run: OMPI_MCA_plm_rsh_agent=/bin/false pytest --cov pyfvm
+      - run: cd tests && OMPI_MCA_plm_rsh_agent=/bin/false pytest ../examples . --cov pyfvm
       # submit to codecov
       - run: apt-get install -y curl
       - run: bash <(curl -s https://codecov.io/bash)
