@@ -13,10 +13,6 @@ class Expression(sympy.Function):
     # degree = sympy.oo
 
 
-class ScalarParameter(sympy.Symbol):
-    pass
-
-
 class Subdomain(object):
     pass
 
@@ -26,16 +22,6 @@ class Boundary(Subdomain):
 
     def is_inside(self, x):
         return numpy.ones(x.shape[1], dtype=bool)
-
-
-class Callable(object):
-    def __init__(self, *args):
-        self.args = args
-        return
-
-
-class FunctionParameter(sympy.Function):
-    pass
 
 
 class KernelList(object):
