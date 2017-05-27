@@ -42,8 +42,7 @@ class KernelList(object):
         return self
 
     def __sub__(self, other):
-        if other.kernels:
-            raise NotImplementedError('Cannot negate kernels yet.')
+        assert not other.kernels  # not implemented yet
         # flip the sign on the integrand of all 'other' kernels
         new_integrals = [Integral(
                 lambda x: -integral.integrand(x),
@@ -57,8 +56,7 @@ class KernelList(object):
         return self
 
     def __neg__(self):
-        if self.kernels:
-            raise NotImplementedError('Cannot negate kernels yet.')
+        assert not self.kernels  # not implemented yet
         # flip the sign on the integrand of all 'self' kernels
         new_integrals = [Integral(
                 lambda x: -integral.integrand(x),
@@ -69,9 +67,8 @@ class KernelList(object):
         return self
 
     def __mul__(self, other):
-        if self.kernels:
-            raise NotImplementedError('Cannot multiply kernels yet.')
-        assert(isinstance(other, float) or isinstance(other, int))
+        assert not self.kernels  # not implemented yet
+        assert isinstance(other, float) or isinstance(other, int)
         # flip the sign on the integrand of all 'self' kernels
         new_integrals = [Integral(
                 lambda x: other * integral.integrand(x),
