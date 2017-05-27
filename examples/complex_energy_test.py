@@ -9,7 +9,7 @@ import voropy
 
 def test():
     class EnergyEdgeKernel(object):
-        def __init__(self, linear, affine):
+        def __init__(self):
             self.subdomains = [None]
             return
 
@@ -25,7 +25,7 @@ def test():
     mesh = voropy.mesh_tri.MeshTri(vertices, cells)
 
     matrix = pyfvm.get_fvm_matrix(mesh, [EnergyEdgeKernel()], [], [], [])
-    rhs = mesh.control_volumes.copy()
+    rhs = mesh.get_control_volumes().copy()
 
     sa = pyamg.smoothed_aggregation_solver(matrix, smooth='energy')
     u = sa.solve(rhs, tol=1e-10)
