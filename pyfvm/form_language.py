@@ -13,10 +13,6 @@ class Expression(sympy.Function):
     # degree = sympy.oo
 
 
-class ScalarParameter(sympy.Symbol):
-    pass
-
-
 class Subdomain(object):
     pass
 
@@ -26,16 +22,6 @@ class Boundary(Subdomain):
 
     def is_inside(self, x):
         return numpy.ones(x.shape[1], dtype=bool)
-
-
-class Callable(object):
-    def __init__(self, *args):
-        self.args = args
-        return
-
-
-class FunctionParameter(sympy.Function):
-    pass
 
 
 class KernelList(object):
@@ -56,8 +42,7 @@ class KernelList(object):
         return self
 
     def __sub__(self, other):
-        if other.kernels:
-            raise NotImplementedError('Cannot negate kernels yet.')
+        assert not other.kernels  # not implemented yet
         # flip the sign on the integrand of all 'other' kernels
         new_integrals = [Integral(
                 lambda x: -integral.integrand(x),
@@ -71,8 +56,7 @@ class KernelList(object):
         return self
 
     def __neg__(self):
-        if self.kernels:
-            raise NotImplementedError('Cannot negate kernels yet.')
+        assert not self.kernels  # not implemented yet
         # flip the sign on the integrand of all 'self' kernels
         new_integrals = [Integral(
                 lambda x: -integral.integrand(x),
@@ -83,9 +67,8 @@ class KernelList(object):
         return self
 
     def __mul__(self, other):
-        if self.kernels:
-            raise NotImplementedError('Cannot multiply kernels yet.')
-        assert(isinstance(other, float) or isinstance(other, int))
+        assert not self.kernels  # not implemented yet
+        assert isinstance(other, float) or isinstance(other, int)
         # flip the sign on the integrand of all 'self' kernels
         new_integrals = [Integral(
                 lambda x: other * integral.integrand(x),

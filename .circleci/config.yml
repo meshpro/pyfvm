@@ -24,10 +24,9 @@ jobs:
       - checkout
       - run: LANG=C.UTF-8 pip3 install .
       # The actual test
-      - run: cd ~/pyfvm/examples/ && pytest
       # OMPI doesn't work in chroot by default, cf.
       # <https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=494046>
-      - run: cd ~/pyfvm/tests/ && OMPI_MCA_plm_rsh_agent=/bin/false pytest --cov pyfvm
+      - run: OMPI_MCA_plm_rsh_agent=/bin/false pytest --cov pyfvm
       # submit to codecov
       - run: apt-get install -y curl
       - run: bash <(curl -s https://codecov.io/bash)

@@ -88,11 +88,9 @@ def discretize(obj, mesh):
     jacobian_face_kernels = set()
 
     for kernel in res.kernels:
-        if isinstance(kernel, fvm_matrix.EdgeMatrixKernel):
-            edge_matrix_kernels.add(kernel)
-            jacobian_edge_kernels.add(kernel)
-        else:
-            raise ValueError('Unknown kernel.')
+        assert isinstance(kernel, fvm_matrix.EdgeMatrixKernel)
+        edge_matrix_kernels.add(kernel)
+        jacobian_edge_kernels.add(kernel)
 
     for integral in res.integrals:
         if isinstance(integral.measure, form_language.ControlVolumeSurface):
@@ -152,7 +150,8 @@ def discretize(obj, mesh):
                 )
             jacobian_vertex_kernels.add(VertexKernel(val_lin))
 
-        elif isinstance(integral.measure, form_language.CellSurface):
+        else:
+            assert isinstance(integral.measure, form_language.CellSurface)
             x = sympy.DeferredVector('x')
             fx = integral.integrand(x)
 
@@ -175,11 +174,6 @@ def discretize(obj, mesh):
                 (uk0, face_area, x), expr_lin, modules=a2a
                 )
             jacobian_face_kernels.add(FaceKernel(val_lin))
-
-        else:
-            raise RuntimeError(
-                    'Illegal measure type \'%s\'.' % integral.measure
-                    )
 
     dirichlet_kernels = set()
     jacobian_dirichlet_kernels = set()

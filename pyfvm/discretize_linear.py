@@ -225,14 +225,6 @@ class DiscretizeEdgeIntegral(object):
 
         return out, index_vars
 
-    def generic_visit(self, node):
-        raise RuntimeError(
-            'Should never be called. __name__:', type(node).__name__
-            )
-
-    def visit_Load(self, node):
-        return
-
     def visit_Call(self, node):
         '''Handles calls for operators A(u) and pointwise functions sin(u).
         '''
@@ -352,7 +344,8 @@ def discretize_linear(obj, mesh):
 
             vertex_kernels.add(VertexLinearKernel(mesh, l_eval, a_eval))
 
-        elif isinstance(integral.measure, form_language.CellSurface):
+        else:
+            assert isinstance(integral.measure, form_language.CellSurface)
             x = sympy.DeferredVector('x')
             fx = integral.integrand(x)
 
@@ -374,11 +367,6 @@ def discretize_linear(obj, mesh):
                         mesh, l_eval, a_eval,
                         [form_language.Boundary()]
                         )
-                    )
-
-        else:
-            raise RuntimeError(
-                    'Illegal measure type \'%s\'.' % integral.measure
                     )
 
     dirichlet_kernels = set()
