@@ -26,7 +26,6 @@ import meshzoo
 from scipy.sparse import linalg
 import voropy
 
-
 class Poisson(object):
     def apply(self, u):
         return integrate(lambda x: -n_dot_grad(u(x)), dS) \
@@ -71,18 +70,18 @@ from pyfvm.form_language import *
 import meshzoo
 import numpy
 from sympy import exp
+import voropy
 
-
-class Bratu(FvmProblem):
+class Bratu(object):
     def apply(self, u):
         return integrate(lambda x: -n_dot_grad(u(x)), dS) \
              - integrate(lambda x: 2.0 * exp(u(x)), dV)
 
     def dirichlet(self, u):
-        return [(u, 'boundary')]
+        return [(u, Boundary())]
 
 vertices, cells = meshzoo.rectangle(0.0, 2.0, 0.0, 1.0, 101, 51)
-mesh = pyfvm.mesh_tri.MeshTri(vertices, cells)
+mesh = voropy.mesh_tri.MeshTri(vertices, cells)
 
 f, jacobian = pyfvm.discretize(Bratu(), mesh)
 
@@ -102,24 +101,12 @@ u = scipy.optimize.newton_krylov(f.eval, u0)
 
 ### Installation
 
-#### Python Package Index
-
 PyFVM is [available from the Python Package
 Index](https://pypi.python.org/pypi/pyfvm/), so simply type
 ```
 pip install -U pyfvm
 ```
 to install or upgrade.
-
-#### Manual installation
-
-Download PyFVM from
-[the Python Package Index](https://pypi.python.org/pypi/pyfvm/).
-Place PyFVM in a directory where Python can find it (e.g.,
-`$PYTHONPATH`).  You can install it system-wide with
-```
-python setup.py install
-```
 
 ### Testing
 
