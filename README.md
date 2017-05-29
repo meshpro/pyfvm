@@ -20,28 +20,29 @@ construct FVM systems.
 
 PyFVM works by specifying the residuals, so for solving Poisson's equation with
 Dirichlet boundary conditions, simply do
-```python
+```python,test
 import pyfvm
 from pyfvm.form_language import *
 import meshzoo
 from scipy.sparse import linalg
+import voropy
 
 
-class Poisson(FvmProblem):
+class Poisson(object):
     def apply(self, u):
         return integrate(lambda x: -n_dot_grad(u(x)), dS) \
              - integrate(lambda x: 1.0, dV)
 
     def dirichlet(self, u):
-        return [(lambda x: u(x) - 0.0, 'boundary')]
+        return [(lambda x: u(x) - 0.0, Boundary())]
 
 # Create mesh using meshzoo
-vertices, cells = meshzoo.rectangle.create_mesh(0.0, 2.0, 0.0, 1.0, 401, 201)
-mesh = pyfvm.mesh_tri.MeshTri(vertices, cells)
+vertices, cells = meshzoo.rectangle(0.0, 2.0, 0.0, 1.0, 401, 201)
+mesh = voropy.mesh_tri.MeshTri(vertices, cells)
 
-linear_system = pyfvm.discretize_linear(Poisson(), mesh)
+matrix, rhs = pyfvm.discretize_linear(Poisson(), mesh)
 
-u = linalg.spsolve(linear_system.matrix, linear_system.rhs)
+u = linalg.spsolve(matrix, rhs)
 
 mesh.write('out.vtu', point_data={'u': u})
 ```
@@ -65,7 +66,7 @@ More examples are contained in the [examples directory](examples/).
 #### Nonlinear equation systems
 Nonlinear systems are treated almost equally; only the discretization and
 obviously the solver call is different. For Bratu's problem:
-```python
+```python,test
 import pyfvm
 from pyfvm.form_language import *
 import meshzoo

@@ -4,15 +4,6 @@ import numpy
 import sympy
 
 
-class FvmOperator(sympy.Function):
-    pass
-
-
-class Expression(sympy.Function):
-    pass
-    # degree = sympy.oo
-
-
 class Subdomain(object):
     pass
 
