@@ -23,7 +23,7 @@ jobs:
       - run: pip3 install -U pytest pytest-cov pyamg code_extract
       - checkout
       - run: LANG=C.UTF-8 pip3 install .
-      - run: code_extract README.md tests/readme_test.py --filter python,test
+      - run: code_extract README.md tests/readme_test --filter python,test
       # The actual test
       # OMPI doesn't work in chroot by default, cf.
       # <https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=494046>

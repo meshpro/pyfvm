@@ -81,7 +81,7 @@ class Bratu(FvmProblem):
     def dirichlet(self, u):
         return [(u, 'boundary')]
 
-vertices, cells = meshzoo.rectangle.create_mesh(0.0, 2.0, 0.0, 1.0, 101, 51)
+vertices, cells = meshzoo.rectangle(0.0, 2.0, 0.0, 1.0, 101, 51)
 mesh = pyfvm.mesh_tri.MeshTri(vertices, cells)
 
 f, jacobian = pyfvm.discretize(Bratu(), mesh)
