@@ -3,7 +3,7 @@ from numpy import pi
 import pyamg
 import pyfvm
 from pyfvm.form_language import (
-        integrate, Subdomain, FvmProblem, dS, dV, n_dot_grad
+        integrate, Subdomain, dS, dV, n_dot_grad
         )
 from sympy import sin
 import voropy
@@ -18,7 +18,7 @@ def test():
         def is_inside(self, x): return x[1] >= 0.5
         is_boundary_only = True
 
-    class Poisson(FvmProblem):
+    class Poisson(object):
         def apply(self, u):
             return integrate(lambda x: -n_dot_grad(u(x)), dS) \
                  - integrate(lambda x: 50 * sin(2*pi*x[0]), dV)

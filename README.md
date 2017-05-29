@@ -2,7 +2,6 @@
 
 [![CircleCI](https://img.shields.io/circleci/project/github/nschloe/pyfvm.svg)](https://circleci.com/gh/nschloe/pyfvm)
 [![codecov](https://codecov.io/gh/nschloe/pyfvm/branch/master/graph/badge.svg)](https://codecov.io/gh/nschloe/pyfvm)
-[![Code Health](https://landscape.io/github/nschloe/pyfvm/master/landscape.png)](https://landscape.io/github/nschloe/pyfvm/master)
 [![PyPi Version](https://img.shields.io/pypi/v/pyfvm.svg)](https://pypi.python.org/pypi/pyfvm)
 [![GitHub stars](https://img.shields.io/github/stars/nschloe/pyfvm.svg?style=social&label=Star&maxAge=2592000)](https://github.com/nschloe/pyfvm)
 
@@ -20,28 +19,28 @@ construct FVM systems.
 
 PyFVM works by specifying the residuals, so for solving Poisson's equation with
 Dirichlet boundary conditions, simply do
-```python
+```python,test
 import pyfvm
 from pyfvm.form_language import *
 import meshzoo
 from scipy.sparse import linalg
+import voropy
 
-
-class Poisson(FvmProblem):
+class Poisson(object):
     def apply(self, u):
         return integrate(lambda x: -n_dot_grad(u(x)), dS) \
              - integrate(lambda x: 1.0, dV)
 
     def dirichlet(self, u):
-        return [(lambda x: u(x) - 0.0, 'boundary')]
+        return [(lambda x: u(x) - 0.0, Boundary())]
 
 # Create mesh using meshzoo
-vertices, cells = meshzoo.rectangle.create_mesh(0.0, 2.0, 0.0, 1.0, 401, 201)
-mesh = pyfvm.mesh_tri.MeshTri(vertices, cells)
+vertices, cells = meshzoo.rectangle(0.0, 2.0, 0.0, 1.0, 401, 201)
+mesh = voropy.mesh_tri.MeshTri(vertices, cells)
 
-linear_system = pyfvm.discretize_linear(Poisson(), mesh)
+matrix, rhs = pyfvm.discretize_linear(Poisson(), mesh)
 
-u = linalg.spsolve(linear_system.matrix, linear_system.rhs)
+u = linalg.spsolve(matrix, rhs)
 
 mesh.write('out.vtu', point_data={'u': u})
 ```
@@ -65,29 +64,34 @@ More examples are contained in the [examples directory](examples/).
 #### Nonlinear equation systems
 Nonlinear systems are treated almost equally; only the discretization and
 obviously the solver call is different. For Bratu's problem:
-```python
+```python,test
 import pyfvm
 from pyfvm.form_language import *
 import meshzoo
 import numpy
 from sympy import exp
+import voropy
 
-
-class Bratu(FvmProblem):
+class Bratu(object):
     def apply(self, u):
         return integrate(lambda x: -n_dot_grad(u(x)), dS) \
              - integrate(lambda x: 2.0 * exp(u(x)), dV)
 
     def dirichlet(self, u):
-        return [(u, 'boundary')]
+        return [(u, Boundary())]
 
-vertices, cells = meshzoo.rectangle.create_mesh(0.0, 2.0, 0.0, 1.0, 101, 51)
-mesh = pyfvm.mesh_tri.MeshTri(vertices, cells)
+vertices, cells = meshzoo.rectangle(0.0, 2.0, 0.0, 1.0, 101, 51)
+mesh = voropy.mesh_tri.MeshTri(vertices, cells)
 
 f, jacobian = pyfvm.discretize(Bratu(), mesh)
 
+def jacobian_solver(u0, rhs):
+    from scipy.sparse import linalg
+    jac = jacobian.get_linear_operator(u0)
+    return linalg.spsolve(jac, rhs)
+
 u0 = numpy.zeros(len(vertices))
-u = pyfvm.newton(f.eval, jacobian.get_linear_operator, u0)
+u = pyfvm.newton(f.eval, jacobian_solver, u0)
 
 mesh.write('out.vtu', point_data={'u': u})
 ```
@@ -102,24 +106,12 @@ u = scipy.optimize.newton_krylov(f.eval, u0)
 
 ### Installation
 
-#### Python Package Index
-
 PyFVM is [available from the Python Package
 Index](https://pypi.python.org/pypi/pyfvm/), so simply type
 ```
 pip install -U pyfvm
 ```
 to install or upgrade.
-
-#### Manual installation
-
-Download PyFVM from
-[the Python Package Index](https://pypi.python.org/pypi/pyfvm/).
-Place PyFVM in a directory where Python can find it (e.g.,
-`$PYTHONPATH`).  You can install it system-wide with
-```
-python setup.py install
-```
 
 ### Testing
 
