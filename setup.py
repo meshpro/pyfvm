@@ -33,6 +33,7 @@ setup(
         'krypy',
         'meshzoo',
         'numpy',
+        'pipdate >=0.3.0, <0.4.0',
         'pyamg',
         'pygmsh',
         'scipy',
