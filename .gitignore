@@ -10,3 +10,4 @@ dist/
 .cache/
 LloydInit.pos
 *.egg-info/
+.pytest_cache/
