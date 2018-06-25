@@ -3,7 +3,7 @@
 [![CircleCI](https://img.shields.io/circleci/project/github/nschloe/pyfvm.svg)](https://circleci.com/gh/nschloe/pyfvm)
 [![codecov](https://codecov.io/gh/nschloe/pyfvm/branch/master/graph/badge.svg)](https://codecov.io/gh/nschloe/pyfvm)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
-[![PyPi Version](https://img.shields.io/pypi/v/pyfvm.svg)](https://pypi.python.org/pypi/pyfvm)
+[![PyPi Version](https://img.shields.io/pypi/v/pyfvm.svg)](https://pypi.org/project/pyfvm)
 [![GitHub stars](https://img.shields.io/github/stars/nschloe/pyfvm.svg?logo=github&label=Stars)](https://github.com/nschloe/pyfvm)
 
 Creating finite volume equation systems with ease.
@@ -45,10 +45,10 @@ u = linalg.spsolve(matrix, rhs)
 
 mesh.write('out.vtu', point_data={'u': u})
 ```
-This example uses [meshzoo](https://pypi.python.org/pypi/meshzoo) for creating
+This example uses [meshzoo](https://pypi.org/project/meshzoo) for creating
 a simple mesh, but anything else that provides vertices and cells works as
 well. For example, reading from a wide variety of mesh files is supported
-(via [meshio](https://pypi.python.org/pypi/meshio)):
+(via [meshio](https://pypi.org/project/meshio)):
 ```python
 mesh, _, _ = pyfvm.reader.read('pacman.e')
 ```
@@ -108,7 +108,7 @@ u = scipy.optimize.newton_krylov(f.eval, u0)
 ### Installation
 
 pyfvm is [available from the Python Package
-Index](https://pypi.python.org/pypi/pyfvm/), so simply type
+Index](https://pypi.org/project/pyfvm/), so simply type
 ```
 pip install -U pyfvm
 ```
