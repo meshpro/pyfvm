@@ -126,7 +126,7 @@ def get_ball_mesh(k):
     import pygmsh
 
     h = 0.5 ** (k + 1)
-    geom = pygmsh.Geometry()
+    geom = pygmsh.built_in.Geometry()
     geom.add_ball([0.0, 0.0, 0.0], 1.0, h)
     points, cells, _, _, _ = pygmsh.generate_mesh(geom, verbose=False)
     cells = cells["tetra"]
@@ -155,7 +155,7 @@ def get_circle_mesh(k):
     import pygmsh
 
     h = 0.5 ** k
-    geom = pygmsh.Geometry()
+    geom = pygmsh.built_in.Geometry()
     geom.add_circle([0.0, 0.0, 0.0], 1.0, lcar=h)
     points, cells, _, _, _ = pygmsh.generate_mesh(geom, verbose=False)
     cells = cells["triangle"]
