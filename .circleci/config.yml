@@ -7,10 +7,10 @@ jobs:
       - image: ubuntu:18.04
     steps:
       - run: apt-get update
-      - run: apt-get -y install gmsh
+      - run: apt-get install -y git python3-pip gmsh
       - run: pip3 install -U pytest pytest-cov excode black flake8
       - checkout
-      - run: LANG=C.UTF-8 pip3 install .
+      - run: pip3 install .
       - run: excode README.md tests/readme_test.py --filter python,test
       # format and lint
       - run: LC_ALL=C.UTF-8 black --check setup.py quadpy/ test/*.py
