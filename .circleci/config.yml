@@ -2,28 +2,19 @@ version: 2
 
 jobs:
   build:
-    working_directory: ~/pyfvm/
+    working_directory: ~/work/
     docker:
-      - image: ubuntu:17.04
+      - image: ubuntu:18.04
     steps:
       - run: apt-get update
-      - run: apt-get install -y software-properties-common
-      # For python3-vtk7
-      - run: LANG=C.UTF-8 apt-add-repository -y ppa:nschloe/vtk7-nightly
-      # For various sympy bugs, e.g., <https://github.com/sympy/sympy/issues/12132>:
-      - run: LANG=C.UTF-8 apt-add-repository -y ppa:nschloe/sympy-nightly
-      - run: apt-get update
-      - run: apt-get -y install python3-matplotlib
-      - run: apt-get -y install python3-numpy
-      - run: apt-get -y install python3-scipy
-      - run: apt-get -y install python3-vtk7
-      - run: apt-get -y install python3-sympy  # takes forever b/c of texlive
-      - run: apt-get -y install python3-pip
       - run: apt-get -y install gmsh
-      - run: pip3 install -U pytest pytest-cov pyamg code_extract
+      - run: pip3 install -U pytest pytest-cov excode black flake8
       - checkout
       - run: LANG=C.UTF-8 pip3 install .
-      - run: code_extract README.md tests/readme_test.py --filter python,test
+      - run: excode README.md tests/readme_test.py --filter python,test
+      # format and lint
+      - run: LC_ALL=C.UTF-8 black --check setup.py quadpy/ test/*.py
+      - run: flake8 setup.py quadpy/ test/*.py
       # The actual test
       # OMPI doesn't work in chroot by default, cf.
       # <https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=494046>

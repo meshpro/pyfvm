@@ -12,14 +12,7 @@ with open(os.path.join(base_dir, 'pyfvm', '__about__.py')) as f:
 
 
 def read(fname):
-    try:
-        content = codecs.open(
-            os.path.join(os.path.dirname(__file__), fname),
-            encoding='utf-8'
-            ).read()
-    except Exception:
-        content = ''
-    return content
+    return codecs.open(os.path.join(base_dir, fname), encoding="utf-8").read()
 
 
 setup(
@@ -29,9 +22,9 @@ setup(
     author_email=about['__author_email__'],
     packages=find_packages(),
     description='Finite Volume Discretizations for Python',
-    long_description=read('README.rst'),
+    long_description=read('README.md'),
+    long_description_content_type="text/markdown",
     url='https://github.com/nschloe/pyfvm',
-    download_url='https://github.com/nschloe/pyfvm/releases',
     license=about['__license__'],
     platforms='any',
     install_requires=[
