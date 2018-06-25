@@ -10,9 +10,11 @@ import voropy
 def test():
     class Singular(object):
         def apply(self, u):
-            return integrate(lambda x: - 1.0e-2 * n_dot_grad(u(x)), dS) \
-                   + integrate(u, dV) \
-                   - integrate(lambda x: 1.0, dV)
+            return (
+                integrate(lambda x: -1.0e-2 * n_dot_grad(u(x)), dS)
+                + integrate(u, dV)
+                - integrate(lambda x: 1.0, dV)
+            )
 
         def dirichlet(self, u):
             return [(u, Boundary())]
@@ -24,9 +26,9 @@ def test():
 
     u = linalg.spsolve(matrix, rhs)
 
-    mesh.write('out.vtu', point_data={'u': u})
+    mesh.write("out.vtk", point_data={"u": u})
     return
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     test()
