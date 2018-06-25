@@ -10,7 +10,7 @@ jobs:
       - run: apt-get install -y git python3-pip gmsh
       - run: pip3 install -U pytest pytest-cov excode black flake8
       - checkout
-      - run: pip3 install .
+      - run: LANG=C.UTF-8 pip3 install .
       - run: excode README.md tests/readme_test.py --filter python,test
       # format and lint
       - run: LC_ALL=C.UTF-8 black --check setup.py quadpy/ test/*.py
