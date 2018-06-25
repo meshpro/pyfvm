@@ -3,7 +3,7 @@
 [![CircleCI](https://img.shields.io/circleci/project/github/nschloe/pyfvm.svg)](https://circleci.com/gh/nschloe/pyfvm)
 [![codecov](https://codecov.io/gh/nschloe/pyfvm/branch/master/graph/badge.svg)](https://codecov.io/gh/nschloe/pyfvm)
 [![PyPi Version](https://img.shields.io/pypi/v/pyfvm.svg)](https://pypi.python.org/pypi/pyfvm)
-[![GitHub stars](https://img.shields.io/github/stars/nschloe/pyfvm.svg?style=social&label=Star&maxAge=2592000)](https://github.com/nschloe/pyfvm)
+[![GitHub stars](https://img.shields.io/github/stars/nschloe/pyfvm.svg?logo=github&label=Stars)](https://github.com/nschloe/pyfvm)
 
 Creating finite volume equation systems with ease.
 

@@ -36,7 +36,7 @@ setup(
     platforms='any',
     install_requires=[
         'sphinxcontrib-bibtex',
-        'code_extract',
+        'excode',  # TODO remove?
         'krypy',
         'meshzoo',
         'numpy',

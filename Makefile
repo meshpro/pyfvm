@@ -21,7 +21,6 @@ README.rst: README.md
 upload: setup.py README.rst
 	rm -f dist/*
 	python setup.py bdist_wheel --universal
-	gpg --detach-sign -a dist/*
 	twine upload dist/*
 
 publish: tag upload
