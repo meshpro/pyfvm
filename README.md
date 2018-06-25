@@ -43,7 +43,7 @@ matrix, rhs = pyfvm.discretize_linear(Poisson(), mesh)
 
 u = linalg.spsolve(matrix, rhs)
 
-mesh.write('out.vtu', point_data={'u': u})
+mesh.write('out.vtk', point_data={'u': u})
 ```
 This example uses [meshzoo](https://pypi.org/project/meshzoo) for creating
 a simple mesh, but anything else that provides vertices and cells works as
@@ -94,7 +94,7 @@ def jacobian_solver(u0, rhs):
 u0 = numpy.zeros(len(vertices))
 u = pyfvm.newton(f.eval, jacobian_solver, u0)
 
-mesh.write('out.vtu', point_data={'u': u})
+mesh.write('out.vtk', point_data={'u': u})
 ```
 Note that the Jacobian is computed symbolically from the `Bratu` class.
 
