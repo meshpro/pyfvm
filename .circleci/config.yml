@@ -15,10 +15,10 @@ jobs:
       - run: LC_ALL=C.UTF-8 black --check setup.py pyfvm/ test/*.py
       - run: flake8 setup.py pyfvm/ test/*.py
       # The actual test
+      - run: excode README.md test/readme_test.py --filter python,test
       # OMPI doesn't work in chroot by default, cf.
       # <https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=494046>
-      - run: excode README.md tests/readme_test.py --filter python,test
-      - run: cd tests && OMPI_MCA_plm_rsh_agent=/bin/false pytest ../examples . --cov pyfvm
+      - run: cd test/ && OMPI_MCA_plm_rsh_agent=/bin/false pytest ../examples . --cov pyfvm
       # submit to codecov
       - run: apt-get install -y curl
       - run: bash <(curl -s https://codecov.io/bash)
