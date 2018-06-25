@@ -9,7 +9,7 @@ def newton(f, jacobian_solver, u0, tol=1.0e-10, max_iter=20, verbose=True):
     fu = f(u)
     nrm = numpy.linalg.norm(fu)
     if verbose:
-        print('||F(u)|| = %e' % nrm)
+        print("||F(u)|| = %e" % nrm)
 
     k = 0
     is_converged = False
@@ -23,7 +23,7 @@ def newton(f, jacobian_solver, u0, tol=1.0e-10, max_iter=20, verbose=True):
         nrm = numpy.linalg.norm(fu)
         k += 1
         if verbose:
-            print('||F(u)|| = %e' % nrm)
+            print("||F(u)|| = %e" % nrm)
 
     assert is_converged
 

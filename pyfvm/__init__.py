@@ -8,16 +8,9 @@ from .discretize import *
 from .nonlinear_methods import *
 from .fvm_matrix import *
 
-from pyfvm.__about__ import (
-    __version__,
-    __author__,
-    __author_email__,
-    )
+from pyfvm.__about__ import __version__, __author__, __author_email__
 
-__all__ = [
-    'fvm_problem',
-    'linear_fvm_problem'
-    ]
+__all__ = ["fvm_problem", "linear_fvm_problem"]
 
 try:
     import pipdate

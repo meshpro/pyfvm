@@ -12,44 +12,33 @@ class EdgeMatrixKernel(form_language.KernelList):
         return
 
 
-def get_fvm_matrix(
-            mesh,
-            edge_kernels, vertex_kernels, face_kernels, dirichlets
-            ):
+def get_fvm_matrix(mesh, edge_kernels, vertex_kernels, face_kernels, dirichlets):
 
-        V, I, J = _get_VIJ(
-                mesh,
-                edge_kernels,
-                vertex_kernels,
-                face_kernels
-                )
+    V, I, J = _get_VIJ(mesh, edge_kernels, vertex_kernels, face_kernels)
 
-        # One unknown per vertex
-        n = len(mesh.node_coords)
-        matrix = sparse.coo_matrix((V, (I, J)), shape=(n, n))
-        # Transform to CSR format for efficiency
-        matrix = matrix.tocsr()
+    # One unknown per vertex
+    n = len(mesh.node_coords)
+    matrix = sparse.coo_matrix((V, (I, J)), shape=(n, n))
+    # Transform to CSR format for efficiency
+    matrix = matrix.tocsr()
 
-        # Apply Dirichlet conditions.
-        d = matrix.diagonal()
-        for dirichlet in dirichlets:
-            verts = mesh.get_vertices(dirichlet.subdomain)
-            # Set all Dirichlet rows to 0.
-            for i in verts:
-                matrix.data[matrix.indptr[i]:matrix.indptr[i+1]] = 0.0
+    # Apply Dirichlet conditions.
+    d = matrix.diagonal()
+    for dirichlet in dirichlets:
+        verts = mesh.get_vertices(dirichlet.subdomain)
+        # Set all Dirichlet rows to 0.
+        for i in verts:
+            matrix.data[matrix.indptr[i] : matrix.indptr[i + 1]] = 0.0
 
-            # Set the diagonal and RHS.
-            d[verts] = dirichlet.eval(mesh, verts)
+        # Set the diagonal and RHS.
+        d[verts] = dirichlet.eval(mesh, verts)
 
-        matrix.setdiag(d)
+    matrix.setdiag(d)
 
-        return matrix
+    return matrix
 
 
-def _get_VIJ(
-        mesh,
-        edge_kernels, vertex_kernels, face_kernels
-        ):
+def _get_VIJ(mesh, edge_kernels, vertex_kernels, face_kernels):
     V = []
     I = []
     J = []

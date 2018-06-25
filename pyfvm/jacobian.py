@@ -5,11 +5,7 @@ from scipy import sparse
 
 
 class Jacobian(object):
-    def __init__(
-            self,
-            mesh,
-            edge_kernels, vertex_kernels, face_kernels, dirichlets
-            ):
+    def __init__(self, mesh, edge_kernels, vertex_kernels, face_kernels, dirichlets):
         self.mesh = mesh
         self.edge_kernels = edge_kernels
         self.vertex_kernels = vertex_kernels
@@ -19,10 +15,8 @@ class Jacobian(object):
 
     def get_linear_operator(self, u):
         V, I, J = _get_VIJ(
-                self.mesh,
-                u,
-                self.edge_kernels, self.vertex_kernels, self.face_kernels
-                )
+            self.mesh, u, self.edge_kernels, self.vertex_kernels, self.face_kernels
+        )
 
         # One unknown per vertex
         n = len(self.mesh.node_coords)
@@ -36,22 +30,17 @@ class Jacobian(object):
             vertex_mask = self.mesh.get_vertex_mask(dirichlet.subdomain)
             # Set all Dirichlet rows to 0.
             for i in numpy.where(vertex_mask)[0]:
-                matrix.data[matrix.indptr[i]:matrix.indptr[i+1]] = 0.0
+                matrix.data[matrix.indptr[i] : matrix.indptr[i + 1]] = 0.0
 
             # Set the diagonal.
-            d[vertex_mask] = \
-                dirichlet.eval(u[vertex_mask], self.mesh, vertex_mask)
+            d[vertex_mask] = dirichlet.eval(u[vertex_mask], self.mesh, vertex_mask)
 
         matrix.setdiag(d)
 
         return matrix
 
 
-def _get_VIJ(
-        mesh,
-        u,
-        edge_kernels, vertex_kernels, face_kernels
-        ):
+def _get_VIJ(mesh, u, edge_kernels, vertex_kernels, face_kernels):
     V = []
     I = []
     J = []
