@@ -42,7 +42,7 @@ class Jacobian(object):
 
 def _get_VIJ(mesh, u, edge_kernels, vertex_kernels, face_kernels):
     V = []
-    I = []
+    I_ = []
     J = []
 
     for edge_kernel in edge_kernels:
@@ -55,10 +55,10 @@ def _get_VIJ(mesh, u, edge_kernels, vertex_kernels, face_kernels):
             V.append(v_matrix[1, 0].flatten())
             V.append(v_matrix[1, 1].flatten())
 
-            I.append(mesh.idx_hierarchy[0].flatten())
-            I.append(mesh.idx_hierarchy[0].flatten())
-            I.append(mesh.idx_hierarchy[1].flatten())
-            I.append(mesh.idx_hierarchy[1].flatten())
+            I_.append(mesh.idx_hierarchy[0].flatten())
+            I_.append(mesh.idx_hierarchy[0].flatten())
+            I_.append(mesh.idx_hierarchy[1].flatten())
+            I_.append(mesh.idx_hierarchy[1].flatten())
 
             J.append(mesh.idx_hierarchy[0].flatten())
             J.append(mesh.idx_hierarchy[1].flatten())
@@ -73,7 +73,7 @@ def _get_VIJ(mesh, u, edge_kernels, vertex_kernels, face_kernels):
             if vertex_mask == numpy.s_[:]:
                 verts = numpy.arange(len(vals_matrix))
             V.append(vals_matrix)
-            I.append(verts)
+            I_.append(verts)
             J.append(verts)
 
     for face_kernel in face_kernels:
@@ -82,12 +82,12 @@ def _get_VIJ(mesh, u, edge_kernels, vertex_kernels, face_kernels):
             vals_matrix = face_kernel.eval(u, mesh, face_mask)
             faces = mesh.idx_hierarchy[face_mask]
             V.append(vals_matrix)
-            I.append(faces)
+            I_.append(faces)
             J.append(faces)
 
     # Finally, make V, I, J into 1D-arrays.
     V = numpy.concatenate(V)
-    I = numpy.concatenate(I)
+    I_ = numpy.concatenate(I_)
     J = numpy.concatenate(J)
 
-    return V, I, J
+    return V, I_, J

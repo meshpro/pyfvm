@@ -40,7 +40,7 @@ def get_fvm_matrix(mesh, edge_kernels, vertex_kernels, face_kernels, dirichlets)
 
 def _get_VIJ(mesh, edge_kernels, vertex_kernels, face_kernels):
     V = []
-    I = []
+    I_ = []
     J = []
 
     for edge_kernel in edge_kernels:
@@ -54,24 +54,25 @@ def _get_VIJ(mesh, edge_kernels, vertex_kernels, face_kernels):
             V.append(v_matrix[1, 0].flatten())
             V.append(v_matrix[1, 1].flatten())
 
-            I.append(mesh.idx_hierarchy[0].flatten())
-            I.append(mesh.idx_hierarchy[0].flatten())
-            I.append(mesh.idx_hierarchy[1].flatten())
-            I.append(mesh.idx_hierarchy[1].flatten())
+            I_.append(mesh.idx_hierarchy[0].flatten())
+            I_.append(mesh.idx_hierarchy[0].flatten())
+            I_.append(mesh.idx_hierarchy[1].flatten())
+            I_.append(mesh.idx_hierarchy[1].flatten())
 
             J.append(mesh.idx_hierarchy[0].flatten())
             J.append(mesh.idx_hierarchy[1].flatten())
             J.append(mesh.idx_hierarchy[0].flatten())
             J.append(mesh.idx_hierarchy[1].flatten())
 
-    for vertex_kernel in vertex_kernels:
-        for subdomain in vertex_kernel.subdomains:
-            vertex_mask = mesh.get_vertex_mask(subdomain)
-            vals_matrix = vertex_kernel.eval(mesh, vertex_mask)
+    # TODO
+    # for vertex_kernel in vertex_kernels:
+    #     for subdomain in vertex_kernel.subdomains:
+    #         vertex_mask = mesh.get_vertex_mask(subdomain)
+    #         vals_matrix = vertex_kernel.eval(mesh, vertex_mask)
 
-            V.append(vals_matrix)
-            I.append(verts)
-            J.append(verts)
+    #         V.append(vals_matrix)
+    #         I_.append(verts)
+    #         J.append(verts)
 
     for face_kernel in face_kernels:
         for subdomain in face_kernel.subdomains:
@@ -80,12 +81,12 @@ def _get_VIJ(mesh, edge_kernels, vertex_kernels, face_kernels):
 
             ids = mesh.idx_hierarchy[..., face_mask]
             V.append(vals_matrix)
-            I.append(ids)
+            I_.append(ids)
             J.append(ids)
 
     # Finally, make V, I, J into 1D-arrays.
     V = numpy.concatenate(V)
-    I = numpy.concatenate(I)
+    I_ = numpy.concatenate(I_)
     J = numpy.concatenate(J)
 
-    return V, I, J
+    return V, I_, J

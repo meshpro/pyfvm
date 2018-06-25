@@ -35,7 +35,7 @@ def get_linear_fvm_problem(
 
 def _get_VIJ(mesh, edge_kernels, vertex_kernels, face_kernels):
     V = []
-    I = []
+    I_ = []
     J = []
     n = len(mesh.node_coords)
     # Treating the diagonal explicitly makes tocsr() faster at the cost of a
@@ -57,11 +57,11 @@ def _get_VIJ(mesh, edge_kernels, vertex_kernels, face_kernels):
 
             # offdiagonal entries
             V.append(v_mtx[0][1])
-            I.append(nec[0])
+            I_.append(nec[0])
             J.append(nec[1])
             #
             V.append(v_mtx[1][0])
-            I.append(nec[1])
+            I_.append(nec[1])
             J.append(nec[0])
 
             # Right-hand side.
@@ -110,19 +110,19 @@ def _get_VIJ(mesh, edge_kernels, vertex_kernels, face_kernels):
             ids = mesh.idx_hierarchy[..., face_mask]
 
             V.append(vals_matrix)
-            I.append(ids)
+            I_.append(ids)
             J.append(ids)
 
             numpy.subtract.at(rhs, ids, vals_rhs)
 
     # add diagonal
-    I.append(numpy.arange(n))
+    I_.append(numpy.arange(n))
     J.append(numpy.arange(n))
     V.append(diag)
 
     # Finally, make V, I, J into 1D-arrays.
     V = numpy.concatenate([v.flat for v in V])
-    I = numpy.concatenate([i.flat for i in I])
+    I_ = numpy.concatenate([i.flat for i in I_])
     J = numpy.concatenate([j.flat for j in J])
 
-    return V, I, J, rhs
+    return V, I_, J, rhs
