@@ -1,15 +1,16 @@
-# PyFVM
+# pyfvm
 
 [![CircleCI](https://img.shields.io/circleci/project/github/nschloe/pyfvm.svg)](https://circleci.com/gh/nschloe/pyfvm)
 [![codecov](https://codecov.io/gh/nschloe/pyfvm/branch/master/graph/badge.svg)](https://codecov.io/gh/nschloe/pyfvm)
-[![PyPi Version](https://img.shields.io/pypi/v/pyfvm.svg)](https://pypi.python.org/pypi/pyfvm)
-[![GitHub stars](https://img.shields.io/github/stars/nschloe/pyfvm.svg?style=social&label=Star&maxAge=2592000)](https://github.com/nschloe/pyfvm)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
+[![PyPi Version](https://img.shields.io/pypi/v/pyfvm.svg)](https://pypi.org/project/pyfvm)
+[![GitHub stars](https://img.shields.io/github/stars/nschloe/pyfvm.svg?logo=github&label=Stars)](https://github.com/nschloe/pyfvm)
 
 Creating finite volume equation systems with ease.
 
-PyFVM provides everything that is needed for setting up finite volume equation
+pyfvm provides everything that is needed for setting up finite volume equation
 systems. The user needs to specify the finite volume formulation in a
-configuration file, and PyFVM will create the matrix/right-hand side or the
+configuration file, and pyfvm will create the matrix/right-hand side or the
 nonlinear system for it. This package is for everyone who wants to quickly
 construct FVM systems.
 
@@ -17,7 +18,7 @@ construct FVM systems.
 
 #### Linear equation systems
 
-PyFVM works by specifying the residuals, so for solving Poisson's equation with
+pyfvm works by specifying the residuals, so for solving Poisson's equation with
 Dirichlet boundary conditions, simply do
 ```python,test
 import pyfvm
@@ -42,12 +43,12 @@ matrix, rhs = pyfvm.discretize_linear(Poisson(), mesh)
 
 u = linalg.spsolve(matrix, rhs)
 
-mesh.write('out.vtu', point_data={'u': u})
+mesh.write('out.vtk', point_data={'u': u})
 ```
-This example uses [meshzoo](https://pypi.python.org/pypi/meshzoo) for creating
+This example uses [meshzoo](https://pypi.org/project/meshzoo) for creating
 a simple mesh, but anything else that provides vertices and cells works as
 well. For example, reading from a wide variety of mesh files is supported
-(via [meshio](https://pypi.python.org/pypi/meshio)):
+(via [meshio](https://pypi.org/project/meshio)):
 ```python
 mesh, _, _ = pyfvm.reader.read('pacman.e')
 ```
@@ -93,7 +94,7 @@ def jacobian_solver(u0, rhs):
 u0 = numpy.zeros(len(vertices))
 u = pyfvm.newton(f.eval, jacobian_solver, u0)
 
-mesh.write('out.vtu', point_data={'u': u})
+mesh.write('out.vtk', point_data={'u': u})
 ```
 Note that the Jacobian is computed symbolically from the `Bratu` class.
 
@@ -106,8 +107,8 @@ u = scipy.optimize.newton_krylov(f.eval, u0)
 
 ### Installation
 
-PyFVM is [available from the Python Package
-Index](https://pypi.python.org/pypi/pyfvm/), so simply type
+pyfvm is [available from the Python Package
+Index](https://pypi.org/project/pyfvm/), so simply type
 ```
 pip install -U pyfvm
 ```
@@ -133,4 +134,4 @@ To create a new release
 
 ### License
 
-PyFVM is published under the [MIT license](https://en.wikipedia.org/wiki/MIT_License).
+pyfvm is published under the [MIT license](https://en.wikipedia.org/wiki/MIT_License).

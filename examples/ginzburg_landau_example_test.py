@@ -13,8 +13,9 @@ def test():
     g = 1.0
 
     class Energy(pyfvm.EdgeMatrixKernel):
-        '''Specification of the kinetic energy operator.
-        '''
+        """Specification of the kinetic energy operator.
+        """
+
         def __init__(self):
             super(Energy, self).__init__()
 
@@ -31,17 +32,20 @@ def test():
             edge_ce_ratio = mesh.get_ce_ratios()[..., cell_mask]
 
             # project the magnetic potential on the edge at the midpoint
-            magnetic_potential = \
+            magnetic_potential = (
                 0.5 * numpy.cross(self.magnetic_field, edge_midpoint.T).T
+            )
 
             # The dot product <magnetic_potential, edge>, executed for many
             # points at once; cf. <http://stackoverflow.com/a/26168677/353337>.
-            beta = numpy.einsum('ijk, ijk->ij', magnetic_potential.T, edge.T)
+            beta = numpy.einsum("ijk, ijk->ij", magnetic_potential.T, edge.T)
 
-            return numpy.array([
-                [edge_ce_ratio, -edge_ce_ratio * numpy.exp(1j * beta)],
-                [-edge_ce_ratio * numpy.exp(-1j * beta), edge_ce_ratio]
-                ])
+            return numpy.array(
+                [
+                    [edge_ce_ratio, -edge_ce_ratio * numpy.exp(1j * beta)],
+                    [-edge_ce_ratio * numpy.exp(-1j * beta), edge_ce_ratio],
+                ]
+            )
 
     vertices, cells = meshzoo.rectangle(0.0, 1.0, 0.0, 1.0, 31, 31)
     mesh = voropy.mesh_tri.MeshTri(vertices, cells)
@@ -62,45 +66,47 @@ def test():
 
     def f(psi):
         cv = mesh.get_control_volumes()
-        return keo * psi + cv * psi * (V + g * abs(psi)**2)
+        return keo * psi + cv * psi * (V + g * abs(psi) ** 2)
 
     def jacobian(psi):
         def _apply_jacobian(phi):
             cv = mesh.get_control_volumes()
             s = phi.shape
-            y = keo * phi \
-                + cv.reshape(s) * alpha.reshape(s) * phi \
+            y = (
+                keo * phi
+                + cv.reshape(s) * alpha.reshape(s) * phi
                 + cv.reshape(s) * gPsi0Squared.reshape(s) * phi.conj()
+            )
             return y
 
-        alpha = V + g * 2.0*(psi.real**2 + psi.imag**2)
-        gPsi0Squared = g * psi**2
+        alpha = V + g * 2.0 * (psi.real ** 2 + psi.imag ** 2)
+        gPsi0Squared = g * psi ** 2
 
         num_unknowns = len(mesh.node_coords)
         return krypy.utils.LinearOperator(
-                (num_unknowns, num_unknowns),
-                complex,
-                dot=_apply_jacobian,
-                dot_adj=_apply_jacobian
-                )
+            (num_unknowns, num_unknowns),
+            complex,
+            dot=_apply_jacobian,
+            dot_adj=_apply_jacobian,
+        )
 
     def jacobian_solver(psi0, rhs):
         jac = jacobian(psi0)
         linear_system = LinearSystem(
-                 A=jac,
-                 b=rhs,
-                 self_adjoint=True,
-                 ip_B=lambda a, b: numpy.dot(a.T.conj(), b).real
-                 )
+            A=jac,
+            b=rhs,
+            self_adjoint=True,
+            ip_B=lambda a, b: numpy.dot(a.T.conj(), b).real,
+        )
         out = Gmres(linear_system, maxiter=1000, tol=1.0e-10)
         return out.xk[:, 0]
 
     u0 = numpy.ones(len(vertices), dtype=complex)
     u = pyfvm.newton(f, jacobian_solver, u0)
 
-    mesh.write('out.vtu', point_data={'u': u.view('(2,)float')})
+    mesh.write("out.vtk", point_data={"u": u.view("(2,)float")})
     return
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     test()

@@ -1,7 +1,6 @@
 build/
 doc/_build/
 doc/build/
-README.rst
 pyfvm.egg-info/
 dist/
 *.vtu
@@ -10,4 +9,5 @@ dist/
 *.msh
 .cache/
 LloydInit.pos
-PyFVM.egg-info/
+*.egg-info/
+.pytest_cache/

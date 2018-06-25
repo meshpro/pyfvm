@@ -9,8 +9,8 @@ from sympy.matrices.expressions.matexpr import MatrixExpr, MatrixSymbol
 
 
 def split(expr, variables):
-    '''Split affine, linear, and nonlinear part of expr w.r.t. variables.
-    '''
+    """Split affine, linear, and nonlinear part of expr w.r.t. variables.
+    """
     if isinstance(expr, float):
         return expr, 0, 0
 
@@ -130,8 +130,8 @@ class FaceLinearKernel(object):
         zero = numpy.zeros(ids.shape).T
         return (
             face_parts * (self.coeff(X.T) + zero).T,
-            face_parts * (self.affine(X.T) + zero).T
-            )
+            face_parts * (self.affine(X.T) + zero).T,
+        )
 
 
 class DirichletLinearKernel(object):
@@ -145,16 +145,12 @@ class DirichletLinearKernel(object):
     def eval(self, vertex_mask):
         X = self.mesh.node_coords[vertex_mask].T
         zero = numpy.zeros(sum(vertex_mask))
-        return (
-            self.coeff(X) + zero,
-            self.rhs(X) + zero
-            )
+        return (self.coeff(X) + zero, self.rhs(X) + zero)
 
 
 def _discretize_edge_integral(
-        integrand, x0, x1, edge_length, edge_ce_ratio,
-        index_functions
-        ):
+    integrand, x0, x1, edge_length, edge_ce_ratio, index_functions
+):
     discretizer = DiscretizeEdgeIntegral(x0, x1, edge_length, edge_ce_ratio)
     return discretizer.generate(integrand, index_functions)
 
@@ -188,22 +184,21 @@ class DiscretizeEdgeIntegral(object):
                 return node
 
         assert (
-            isinstance(node, int) or
-            isinstance(node, float) or
-            isinstance(
-                node,
-                sympy.tensor.array.dense_ndim_array.ImmutableDenseNDimArray
-                )
+            isinstance(node, int)
+            or isinstance(node, float)
+            or isinstance(
+                node, sympy.tensor.array.dense_ndim_array.ImmutableDenseNDimArray
             )
+        )
         return node
 
     def generate(self, node, index_functions=None):
-        '''Entrance point to this class.
-        '''
+        """Entrance point to this class.
+        """
         if index_functions is None:
             index_functions = []
 
-        x = sympy.MatrixSymbol('x', 3, 1)
+        x = sympy.MatrixSymbol("x", 3, 1)
         expr = node(x)
 
         out = self.edge_ce_ratio * self.edge_length * self.visit(expr)
@@ -211,8 +206,8 @@ class DiscretizeEdgeIntegral(object):
         index_vars = []
         for f in index_functions:
             # Replace f(x0) by f[k0], f(x1) by f[k1].
-            fk0 = sympy.Symbol('%sk0' % f)
-            fk1 = sympy.Symbol('%sk1' % f)
+            fk0 = sympy.Symbol("%sk0" % f)
+            fk1 = sympy.Symbol("%sk1" % f)
             out = out.subs(f(self.x0), fk0)
             out = out.subs(f(self.x1), fk1)
             # Replace f(x) by 0.5*(f[k0] + f[k1]) (the edge midpoint)
@@ -226,18 +221,18 @@ class DiscretizeEdgeIntegral(object):
         return out, index_vars
 
     def visit_Call(self, node):
-        '''Handles calls for operators A(u) and pointwise functions sin(u).
-        '''
+        """Handles calls for operators A(u) and pointwise functions sin(u).
+        """
         try:
             ident = node.func.__name__
         except AttributeError:
             ident = repr(node)
         # Handle special functions
-        if ident == 'n_dot':
+        if ident == "n_dot":
             assert len(node.args) == 1
             arg0 = self.visit(node.args[0])
             out = self.dot(self.x1 - self.x0, arg0) / self.edge_length
-        elif ident == 'n_dot_grad':
+        elif ident == "n_dot_grad":
             assert len(node.args) == 1
             fx = node.args[0]
             f = fx.func
@@ -252,8 +247,8 @@ class DiscretizeEdgeIntegral(object):
         return out
 
     def visit_ChainOp(self, node, operator):
-        '''Handles binary operations (e.g., +, -, *,...).
-        '''
+        """Handles binary operations (e.g., +, -, *,...).
+        """
         # collect the pointwise code for left and right
         args = []
         for arg in node.args:
@@ -267,7 +262,7 @@ class DiscretizeEdgeIntegral(object):
 
 
 def discretize_linear(obj, mesh):
-    u = sympy.Function('u')
+    u = sympy.Function("u")
     res = obj.apply(u)
 
     # See <http://docs.sympy.org/dev/modules/utilities/lambdify.html>.
@@ -281,10 +276,8 @@ def discretize_linear(obj, mesh):
         if len(out.shape) == 2 and out.shape[1] == 1:
             out = out[:, 0]
         return out
-    mods = [
-        {'ImmutableDenseMatrix': vector2vector},
-        'numpy'
-        ]
+
+    mods = [{"ImmutableDenseMatrix": vector2vector}, "numpy"]
 
     edge_kernels = set()
     vertex_kernels = set()
@@ -292,13 +285,13 @@ def discretize_linear(obj, mesh):
     for integral in res.integrals:
         if isinstance(integral.measure, form_language.ControlVolumeSurface):
             # discretization
-            x0 = sympy.Symbol('x0')
-            x1 = sympy.Symbol('x1')
-            el = sympy.Symbol('edge_length')
-            er = sympy.Symbol('edge_ce_ratio')
+            x0 = sympy.Symbol("x0")
+            x1 = sympy.Symbol("x1")
+            el = sympy.Symbol("edge_length")
+            er = sympy.Symbol("edge_ce_ratio")
             expr, index_vars = _discretize_edge_integral(
-                        integral.integrand, x0, x1, el, er, [u]
-                        )
+                integral.integrand, x0, x1, el, er, [u]
+            )
             expr = sympy.simplify(expr)
 
             uk0 = index_vars[0][0]
@@ -309,9 +302,8 @@ def discretize_linear(obj, mesh):
 
             # Turn edge around
             expr_turned = expr.subs(
-                    {uk0: uk1, uk1: uk0, x0: x1, x1: x0},
-                    simultaneous=True
-                    )
+                {uk0: uk1, uk1: uk0, x0: x1, x1: x0}, simultaneous=True
+            )
             affine1, linear1, nonlinear = split(expr_turned, [uk0, uk1])
             assert nonlinear == 0
 
@@ -324,16 +316,16 @@ def discretize_linear(obj, mesh):
             edge_kernels.add(EdgeLinearKernel(l_eval, a_eval))
 
         elif isinstance(integral.measure, form_language.ControlVolume):
-            x = sympy.DeferredVector('x')
+            x = sympy.DeferredVector("x")
             fx = integral.integrand(x)
 
             # discretization
-            uk0 = sympy.Symbol('uk0')
+            uk0 = sympy.Symbol("uk0")
             try:
                 expr = fx.subs(u(x), uk0)
             except AttributeError:  # 'float' object has no
                 expr = fx
-            control_volume = sympy.Symbol('control_volume')
+            control_volume = sympy.Symbol("control_volume")
             expr *= control_volume
 
             affine, linear, nonlinear = split(expr, uk0)
@@ -346,11 +338,11 @@ def discretize_linear(obj, mesh):
 
         else:
             assert isinstance(integral.measure, form_language.CellSurface)
-            x = sympy.DeferredVector('x')
+            x = sympy.DeferredVector("x")
             fx = integral.integrand(x)
 
             # discretization
-            uk = sympy.Symbol('uk')
+            uk = sympy.Symbol("uk")
             try:
                 expr = fx.subs(u(x), uk)
             except AttributeError:  # 'float' object has no subs()
@@ -363,19 +355,16 @@ def discretize_linear(obj, mesh):
             a_eval = sympy.lambdify((x,), affine, modules=mods)
 
             face_kernels.add(
-                    FaceLinearKernel(
-                        mesh, l_eval, a_eval,
-                        [form_language.Boundary()]
-                        )
-                    )
+                FaceLinearKernel(mesh, l_eval, a_eval, [form_language.Boundary()])
+            )
 
     dirichlet_kernels = set()
-    dirichlet = getattr(obj, 'dirichlet', None)
+    dirichlet = getattr(obj, "dirichlet", None)
     if callable(dirichlet):
-        u = sympy.Function('u')
-        x = sympy.DeferredVector('x')
+        u = sympy.Function("u")
+        x = sympy.DeferredVector("x")
         for f, subdomain in dirichlet(u):
-            uk0 = sympy.Symbol('uk0')
+            uk0 = sympy.Symbol("uk0")
             try:
                 expr = f(x).subs(u(x), uk0)
             except AttributeError:  # 'float' object has no
@@ -389,9 +378,8 @@ def discretize_linear(obj, mesh):
 
             dirichlet_kernels.add(
                 DirichletLinearKernel(mesh, coeff_eval, rhs_eval, subdomain)
-                )
+            )
 
     return get_linear_fvm_problem(
-            mesh,
-            edge_kernels, vertex_kernels, face_kernels, dirichlet_kernels
-            )
+        mesh, edge_kernels, vertex_kernels, face_kernels, dirichlet_kernels
+    )

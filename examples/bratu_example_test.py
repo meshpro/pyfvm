@@ -10,8 +10,9 @@ import voropy
 def test():
     class Bratu(object):
         def apply(self, u):
-            return integrate(lambda x: -n_dot_grad(u(x)), dS) \
-                 - integrate(lambda x: 2.0 * exp(u(x)), dV)
+            return integrate(lambda x: -n_dot_grad(u(x)), dS) - integrate(
+                lambda x: 2.0 * exp(u(x)), dV
+            )
 
         def dirichlet(self, u):
             return [(u, Boundary())]
@@ -23,6 +24,7 @@ def test():
 
     def jacobian_solver(u0, rhs):
         from scipy.sparse import linalg
+
         jac = jacobian.get_linear_operator(u0)
         return linalg.spsolve(jac, rhs)
 
@@ -31,9 +33,9 @@ def test():
     # import scipy.optimize
     # u = scipy.optimize.newton_krylov(f.eval, u0)
 
-    mesh.write('out.vtu', point_data={'u': u})
+    mesh.write("out.vtk", point_data={"u": u})
     return
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     test()

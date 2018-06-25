@@ -5,46 +5,37 @@ from scipy import sparse
 
 
 def get_linear_fvm_problem(
-        mesh,
-        edge_kernels, vertex_kernels, face_kernels, dirichlets
-        ):
-        V, I, J, rhs = _get_VIJ(
-                mesh,
-                edge_kernels,
-                vertex_kernels,
-                face_kernels
-                )
+    mesh, edge_kernels, vertex_kernels, face_kernels, dirichlets
+):
+    V, I, J, rhs = _get_VIJ(mesh, edge_kernels, vertex_kernels, face_kernels)
 
-        # One unknown per vertex
-        n = len(mesh.node_coords)
-        # Transform to CSR format for efficiency
-        matrix = sparse.coo_matrix((V, (I, J)), shape=(n, n))
-        matrix = matrix.tocsr()
+    # One unknown per vertex
+    n = len(mesh.node_coords)
+    # Transform to CSR format for efficiency
+    matrix = sparse.coo_matrix((V, (I, J)), shape=(n, n))
+    matrix = matrix.tocsr()
 
-        # Apply Dirichlet conditions.
-        d = matrix.diagonal()
-        for dirichlet in dirichlets:
-            vertex_mask = mesh.get_vertex_mask(dirichlet.subdomain)
-            # Set all Dirichlet rows to 0.
-            for i in numpy.where(vertex_mask)[0]:
-                matrix.data[matrix.indptr[i]:matrix.indptr[i+1]] = 0.0
+    # Apply Dirichlet conditions.
+    d = matrix.diagonal()
+    for dirichlet in dirichlets:
+        vertex_mask = mesh.get_vertex_mask(dirichlet.subdomain)
+        # Set all Dirichlet rows to 0.
+        for i in numpy.where(vertex_mask)[0]:
+            matrix.data[matrix.indptr[i] : matrix.indptr[i + 1]] = 0.0
 
-            # Set the diagonal and RHS.
-            coeff, rhs_vals = dirichlet.eval(vertex_mask)
-            d[vertex_mask] = coeff
-            rhs[vertex_mask] = rhs_vals
+        # Set the diagonal and RHS.
+        coeff, rhs_vals = dirichlet.eval(vertex_mask)
+        d[vertex_mask] = coeff
+        rhs[vertex_mask] = rhs_vals
 
-        matrix.setdiag(d)
+    matrix.setdiag(d)
 
-        return matrix, rhs
+    return matrix, rhs
 
 
-def _get_VIJ(
-        mesh,
-        edge_kernels, vertex_kernels, face_kernels
-        ):
+def _get_VIJ(mesh, edge_kernels, vertex_kernels, face_kernels):
     V = []
-    I = []
+    I_ = []
     J = []
     n = len(mesh.node_coords)
     # Treating the diagonal explicitly makes tocsr() faster at the cost of a
@@ -61,30 +52,22 @@ def _get_VIJ(
 
             # Diagonal entries.
             # Manually sum up the entries corresponding to the same i, j first.
-            for c, i in zip(mesh.cells['nodes'].T, mesh.local_idx_inv):
-                numpy.add.at(
-                    diag,
-                    c,
-                    sum([v_mtx[t[0]][t[0]][t[1:]] for t in i])
-                    )
+            for c, i in zip(mesh.cells["nodes"].T, mesh.local_idx_inv):
+                numpy.add.at(diag, c, sum([v_mtx[t[0]][t[0]][t[1:]] for t in i]))
 
             # offdiagonal entries
             V.append(v_mtx[0][1])
-            I.append(nec[0])
+            I_.append(nec[0])
             J.append(nec[1])
             #
             V.append(v_mtx[1][0])
-            I.append(nec[1])
+            I_.append(nec[1])
             J.append(nec[0])
 
             # Right-hand side.
             try:
-                for c, i in zip(mesh.cells['nodes'].T, mesh.local_idx_inv):
-                    numpy.subtract.at(
-                        rhs,
-                        c,
-                        sum([v_rhs[t[0]][t[1:]] for t in i])
-                        )
+                for c, i in zip(mesh.cells["nodes"].T, mesh.local_idx_inv):
+                    numpy.subtract.at(rhs, c, sum([v_rhs[t[0]][t[1:]] for t in i]))
             except TypeError:
                 # v_rhs probably integers/floats
                 if v_rhs[0] != 0:
@@ -127,19 +110,19 @@ def _get_VIJ(
             ids = mesh.idx_hierarchy[..., face_mask]
 
             V.append(vals_matrix)
-            I.append(ids)
+            I_.append(ids)
             J.append(ids)
 
             numpy.subtract.at(rhs, ids, vals_rhs)
 
     # add diagonal
-    I.append(numpy.arange(n))
+    I_.append(numpy.arange(n))
     J.append(numpy.arange(n))
     V.append(diag)
 
     # Finally, make V, I, J into 1D-arrays.
     V = numpy.concatenate([v.flat for v in V])
-    I = numpy.concatenate([i.flat for i in I])
+    I_ = numpy.concatenate([i.flat for i in I_])
     J = numpy.concatenate([j.flat for j in J])
 
-    return V, I, J, rhs
+    return V, I_, J, rhs

@@ -16,12 +16,13 @@ class Boundary(Subdomain):
 
 
 class KernelList(object):
-    '''A kernel is an entity that can occur in a the definition of `apply()` for
+    """A kernel is an entity that can occur in a the definition of `apply()` for
     an operator. That's either an Integral or a Kernel.
     The purpose of organizing them into a KernelList is to make it possible to
     "add" kernels, which eventually comes down to just collecting the kernels
     into a list.
-    '''
+    """
+
     def __init__(self, integrals, kernels=None):
         self.integrals = integrals
         self.kernels = [] if kernels is None else kernels
@@ -35,11 +36,12 @@ class KernelList(object):
     def __sub__(self, other):
         assert not other.kernels  # not implemented yet
         # flip the sign on the integrand of all 'other' kernels
-        new_integrals = [Integral(
-                lambda x: -integral.integrand(x),
-                integral.measure,
-                integral.subdomains
-                ) for integral in other.integrals]
+        new_integrals = [
+            Integral(
+                lambda x: -integral.integrand(x), integral.measure, integral.subdomains
+            )
+            for integral in other.integrals
+        ]
         self.integrals.extend(new_integrals)
         return self
 
@@ -49,11 +51,12 @@ class KernelList(object):
     def __neg__(self):
         assert not self.kernels  # not implemented yet
         # flip the sign on the integrand of all 'self' kernels
-        new_integrals = [Integral(
-                lambda x: -integral.integrand(x),
-                integral.measure,
-                integral.subdomains
-                ) for integral in self.integrals]
+        new_integrals = [
+            Integral(
+                lambda x: -integral.integrand(x), integral.measure, integral.subdomains
+            )
+            for integral in self.integrals
+        ]
         self.integrals = new_integrals
         return self
 
@@ -61,11 +64,14 @@ class KernelList(object):
         assert not self.kernels  # not implemented yet
         assert isinstance(other, float) or isinstance(other, int)
         # flip the sign on the integrand of all 'self' kernels
-        new_integrals = [Integral(
+        new_integrals = [
+            Integral(
                 lambda x: other * integral.integrand(x),
                 integral.measure,
-                integral.subdomains
-                ) for integral in self.integrals]
+                integral.subdomains,
+            )
+            for integral in self.integrals
+        ]
         self.integrals = new_integrals
         return self
 
@@ -102,7 +108,7 @@ dGamma = CellSurface()
 
 
 def integrate(integrand, measure, subdomains=None):
-    assert(isinstance(measure, Measure))
+    assert isinstance(measure, Measure)
 
     if subdomains is None:
         subdomains = set()
@@ -112,11 +118,11 @@ def integrate(integrand, measure, subdomains=None):
         except TypeError:  # TypeError: 'D1' object is not iterable
             subdomains = set([subdomains])
 
-    assert(
-        isinstance(measure, ControlVolumeSurface) or
-        isinstance(measure, ControlVolume) or
-        isinstance(measure, CellSurface)
-        )
+    assert (
+        isinstance(measure, ControlVolumeSurface)
+        or isinstance(measure, ControlVolume)
+        or isinstance(measure, CellSurface)
+    )
 
     return KernelList([Integral(integrand, measure, subdomains)])
 
