@@ -1,4 +1,4 @@
-# PyFVM
+# pyfvm
 
 [![CircleCI](https://img.shields.io/circleci/project/github/nschloe/pyfvm.svg)](https://circleci.com/gh/nschloe/pyfvm)
 [![codecov](https://codecov.io/gh/nschloe/pyfvm/branch/master/graph/badge.svg)](https://codecov.io/gh/nschloe/pyfvm)
@@ -7,9 +7,9 @@
 
 Creating finite volume equation systems with ease.
 
-PyFVM provides everything that is needed for setting up finite volume equation
+pyfvm provides everything that is needed for setting up finite volume equation
 systems. The user needs to specify the finite volume formulation in a
-configuration file, and PyFVM will create the matrix/right-hand side or the
+configuration file, and pyfvm will create the matrix/right-hand side or the
 nonlinear system for it. This package is for everyone who wants to quickly
 construct FVM systems.
 
@@ -17,7 +17,7 @@ construct FVM systems.
 
 #### Linear equation systems
 
-PyFVM works by specifying the residuals, so for solving Poisson's equation with
+pyfvm works by specifying the residuals, so for solving Poisson's equation with
 Dirichlet boundary conditions, simply do
 ```python,test
 import pyfvm
@@ -106,7 +106,7 @@ u = scipy.optimize.newton_krylov(f.eval, u0)
 
 ### Installation
 
-PyFVM is [available from the Python Package
+pyfvm is [available from the Python Package
 Index](https://pypi.python.org/pypi/pyfvm/), so simply type
 ```
 pip install -U pyfvm
@@ -133,4 +133,4 @@ To create a new release
 
 ### License
 
-PyFVM is published under the [MIT license](https://en.wikipedia.org/wiki/MIT_License).
+pyfvm is published under the [MIT license](https://en.wikipedia.org/wiki/MIT_License).
