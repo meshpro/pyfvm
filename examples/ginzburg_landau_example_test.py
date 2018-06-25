@@ -104,7 +104,7 @@ def test():
     u0 = numpy.ones(len(vertices), dtype=complex)
     u = pyfvm.newton(f, jacobian_solver, u0)
 
-    mesh.write("out.vtu", point_data={"u": u.view("(2,)float")})
+    mesh.write("out.vtk", point_data={"u": u.view("(2,)float")})
     return
 
 
