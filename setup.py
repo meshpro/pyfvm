@@ -31,6 +31,7 @@ setup(
         "sphinxcontrib-bibtex",
         "excode",  # TODO remove?
         "krypy",
+        "meshplex",
         "meshzoo",
         "numpy",
         "pipdate >=0.3.0, <0.4.0",
@@ -38,7 +39,6 @@ setup(
         "pygmsh",
         "scipy",
         "sympy",
-        "voropy",
     ],
     classifiers=[
         about["__license__"],
@@ -46,6 +46,7 @@ setup(
         "Intended Audience :: Science/Research",
         "Operating System :: OS Independent",
         "Programming Language :: Python",
+        "Programming Language :: Python :: 3",
         "Topic :: Scientific/Engineering :: Mathematics",
     ],
 )

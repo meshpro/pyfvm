@@ -1,7 +1,7 @@
 # pyfvm
 
 [![CircleCI](https://img.shields.io/circleci/project/github/nschloe/pyfvm.svg)](https://circleci.com/gh/nschloe/pyfvm)
-[![codecov](https://codecov.io/gh/nschloe/pyfvm/branch/master/graph/badge.svg)](https://codecov.io/gh/nschloe/pyfvm)
+[![codecov](https://img.shields.io/codecov/c/github/nschloe/pyfvm.svg)](https://codecov.io/gh/nschloe/pyfvm)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
 [![PyPi Version](https://img.shields.io/pypi/v/pyfvm.svg)](https://pypi.org/project/pyfvm)
 [![GitHub stars](https://img.shields.io/github/stars/nschloe/pyfvm.svg?logo=github&label=Stars)](https://github.com/nschloe/pyfvm)
@@ -25,7 +25,7 @@ import pyfvm
 from pyfvm.form_language import *
 import meshzoo
 from scipy.sparse import linalg
-import voropy
+import meshplex
 
 class Poisson(object):
     def apply(self, u):
@@ -37,7 +37,7 @@ class Poisson(object):
 
 # Create mesh using meshzoo
 vertices, cells = meshzoo.rectangle(0.0, 2.0, 0.0, 1.0, 401, 201)
-mesh = voropy.mesh_tri.MeshTri(vertices, cells)
+mesh = meshplex.MeshTri(vertices, cells)
 
 matrix, rhs = pyfvm.discretize_linear(Poisson(), mesh)
 
@@ -71,7 +71,7 @@ from pyfvm.form_language import *
 import meshzoo
 import numpy
 from sympy import exp
-import voropy
+import meshplex
 
 class Bratu(object):
     def apply(self, u):
@@ -82,7 +82,7 @@ class Bratu(object):
         return [(u, Boundary())]
 
 vertices, cells = meshzoo.rectangle(0.0, 2.0, 0.0, 1.0, 101, 51)
-mesh = voropy.mesh_tri.MeshTri(vertices, cells)
+mesh = meshplex.MeshTri(vertices, cells)
 
 f, jacobian = pyfvm.discretize(Bratu(), mesh)
 

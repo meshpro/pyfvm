@@ -61,8 +61,8 @@ class EdgeLinearKernel(object):
         return
 
     def eval(self, mesh, cell_mask):
-        edge_ce_ratio = mesh.get_ce_ratios()[..., cell_mask]
-        edge_length = mesh.get_edge_lengths()[..., cell_mask]
+        edge_ce_ratio = mesh.ce_ratios[..., cell_mask]
+        edge_length = mesh.edge_lengths[..., cell_mask]
         nec = mesh.idx_hierarchy[..., cell_mask]
         X = mesh.node_coords[nec]
 
@@ -88,7 +88,7 @@ class VertexLinearKernel(object):
         return
 
     def eval(self, vertex_mask):
-        control_volumes = self.mesh.get_control_volumes()[vertex_mask]
+        control_volumes = self.mesh.control_volumes[vertex_mask]
         X = self.mesh.node_coords[vertex_mask].T
 
         res0 = self.linear(control_volumes, X)
@@ -113,15 +113,14 @@ class FaceLinearKernel(object):
 
     def eval(self, face_cells_inside):
         # TODO
-        # Every face can be divided into subregions, belonging to the adjacent
-        # nodes. The function that need to be integrated (self.coeff,
-        # self.affine), might have a part constant on each of the subregions
-        # (e.g., u(x)), and a part that varies (e.g., some explicitly defined
-        # function).
-        # Hence, for each of the subregions, do a numerical integration.
-        # For now, this only works with triangular meshes and linear faces.
+        # Every face can be divided into subregions, belonging to the adjacent nodes.
+        # The functions that need to be integrated (self.coeff, self.affine) might have
+        # a part constant on each of the subregions (e.g., u(x)), and a part that varies
+        # (e.g., some explicitly defined function).
+        # Hence, for each of the subregions, do a numerical integration. For now, this
+        # only works with triangular meshes and linear faces.
         ids = self.mesh.idx_hierarchy[..., face_cells_inside]
-        face_parts = self.mesh.get_face_partitions()[..., face_cells_inside]
+        face_parts = self.mesh.face_partitions[..., face_cells_inside]
 
         X = self.mesh.node_coords[ids]
 

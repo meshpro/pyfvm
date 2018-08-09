@@ -4,11 +4,11 @@ import helpers
 import pyfvm
 from pyfvm.form_language import integrate, n_dot_grad, dS, dV, Boundary
 
+import meshplex
 import meshzoo
 import numpy
 import pytest
 from sympy import pi, sin, exp, cos
-import voropy
 
 
 class Square(object):
@@ -31,7 +31,7 @@ class Square(object):
         vertices, cells = meshzoo.rectangle(
             0.0, 1.0, 0.0, 1.0, n + 1, n + 1, zigzag=True
         )
-        return voropy.mesh_tri.MeshTri(vertices, cells)
+        return meshplex.MeshTri(vertices, cells)
 
 
 class Circle(object):
@@ -81,8 +81,8 @@ class Cube(object):
         vertices, cells = meshzoo.cube(
             0.0, 1.0, 0.0, 1.0, 0.0, 1.0, n + 1, n + 1, n + 1
         )
-        # return voropy.mesh_tetra.MeshTetra(vertices, cells, mode='algebraic')
-        return voropy.mesh_tetra.MeshTetra(vertices, cells, mode="geometric")
+        # return meshplex.MeshTetra(vertices, cells, mode='algebraic')
+        return meshplex.MeshTetra(vertices, cells, mode="geometric")
 
 
 class Ball(object):

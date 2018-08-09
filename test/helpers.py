@@ -2,7 +2,7 @@
 import matplotlib.pyplot as plt
 import numpy
 import sympy
-import voropy
+import meshplex
 
 
 def perform_convergence_tests(discrete_solver, exact_sol, get_mesh, rng, verbose=False):
@@ -55,7 +55,7 @@ def perform_convergence_tests(discrete_solver, exact_sol, get_mesh, rng, verbose
         #     point_data={'x': x, 'error': error},
         #     )
 
-        error_norm_1[k] = numpy.sum(abs(mesh.get_control_volumes() * error))
+        error_norm_1[k] = numpy.sum(abs(mesh.control_volumes * error))
         error_norm_inf[k] = max(abs(error))
 
         # numerical orders of convergence
@@ -115,7 +115,7 @@ def plot_error_data(H, error_norm_1, error_norm_inf):
 #     h = 0.5**(k+2)
 #     c = mshr.Sphere(dolfin.Point(0., 0., 0.), 1.0, int(2*pi / h))
 #     m = mshr.generate_mesh(c, 2.0 / h)
-#     return voropy.mesh_tetra.MeshTetra(
+#     return meshplex.MeshTetra(
 #             m.coordinates(),
 #             m.cells(),
 #             mode='geometric'
@@ -127,14 +127,14 @@ def get_ball_mesh(k):
 
     h = 0.5 ** (k + 1)
     geom = pygmsh.built_in.Geometry()
-    geom.add_ball([0.0, 0.0, 0.0], 1.0, h)
+    geom.add_ball([0.0, 0.0, 0.0], 1.0, lcar=h)
     points, cells, _, _, _ = pygmsh.generate_mesh(geom, verbose=False)
     cells = cells["tetra"]
     # toss away unused points
     uvertices, uidx = numpy.unique(cells, return_inverse=True)
     cells = uidx.reshape(cells.shape)
     points = points[uvertices]
-    return voropy.mesh_tetra.MeshTetra(points, cells, mode="geometric")
+    return meshplex.MeshTetra(points, cells, mode="geometric")
 
 
 # def get_circle_mesh(k):
@@ -148,7 +148,7 @@ def get_ball_mesh(k):
 #     m = mshr.generate_mesh(c, 2.0 / h)
 #     coords = m.coordinates()
 #     coords = numpy.c_[coords, numpy.zeros(len(coords))]
-#     return voropy.mesh_tri.MeshTri(coords, m.cells())
+#     return meshplex.MeshTri(coords, m.cells())
 
 
 def get_circle_mesh(k):
@@ -163,4 +163,4 @@ def get_circle_mesh(k):
     uvertices, uidx = numpy.unique(cells, return_inverse=True)
     cells = uidx.reshape(cells.shape)
     points = points[uvertices]
-    return voropy.mesh_tri.MeshTri(points, cells)
+    return meshplex.MeshTri(points, cells)
