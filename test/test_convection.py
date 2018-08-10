@@ -8,6 +8,7 @@ import numpy
 import pyamg
 import pytest
 import meshzoo
+import sympy
 from sympy import pi, sin, cos, Matrix
 import meshplex
 
@@ -19,7 +20,7 @@ class Square(object):
     def apply(self, u):
         a0 = 2
         a1 = 1
-        a = Matrix([a0, a1, 0])
+        a = sympy.Matrix([a0, a1, 0])
         return integrate(lambda x: -n_dot_grad(u(x)) + n_dot(a) * u(x), dS) - integrate(
             lambda x: 2 * pi ** 2 * sin(pi * x[0]) * sin(pi * x[1])
             + a0 * pi * cos(pi * x[0]) * sin(pi * x[1])
@@ -64,18 +65,6 @@ class Circle(object):
 
     def get_mesh(self, k):
         return helpers.get_circle_mesh(k)
-
-
-def solve(problem, max_k, verbose=False):
-    def solver(mesh):
-        matrix, rhs = pyfvm.discretize_linear(problem, mesh)
-        ml = pyamg.smoothed_aggregation_solver(matrix)
-        u = ml.solve(rhs, tol=1e-10)
-        return u
-
-    return helpers.perform_convergence_tests(
-        solver, problem.exact_sol, problem.get_mesh, range(max_k), verbose=verbose
-    )
 
 
 class Cube(object):
@@ -138,7 +127,19 @@ class Ball(object):
         return helpers.get_ball_mesh(k)
 
 
-# TODO turn back on
+def solve(problem, max_k, verbose=False):
+    def solver(mesh):
+        matrix, rhs = pyfvm.discretize_linear(problem, mesh)
+        ml = pyamg.smoothed_aggregation_solver(matrix)
+        u = ml.solve(rhs, tol=1e-10)
+        return u
+
+    return helpers.perform_convergence_tests(
+        solver, problem.exact_sol, problem.get_mesh, range(max_k), verbose=verbose
+    )
+
+
+# TODO turn back on when <https://github.com/sympy/sympy/issues/15071> is resolved
 # @pytest.mark.parametrize(
 #     "problem, max_k", [(Square(), 6), (Circle(), 4), (Cube(), 4), (Ball(), 3)]
 # )

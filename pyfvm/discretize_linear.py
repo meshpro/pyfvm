@@ -34,9 +34,6 @@ def split(expr, variables):
     for var in variables:
         d = sympy.diff(expr, var)
         for var2 in variables:
-            # watch out! a sympy regression
-            # <https://github.com/sympy/sympy/issues/12132> prevents this from
-            # working correctly
             d = d.coeff(var2, n=0)
         linear.append(d)
 
@@ -205,8 +202,8 @@ class DiscretizeEdgeIntegral(object):
         index_vars = []
         for f in index_functions:
             # Replace f(x0) by f[k0], f(x1) by f[k1].
-            fk0 = sympy.Symbol("%sk0" % f)
-            fk1 = sympy.Symbol("%sk1" % f)
+            fk0 = sympy.Symbol("{}k0".format(f))
+            fk1 = sympy.Symbol("{}k1".format(f))
             out = out.subs(f(self.x0), fk0)
             out = out.subs(f(self.x1), fk1)
             # Replace f(x) by 0.5*(f[k0] + f[k1]) (the edge midpoint)
