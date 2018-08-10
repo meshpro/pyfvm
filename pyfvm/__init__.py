@@ -8,7 +8,7 @@ from . import linear_fvm_problem
 from .discretize_linear import discretize_linear, split
 from .discretize import discretize
 from .nonlinear_methods import newton
-from .fvm_matrix import get_fvm_matrix, EdgeMatrixKernel
+from .fvm_matrix import get_fvm_matrix
 
 from pyfvm.__about__ import __version__, __author__, __author_email__
 

@@ -12,7 +12,7 @@ def test():
     V = -1.0
     g = 1.0
 
-    class Energy(pyfvm.EdgeMatrixKernel):
+    class Energy(object):
         """Specification of the kinetic energy operator.
         """
 
@@ -38,7 +38,7 @@ def test():
 
             # The dot product <magnetic_potential, edge>, executed for many
             # points at once; cf. <http://stackoverflow.com/a/26168677/353337>.
-            beta = numpy.einsum("ijk, ijk->ij", magnetic_potential.T, edge.T)
+            beta = numpy.einsum("ijk,ijk->ij", magnetic_potential.T, edge.T)
 
             return numpy.array(
                 [
@@ -50,19 +50,7 @@ def test():
     vertices, cells = meshzoo.rectangle(0.0, 1.0, 0.0, 1.0, 31, 31)
     mesh = meshplex.MeshTri(vertices, cells)
 
-    # Equivalently, one could have written
-    #
-    # from pyfvm.form_language import integrate, dV
-    # class GinzburgLandau(object):
-    #     def apply(self, psi):
-    #         return Energy() \
-    #             + integrate(lambda x: psi(x) * (V + g * abs(psi(x))**2), dV)
-    # f, _ = pyfvm.discretize(GinzburgLandau(), mesh)
-    #
-    # The Jacobian still has to be specified manually because of its special
-    # structure.
-
-    keo = pyfvm.get_fvm_matrix(mesh, [Energy()], [], [], [])
+    keo = pyfvm.get_fvm_matrix(mesh, edge_kernels=[Energy()])
 
     def f(psi):
         cv = mesh.control_volumes
