@@ -21,7 +21,7 @@ class EdgeKernel(object):
         X = mesh.node_coords[node_edge_face_cells]
         x0 = X[..., 0]
         x1 = X[..., 1]
-        edge_ce_ratio = mesh.get_ce_ratios()[..., cell_ids]
+        edge_ce_ratio = mesh.ce_ratios[..., cell_ids]
         edge_length = numpy.sqrt(mesh.ei_dot_ei[..., cell_ids])
         zero = numpy.zeros(node_edge_face_cells.shape)
         return (
@@ -46,7 +46,7 @@ class VertexKernel(object):
         return
 
     def eval(self, u, mesh, vertex_ids):
-        control_volumes = mesh.get_control_volumes()[vertex_ids]
+        control_volumes = mesh.control_volumes[vertex_ids]
         X = mesh.node_coords[vertex_ids].T
         zero = numpy.zeros(len(control_volumes))
         return self.val(u, control_volumes, X) + zero

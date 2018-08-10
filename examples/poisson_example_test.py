@@ -4,7 +4,7 @@ import pyamg
 import pyfvm
 from pyfvm.form_language import integrate, Subdomain, dS, dV, n_dot_grad
 from sympy import sin
-import voropy
+import meshplex
 
 
 def test():
@@ -36,9 +36,9 @@ def test():
     import meshzoo
 
     vertices, cells = meshzoo.cube(0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 30, 30, 30)
-    mesh = voropy.mesh_tetra.MeshTetra(vertices, cells)
+    mesh = meshplex.MeshTetra(vertices, cells)
     # vertices, cells = meshzoo.rectangle(0.0, 2.0, 0.0, 1.0, 401, 201)
-    # mesh = voropy.mesh_tri.MeshTri(vertices, cells)
+    # mesh = meshplex.MeshTri(vertices, cells)
     print(len(vertices))
 
     # import mshr
@@ -52,8 +52,8 @@ def test():
     # coords = m.coordinates()
     # coords = numpy.c_[coords, numpy.zeros(len(coords))]
     # cells = m.cells().copy()
-    # mesh = voropy.mesh_tri.MeshTri(coords, cells)
-    # # mesh = voropy.mesh_tri.lloyd_smoothing(mesh, 1.0e-4)
+    # mesh = meshplex.MeshTri(coords, cells)
+    # # mesh = meshplex.lloyd_smoothing(mesh, 1.0e-4)
 
     matrix, rhs = pyfvm.discretize_linear(Poisson(), mesh)
 

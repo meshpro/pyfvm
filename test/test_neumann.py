@@ -8,7 +8,7 @@ import meshzoo
 import pyamg
 import pytest
 from sympy import sin, pi, cos, sqrt
-import voropy
+import meshplex
 
 
 # Everything except the north Boundary()
@@ -38,7 +38,7 @@ class Square(object):
         vertices, cells = meshzoo.rectangle(
             0.0, 1.0, 0.0, 1.0, n + 1, n + 1, zigzag=True
         )
-        return voropy.mesh_tri.MeshTri(vertices, cells)
+        return meshplex.MeshTri(vertices, cells)
 
 
 class Gamma2(Subdomain):

@@ -4,7 +4,7 @@ import pyfvm
 from pyfvm.form_language import integrate, n_dot_grad, dS, dV, Boundary
 import numpy
 from sympy import exp
-import voropy
+import meshplex
 
 
 def test():
@@ -18,7 +18,7 @@ def test():
             return [(u, Boundary())]
 
     vertices, cells = meshzoo.rectangle(0.0, 2.0, 0.0, 1.0, 101, 51)
-    mesh = voropy.mesh_tri.MeshTri(vertices, cells)
+    mesh = meshplex.MeshTri(vertices, cells)
 
     f, jacobian = pyfvm.discretize(Bratu(), mesh)
 

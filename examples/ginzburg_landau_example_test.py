@@ -4,7 +4,7 @@ from krypy.linsys import LinearSystem, Gmres
 import meshzoo
 import numpy
 import pyfvm
-import voropy
+import meshplex
 
 
 def test():
@@ -29,7 +29,7 @@ def test():
 
             edge_midpoint = 0.5 * (X[0] + X[1])
             edge = X[1] - X[0]
-            edge_ce_ratio = mesh.get_ce_ratios()[..., cell_mask]
+            edge_ce_ratio = mesh.ce_ratios[..., cell_mask]
 
             # project the magnetic potential on the edge at the midpoint
             magnetic_potential = (
@@ -48,7 +48,7 @@ def test():
             )
 
     vertices, cells = meshzoo.rectangle(0.0, 1.0, 0.0, 1.0, 31, 31)
-    mesh = voropy.mesh_tri.MeshTri(vertices, cells)
+    mesh = meshplex.MeshTri(vertices, cells)
 
     # Equivalently, one could have written
     #
@@ -65,12 +65,12 @@ def test():
     keo = pyfvm.get_fvm_matrix(mesh, [Energy()], [], [], [])
 
     def f(psi):
-        cv = mesh.get_control_volumes()
+        cv = mesh.control_volumes
         return keo * psi + cv * psi * (V + g * abs(psi) ** 2)
 
     def jacobian(psi):
         def _apply_jacobian(phi):
-            cv = mesh.get_control_volumes()
+            cv = mesh.control_volumes
             s = phi.shape
             y = (
                 keo * phi

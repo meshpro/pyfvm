@@ -4,7 +4,7 @@ from pyfvm.form_language import integrate, n_dot_grad, n_dot, dS, dV, Boundary
 import meshzoo
 import numpy
 from scipy.sparse import linalg
-import voropy
+import meshplex
 
 
 def test():
@@ -19,7 +19,7 @@ def test():
             return [(u, Boundary())]
 
     vertices, cells = meshzoo.rectangle(0.0, 1.0, 0.0, 1.0, 51, 51)
-    mesh = voropy.mesh_tri.MeshTri(vertices, cells)
+    mesh = meshplex.MeshTri(vertices, cells)
 
     matrix, rhs = pyfvm.discretize_linear(DC(), mesh)
 

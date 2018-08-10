@@ -4,7 +4,7 @@ import pyfvm
 import meshzoo
 import pyamg
 import numpy
-import voropy
+import meshplex
 
 
 def test():
@@ -14,7 +14,7 @@ def test():
             return
 
         def eval(self, mesh, cell_mask):
-            edge_ce_ratio = mesh.get_ce_ratios()[..., cell_mask]
+            edge_ce_ratio = mesh.ce_ratios[..., cell_mask]
             beta = 1.0
             return numpy.array(
                 [
@@ -24,10 +24,10 @@ def test():
             )
 
     vertices, cells = meshzoo.rectangle(0.0, 2.0, 0.0, 1.0, 101, 51)
-    mesh = voropy.mesh_tri.MeshTri(vertices, cells)
+    mesh = meshplex.MeshTri(vertices, cells)
 
     matrix = pyfvm.get_fvm_matrix(mesh, [EnergyEdgeKernel()], [], [], [])
-    rhs = mesh.get_control_volumes().copy()
+    rhs = mesh.control_volumes.copy()
 
     sa = pyamg.smoothed_aggregation_solver(matrix, smooth="energy")
     u = sa.solve(rhs, tol=1e-10)

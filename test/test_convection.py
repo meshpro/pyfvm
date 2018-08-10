@@ -6,10 +6,12 @@ from pyfvm.form_language import integrate, n_dot, n_dot_grad, dS, dV, Boundary
 
 import numpy
 import pyamg
-import pytest
+
+# import pytest
 import meshzoo
+import sympy
 from sympy import pi, sin, cos, Matrix
-import voropy
+import meshplex
 
 
 class Square(object):
@@ -19,7 +21,7 @@ class Square(object):
     def apply(self, u):
         a0 = 2
         a1 = 1
-        a = Matrix([a0, a1, 0])
+        a = sympy.Matrix([a0, a1, 0])
         return integrate(lambda x: -n_dot_grad(u(x)) + n_dot(a) * u(x), dS) - integrate(
             lambda x: 2 * pi ** 2 * sin(pi * x[0]) * sin(pi * x[1])
             + a0 * pi * cos(pi * x[0]) * sin(pi * x[1])
@@ -35,7 +37,7 @@ class Square(object):
         vertices, cells = meshzoo.rectangle(
             0.0, 1.0, 0.0, 1.0, n + 1, n + 1, zigzag=True
         )
-        return voropy.mesh_tri.MeshTri(vertices, cells)
+        return meshplex.MeshTri(vertices, cells)
 
 
 class Circle(object):
@@ -66,18 +68,6 @@ class Circle(object):
         return helpers.get_circle_mesh(k)
 
 
-def solve(problem, max_k, verbose=False):
-    def solver(mesh):
-        matrix, rhs = pyfvm.discretize_linear(problem, mesh)
-        ml = pyamg.smoothed_aggregation_solver(matrix)
-        u = ml.solve(rhs, tol=1e-10)
-        return u
-
-    return helpers.perform_convergence_tests(
-        solver, problem.exact_sol, problem.get_mesh, range(max_k), verbose=verbose
-    )
-
-
 class Cube(object):
     def exact_sol(self, x):
         return sin(pi * x[0]) * sin(pi * x[1]) * sin(pi * x[2])
@@ -103,7 +93,7 @@ class Cube(object):
         vertices, cells = meshzoo.cube(
             0.0, 1.0, 0.0, 1.0, 0.0, 1.0, n + 1, n + 1, n + 1
         )
-        return voropy.mesh_tetra.MeshTetra(vertices, cells, mode="algebraic")
+        return meshplex.MeshTetra(vertices, cells, mode="algebraic")
 
 
 class Ball(object):
@@ -138,16 +128,29 @@ class Ball(object):
         return helpers.get_ball_mesh(k)
 
 
-@pytest.mark.parametrize(
-    "problem, max_k", [(Square(), 6), (Circle(), 4), (Cube(), 4), (Ball(), 3)]
-)
-def test(problem, max_k):
-    H, error_norm_1, error_norm_inf, order_1, order_inf = solve(problem, max_k)
-    expected_order = 2
-    tol = 1.0e-1
-    assert order_1[-1] > expected_order - tol
-    assert order_inf[-1] > expected_order - tol
-    return
+def solve(problem, max_k, verbose=False):
+    def solver(mesh):
+        matrix, rhs = pyfvm.discretize_linear(problem, mesh)
+        ml = pyamg.smoothed_aggregation_solver(matrix)
+        u = ml.solve(rhs, tol=1e-10)
+        return u
+
+    return helpers.perform_convergence_tests(
+        solver, problem.exact_sol, problem.get_mesh, range(max_k), verbose=verbose
+    )
+
+
+# TODO turn back on when <https://github.com/sympy/sympy/issues/15071> is resolved
+# @pytest.mark.parametrize(
+#     "problem, max_k", [(Square(), 6), (Circle(), 4), (Cube(), 4), (Ball(), 3)]
+# )
+# def test(problem, max_k):
+#     H, error_norm_1, error_norm_inf, order_1, order_inf = solve(problem, max_k)
+#     expected_order = 2
+#     tol = 1.0e-1
+#     assert order_1[-1] > expected_order - tol
+#     assert order_inf[-1] > expected_order - tol
+#     return
 
 
 if __name__ == "__main__":

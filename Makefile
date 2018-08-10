@@ -26,3 +26,6 @@ clean:
 lint:
 	black --check setup.py pyfvm/ test/*.py
 	flake8 setup.py pyfvm/ test/*.py
+
+black:
+	black setup.py pyfvm/ test/*.py

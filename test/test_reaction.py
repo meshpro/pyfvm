@@ -8,7 +8,7 @@ import pyamg
 import pytest
 import meshzoo
 from sympy import pi, sin, cos
-import voropy
+import meshplex
 
 
 class Square(object):
@@ -32,7 +32,7 @@ class Square(object):
         vertices, cells = meshzoo.rectangle(
             0.0, 1.0, 0.0, 1.0, n + 1, n + 1, zigzag=True
         )
-        return voropy.mesh_tri.MeshTri(vertices, cells)
+        return meshplex.MeshTri(vertices, cells)
 
 
 class Circle(object):
@@ -79,7 +79,7 @@ class Cube(object):
         vertices, cells = meshzoo.cube(
             0.0, 1.0, 0.0, 1.0, 0.0, 1.0, n + 1, n + 1, n + 1
         )
-        return voropy.mesh_tetra.MeshTetra(vertices, cells, mode="algebraic")
+        return meshplex.MeshTetra(vertices, cells, mode="algebraic")
 
 
 class Ball(object):
