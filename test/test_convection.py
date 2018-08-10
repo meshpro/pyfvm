@@ -6,7 +6,8 @@ from pyfvm.form_language import integrate, n_dot, n_dot_grad, dS, dV, Boundary
 
 import numpy
 import pyamg
-import pytest
+
+# import pytest
 import meshzoo
 import sympy
 from sympy import pi, sin, cos, Matrix
