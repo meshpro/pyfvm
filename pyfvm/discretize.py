@@ -81,13 +81,13 @@ class DirichletKernel(object):
 def discretize(obj, mesh):
     u = sympy.Function("u")
 
-    # lmbda = sympy.Function("lambda")
-    # try:
-    #     res = obj.apply(u, lmbda)
-    # except TypeError:
-    #     res = obj.apply(u)
+    lmbda = sympy.Function("lambda")
+    try:
+        res = obj.apply(u, lmbda)
+    except TypeError:
+        res = obj.apply(u)
 
-    res = obj.apply(u)
+    # res = obj.apply(u)
 
     # See <http://docs.sympy.org/dev/modules/utilities/lambdify.html>.
     a2a = [{"ImmutableMatrix": numpy.array}, "numpy"]
@@ -139,7 +139,8 @@ def discretize(obj, mesh):
         elif isinstance(integral.measure, form_language.ControlVolume):
             x = sympy.DeferredVector("x")
 
-            print(integral.integrand)
+            print(integral)
+            exit(1)
 
             fx = integral.integrand(x)
 

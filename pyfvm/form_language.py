@@ -24,14 +24,16 @@ class Measure(object):
 
 
 class ControlVolume(Measure):
-    pass
+    def __repr__(self):
+        return "dV"
 
 
 dV = ControlVolume()
 
 
 class ControlVolumeSurface(Measure):
-    pass
+    def __repr__(self):
+        return "dS"
 
 
 dS = ControlVolumeSurface()
@@ -85,6 +87,11 @@ class Integral(object):
         self.subdomains = subdomains
         return
 
+    def __repr__(self):
+        x = sympy.Symbol("x")
+        msg = "pyfvm.Integral({}, {}, {})".format(self.integrand(x), self.measure, self.subdomains)
+        return msg
+
 
 class IntegralSum(object):
     def __init__(self, integrand, measure, subdomains):
@@ -131,3 +138,9 @@ class IntegralSum(object):
         return self
 
     __rmul__ = __mul__
+
+    def __repr__(self):
+        msg = ["pyfvm.IntegralSum("]
+        msg += ["  " + integral.__repr__() for integral in self.integrals]
+        msg += [")"]
+        return "\n".join(msg)
