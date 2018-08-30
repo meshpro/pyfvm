@@ -118,7 +118,6 @@ def plot_error_data(H, error_norm_1, error_norm_inf):
 #     return meshplex.MeshTetra(
 #             m.coordinates(),
 #             m.cells(),
-#             mode='geometric'
 #             )
 
 
@@ -134,7 +133,7 @@ def get_ball_mesh(k):
     uvertices, uidx = numpy.unique(cells, return_inverse=True)
     cells = uidx.reshape(cells.shape)
     points = points[uvertices]
-    return meshplex.MeshTetra(points, cells, mode="geometric")
+    return meshplex.MeshTetra(points, cells)
 
 
 # def get_circle_mesh(k):

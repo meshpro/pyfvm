@@ -9,9 +9,9 @@ import meshplex
 
 def test():
     class Bratu(object):
-        def apply(self, u, lmbda):
+        def apply(self, u):
             return integrate(lambda x: -n_dot_grad(u(x)), dS) - integrate(
-                lambda x: lmbda * exp(u(x)), dV
+                lambda x: 2.0 * exp(u(x)), dV
             )
 
         def dirichlet(self, u):
@@ -20,18 +20,16 @@ def test():
     vertices, cells = meshzoo.rectangle(0.0, 2.0, 0.0, 1.0, 101, 51)
     mesh = meshplex.MeshTri(vertices, cells)
 
-    f, jac_u, jac_lmbda = pyfvm.discretize(Bratu(), mesh)
-
-    lmbda0 = 2.0
+    f, jac_u = pyfvm.discretize(Bratu(), mesh)
 
     def jacobian_solver(u0, rhs):
         from scipy.sparse import linalg
 
-        jac = jac_u.get_linear_operator(u0, lmbda0)
+        jac = jac_u.get_linear_operator(u0)
         return linalg.spsolve(jac, rhs)
 
     u0 = numpy.zeros(len(vertices))
-    u = pyfvm.newton(lambda u: f.eval(u, lmbda0), jacobian_solver, u0)
+    u = pyfvm.newton(lambda u: f.eval(u), jacobian_solver, u0)
     # import scipy.optimize
     # u = scipy.optimize.newton_krylov(f_eval, u0)
 

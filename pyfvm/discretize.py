@@ -139,9 +139,6 @@ def discretize(obj, mesh):
         elif isinstance(integral.measure, form_language.ControlVolume):
             x = sympy.DeferredVector("x")
 
-            print(integral)
-            exit(1)
-
             fx = integral.integrand(x)
 
             # discretization
