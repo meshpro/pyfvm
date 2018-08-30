@@ -7,6 +7,7 @@ import os
 
 import pyfvm
 
+import krypy
 import meshplex
 import numpy
 import pytest
@@ -46,8 +47,8 @@ class Energy(object):
 
         return numpy.array(
             [
-                [edge_ce_ratio, -edge_ce_ratio * numpy.exp(1j * beta)],
-                [-edge_ce_ratio * numpy.exp(-1j * beta), edge_ce_ratio],
+                [edge_ce_ratio, -edge_ce_ratio * numpy.exp(-1j * beta)],
+                [-edge_ce_ratio * numpy.exp(1j * beta), edge_ce_ratio],
             ]
         )
 
@@ -65,7 +66,7 @@ class Energy(object):
         # ("brick-w-hole.e", [0.16763276012920181, 15.131119904340618]),
     ],
 )
-def test(filename, control_values):
+def test_keo(filename, control_values):
     this_path = os.path.dirname(os.path.realpath(__file__))
     filename = os.path.join(this_path, filename)
     mu = 1.0e-2
@@ -91,4 +92,164 @@ def test(filename, control_values):
     #   Im(K)  Re(K).
     K = abs(keo.real) + abs(keo.imag)
     assert abs(control_values[1] - numpy.max(K.sum(0))) < tol
+    return
+
+
+@pytest.mark.parametrize(
+    "filename, control_values",
+    [
+        ("rectanglesmall.e", [20.0126243424616, 20.0063121712308, 0.00631217123080606]),
+        ("pacman.e", [605.78628672795264, 605.41584408498682, 0.37044264296586299]),
+        # Geometric ce_ratios:
+        (
+            "cubesmall.e",
+            [20.000249999869794, 20.000124999934897, 0.00012499993489734074],
+        ),
+        ("brick-w-hole.e", [777.7072988143686, 777.5399411018254, 0.16735771254316]),
+        (
+            "tetrahedron.e",
+            [128.3145663425826, 128.3073117169993, 0.0072546255832996644],
+        ),
+        ("tet.e", [128.316760714389, 128.30840983471703, 0.008350879671951375]),
+        # Algebraic ce_ratios:
+        # (
+        #     "cubesmall.e",
+        #     [20.000167083246311, 20.000083541623155, 8.3541623155658495e-05],
+        # ),
+        # (
+        #     "brick-w-hole.e",
+        #     [777.70784890954064, 777.54021614941144, 0.16763276012921419],
+        # ),
+        # (
+        #     "tetrahedron.e",
+        #     [128.31647020288861, 128.3082636471523, 0.0082065557362998032],
+        # ),
+        # ("tet.e", [128.31899139655067, 128.30952517579789, 0.0094662207527960365]),
+    ],
+)
+def test_jacobian(filename, control_values):
+    # read the mesh
+    this_path = os.path.dirname(os.path.realpath(__file__))
+    filename = os.path.join(this_path, filename)
+    mu = 1.0e-2
+
+    mesh, point_data, field_data, _ = meshplex.read(filename)
+
+    psi = point_data["psi"][:, 0] + 1j * point_data["psi"][:, 1]
+    psi = psi.reshape(-1, 1)
+
+    V = -1.0
+    g = 1.0
+    keo = pyfvm.get_fvm_matrix(mesh, edge_kernels=[Energy(mu)])
+
+    def jacobian(psi):
+        def _apply_jacobian(phi):
+            cv = mesh.control_volumes
+            s = phi.shape
+            y = (
+                keo * phi / cv.reshape(s)
+                + alpha.reshape(s) * phi
+                + gPsi0Squared.reshape(s) * phi.conj()
+            )
+            return y
+
+        alpha = V + g * 2.0 * (psi.real ** 2 + psi.imag ** 2)
+        gPsi0Squared = g * psi ** 2
+
+        num_unknowns = len(mesh.node_coords)
+        return krypy.utils.LinearOperator(
+            (num_unknowns, num_unknowns),
+            complex,
+            dot=_apply_jacobian,
+            dot_adj=_apply_jacobian,
+        )
+
+    # Get the Jacobian
+    J = jacobian(psi)
+
+    tol = 1.0e-12
+
+    num_unknowns = psi.shape[0]
+
+    # [1+i, 1+i, 1+i, ... ]
+    phi = (1 + 1j) * numpy.ones((num_unknowns, 1), dtype=complex)
+    val = numpy.vdot(phi, mesh.control_volumes.reshape(phi.shape) * (J * phi)).real
+    assert abs(control_values[0] - val) < tol
+
+    # [1, 1, 1, ... ]
+    phi = numpy.ones((num_unknowns, 1), dtype=complex)
+    val = numpy.vdot(phi, mesh.control_volumes[:, None] * (J * phi)).real
+    assert abs(control_values[1] - val) < tol
+
+    # [i, i, i, ... ]
+    phi = 1j * numpy.ones((num_unknowns, 1), dtype=complex)
+    val = numpy.vdot(phi, mesh.control_volumes[:, None] * (J * phi)).real
+    assert abs(control_values[2] - val) < tol
+    return
+
+
+@pytest.mark.parametrize(
+    "filename, control_values",
+    [
+        (
+            "rectanglesmall.e",
+            [0.50126061034211067, 0.24749434381636057, 0.12373710977782607],
+        ),
+        ("pacman.e", [0.71366475047893463, 0.12552206259336218, 0.055859319123267033]),
+        # Geometric ce_ratios
+        (
+            "cubesmall.e",
+            [0.00012499993489764605, 4.419415080700124e-05, 1.5624991863028015e-05],
+        ),
+        (
+            "brick-w-hole.e",
+            [1.8317481239998066, 0.15696030933066502, 0.029179895038465554],
+        ),
+        # Algebraic ce_ratios
+        # (
+        #     "cubesmall.e",
+        #     [8.3541623156163313e-05, 2.9536515963905867e-05, 1.0468744547749431e-05],
+        # ),
+        # (
+        #     "brick-w-hole.e",
+        #     [1.8084716102419285, 0.15654267585120338, 0.03074423493622647],
+        # ),
+    ],
+)
+def test_f(filename, control_values):
+    # read the mesh
+    this_path = os.path.dirname(os.path.realpath(__file__))
+    filename = os.path.join(this_path, filename)
+    mesh, point_data, field_data, _ = meshplex.read(filename)
+
+    mu = 1.0e-2
+    V = -1.0
+    g = 1.0
+
+    keo = pyfvm.get_fvm_matrix(mesh, edge_kernels=[Energy(mu)])
+
+    # compute the Ginzburg-Landau residual
+    psi = point_data["psi"][:, 0] + 1j * point_data["psi"][:, 1]
+    cv = mesh.control_volumes
+    # One divides by the control volumes here. No idea why this has been done in pynosh.
+    r = keo * psi / cv + psi * (V + g * abs(psi) ** 2)
+
+    # scale with D for compliance with the Nosh (C++) tests
+    if mesh.control_volumes is None:
+        mesh.compute_control_volumes()
+    r *= mesh.control_volumes.reshape(r.shape)
+
+    tol = 1.0e-13
+    # For C++ Nosh compatibility:
+    # Compute 1-norm of vector (Re(psi[0]), Im(psi[0]), Re(psi[1]), ... )
+    alpha = numpy.linalg.norm(r.real, ord=1) + numpy.linalg.norm(r.imag, ord=1)
+    assert abs(control_values[0] - alpha) < tol
+    assert abs(control_values[1] - numpy.linalg.norm(r, ord=2)) < tol
+    # For C++ Nosh compatibility:
+    # Compute inf-norm of vector (Re(psi[0]), Im(psi[0]), Re(psi[1]), ... )
+    alpha = max(
+        numpy.linalg.norm(r.real, ord=numpy.inf),
+        numpy.linalg.norm(r.imag, ord=numpy.inf),
+    )
+    assert abs(control_values[2] - alpha) < tol
     return
