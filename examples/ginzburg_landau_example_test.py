@@ -17,8 +17,6 @@ def test():
         """
 
         def __init__(self):
-            super(Energy, self).__init__()
-
             self.magnetic_field = mu * numpy.array([0.0, 0.0, 1.0])
             self.subdomains = [None]
             return
