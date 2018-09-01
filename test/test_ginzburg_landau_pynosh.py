@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 #
 """
-These tests are against the reference values for pynosh.
+These tests are against the reference values from pynosh.
 """
 import os
 
 import pyfvm
 
-import krypy
+import pykry
 import meshplex
 import numpy
 import pytest
@@ -31,10 +31,9 @@ class Energy(object):
         nec = mesh.idx_hierarchy[..., cell_mask]
         X = mesh.node_coords[nec]
 
-        magnetic_potential = numpy.array([
-            0.5 * numpy.cross(self.magnetic_field, x)
-            for x in mesh.node_coords
-        ])
+        magnetic_potential = numpy.array(
+            [0.5 * numpy.cross(self.magnetic_field, x) for x in mesh.node_coords]
+        )
 
         edge = X[1] - X[0]
         edge_ce_ratio = mesh.ce_ratios[..., cell_mask]
@@ -136,7 +135,6 @@ def test_jacobian(filename, control_values):
     mesh, point_data, field_data, _ = meshplex.read(filename)
 
     psi = point_data["psi"][:, 0] + 1j * point_data["psi"][:, 1]
-    psi = psi.reshape(-1, 1)
 
     V = -1.0
     g = 1.0
@@ -145,19 +143,14 @@ def test_jacobian(filename, control_values):
     def jacobian(psi):
         def _apply_jacobian(phi):
             cv = mesh.control_volumes
-            s = phi.shape
-            y = (
-                keo * phi / cv.reshape(s)
-                + alpha.reshape(s) * phi
-                + gPsi0Squared.reshape(s) * phi.conj()
-            )
+            y = keo * phi / cv + alpha * phi + gPsi0Squared * phi.conj()
             return y
 
         alpha = V + g * 2.0 * (psi.real ** 2 + psi.imag ** 2)
         gPsi0Squared = g * psi ** 2
 
         num_unknowns = len(mesh.node_coords)
-        return krypy.utils.LinearOperator(
+        return pykry.LinearOperator(
             (num_unknowns, num_unknowns),
             complex,
             dot=_apply_jacobian,
@@ -172,18 +165,18 @@ def test_jacobian(filename, control_values):
     num_unknowns = psi.shape[0]
 
     # [1+i, 1+i, 1+i, ... ]
-    phi = (1 + 1j) * numpy.ones((num_unknowns, 1), dtype=complex)
-    val = numpy.vdot(phi, mesh.control_volumes.reshape(phi.shape) * (J * phi)).real
+    phi = numpy.full(num_unknowns, 1 + 1j)
+    val = numpy.vdot(phi, mesh.control_volumes * (J * phi)).real
     assert abs(control_values[0] - val) < tol
 
     # [1, 1, 1, ... ]
-    phi = numpy.ones((num_unknowns, 1), dtype=complex)
-    val = numpy.vdot(phi, mesh.control_volumes[:, None] * (J * phi)).real
+    phi = numpy.full(num_unknowns, 1.0, dtype=complex)
+    val = numpy.vdot(phi, mesh.control_volumes * (J * phi)).real
     assert abs(control_values[1] - val) < tol
 
     # [i, i, i, ... ]
-    phi = 1j * numpy.ones((num_unknowns, 1), dtype=complex)
-    val = numpy.vdot(phi, mesh.control_volumes[:, None] * (J * phi)).real
+    phi = numpy.full(num_unknowns, 1j, dtype=complex)
+    val = numpy.vdot(phi, mesh.control_volumes * (J * phi)).real
     assert abs(control_values[2] - val) < tol
     return
 
@@ -232,12 +225,14 @@ def test_f(filename, control_values):
     psi = point_data["psi"][:, 0] + 1j * point_data["psi"][:, 1]
     cv = mesh.control_volumes
     # One divides by the control volumes here. No idea why this has been done in pynosh.
+    # Perhaps to make sure that even the small control volumes have a significant
+    # contribution to the residual?
     r = keo * psi / cv + psi * (V + g * abs(psi) ** 2)
 
     # scale with D for compliance with the Nosh (C++) tests
     if mesh.control_volumes is None:
         mesh.compute_control_volumes()
-    r *= mesh.control_volumes.reshape(r.shape)
+    r *= mesh.control_volumes
 
     tol = 1.0e-13
     # For C++ Nosh compatibility:

@@ -89,7 +89,9 @@ class Integral(object):
 
     def __repr__(self):
         x = sympy.Symbol("x")
-        msg = "pyfvm.Integral({}, {}, {})".format(self.integrand(x), self.measure, self.subdomains)
+        msg = "pyfvm.Integral({}, {}, {})".format(
+            self.integrand(x), self.measure, self.subdomains
+        )
         return msg
 
 
