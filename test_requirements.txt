@@ -3,3 +3,4 @@ pykry
 meshzoo
 pyamg
 pygmsh
+netCDF4
