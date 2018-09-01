@@ -3,7 +3,6 @@
 from . import form_language
 from .discretize_linear import _discretize_edge_integral
 from . import fvm_problem
-from . import fvm_matrix
 from . import jacobian
 
 import numpy
@@ -80,7 +79,14 @@ class DirichletKernel(object):
 
 def discretize(obj, mesh):
     u = sympy.Function("u")
-    res = obj.apply(u)
+
+    lmbda = sympy.Function("lambda")
+    try:
+        res = obj.apply(u, lmbda)
+    except TypeError:
+        res = obj.apply(u)
+
+    # res = obj.apply(u)
 
     # See <http://docs.sympy.org/dev/modules/utilities/lambdify.html>.
     a2a = [{"ImmutableMatrix": numpy.array}, "numpy"]
@@ -95,11 +101,6 @@ def discretize(obj, mesh):
     jacobian_edge_kernels = set()
     jacobian_vertex_kernels = set()
     jacobian_face_kernels = set()
-
-    for kernel in res.kernels:
-        assert isinstance(kernel, fvm_matrix.EdgeMatrixKernel)
-        edge_matrix_kernels.add(kernel)
-        jacobian_edge_kernels.add(kernel)
 
     for integral in res.integrals:
         if isinstance(integral.measure, form_language.ControlVolumeSurface):
@@ -136,6 +137,7 @@ def discretize(obj, mesh):
 
         elif isinstance(integral.measure, form_language.ControlVolume):
             x = sympy.DeferredVector("x")
+
             fx = integral.integrand(x)
 
             # discretization

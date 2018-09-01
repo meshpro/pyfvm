@@ -20,18 +20,18 @@ def test():
     vertices, cells = meshzoo.rectangle(0.0, 2.0, 0.0, 1.0, 101, 51)
     mesh = meshplex.MeshTri(vertices, cells)
 
-    f, jacobian = pyfvm.discretize(Bratu(), mesh)
+    f, jac_u = pyfvm.discretize(Bratu(), mesh)
 
     def jacobian_solver(u0, rhs):
         from scipy.sparse import linalg
 
-        jac = jacobian.get_linear_operator(u0)
+        jac = jac_u.get_linear_operator(u0)
         return linalg.spsolve(jac, rhs)
 
     u0 = numpy.zeros(len(vertices))
-    u = pyfvm.newton(f.eval, jacobian_solver, u0)
+    u = pyfvm.newton(lambda u: f.eval(u), jacobian_solver, u0)
     # import scipy.optimize
-    # u = scipy.optimize.newton_krylov(f.eval, u0)
+    # u = scipy.optimize.newton_krylov(f_eval, u0)
 
     mesh.write("out.vtk", point_data={"u": u})
     return

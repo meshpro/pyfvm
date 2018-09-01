@@ -3,16 +3,14 @@
 import numpy
 from scipy import sparse
 
-from . import form_language
 
-
-class EdgeMatrixKernel(form_language.KernelList):
-    def __init__(self):
-        super(EdgeMatrixKernel, self).__init__([], [self])
-        return
-
-
-def get_fvm_matrix(mesh, edge_kernels, vertex_kernels, face_kernels, dirichlets):
+def get_fvm_matrix(
+    mesh, edge_kernels=None, vertex_kernels=None, face_kernels=None, dirichlets=None
+):
+    edge_kernels = [] if edge_kernels is None else edge_kernels
+    vertex_kernels = [] if vertex_kernels is None else vertex_kernels
+    face_kernels = [] if face_kernels is None else face_kernels
+    dirichlets = [] if dirichlets is None else dirichlets
 
     V, I, J = _get_VIJ(mesh, edge_kernels, vertex_kernels, face_kernels)
 

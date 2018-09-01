@@ -66,8 +66,7 @@ class Cube(object):
         vertices, cells = meshzoo.cube(
             0.0, 1.0, 0.0, 1.0, 0.0, 1.0, n + 1, n + 1, n + 1
         )
-        # return meshplex.MeshTetra(vertices, cells, mode='algebraic')
-        return meshplex.MeshTetra(vertices, cells, mode="geometric")
+        return meshplex.MeshTetra(vertices, cells)
 
 
 class Ball(object):

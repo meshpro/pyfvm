@@ -29,14 +29,9 @@ setup(
     platforms="any",
     install_requires=[
         "sphinxcontrib-bibtex",
-        "excode",  # TODO remove?
-        "krypy",
         "meshplex",
-        "meshzoo",
         "numpy",
         "pipdate >=0.3.0, <0.4.0",
-        "pyamg",
-        "pygmsh",
         "scipy",
         "sympy",
     ],
