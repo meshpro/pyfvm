@@ -7,7 +7,7 @@ import meshplex
 
 
 def test():
-    mu = 5.0
+    mu = 5.0e-2
     V = -1.0
     g = 1.0
 
@@ -30,21 +30,21 @@ def test():
 
             # project the magnetic potential on the edge at the midpoint
             magnetic_potential = (
-                0.5 * numpy.cross(self.magnetic_field, edge_midpoint.T).T
+                0.5 * numpy.cross(self.magnetic_field, edge_midpoint)
             )
 
             # The dot product <magnetic_potential, edge>, executed for many
             # points at once; cf. <http://stackoverflow.com/a/26168677/353337>.
-            beta = numpy.einsum("ijk,ijk->ij", magnetic_potential.T, edge.T)
+            beta = numpy.einsum("ijk,ijk->ij", magnetic_potential, edge)
 
             return numpy.array(
                 [
-                    [edge_ce_ratio, -edge_ce_ratio * numpy.exp(1j * beta)],
-                    [-edge_ce_ratio * numpy.exp(-1j * beta), edge_ce_ratio],
+                    [edge_ce_ratio, -edge_ce_ratio * numpy.exp(-1j * beta)],
+                    [-edge_ce_ratio * numpy.exp(1j * beta), edge_ce_ratio],
                 ]
             )
 
-    vertices, cells = meshzoo.rectangle(0.0, 1.0, 0.0, 1.0, 31, 31)
+    vertices, cells = meshzoo.rectangle(-5.0, 5.0, -5.0, 5.0, 51, 51)
     mesh = meshplex.MeshTri(vertices, cells)
 
     keo = pyfvm.get_fvm_matrix(mesh, edge_kernels=[Energy()])
