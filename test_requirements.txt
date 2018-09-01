@@ -1,1 +1,5 @@
 matplotlib
+pykry
+meshzoo
+pyamg
+pygmsh

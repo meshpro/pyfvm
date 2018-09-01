@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-import krypy
-from krypy.linsys import LinearSystem, Gmres
+import pykry
 import meshzoo
 import numpy
 import pyfvm
@@ -57,19 +56,14 @@ def test():
     def jacobian(psi):
         def _apply_jacobian(phi):
             cv = mesh.control_volumes
-            s = phi.shape
-            y = (
-                keo * phi
-                + cv.reshape(s) * alpha.reshape(s) * phi
-                + cv.reshape(s) * gPsi0Squared.reshape(s) * phi.conj()
-            )
+            y = keo * phi + cv * alpha * phi + cv * gPsi0Squared * phi.conj()
             return y
 
         alpha = V + g * 2.0 * (psi.real ** 2 + psi.imag ** 2)
         gPsi0Squared = g * psi ** 2
 
         num_unknowns = len(mesh.node_coords)
-        return krypy.utils.LinearOperator(
+        return pykry.LinearOperator(
             (num_unknowns, num_unknowns),
             complex,
             dot=_apply_jacobian,
@@ -78,14 +72,14 @@ def test():
 
     def jacobian_solver(psi0, rhs):
         jac = jacobian(psi0)
-        linear_system = LinearSystem(
+        out = pykry.gmres(
             A=jac,
             b=rhs,
-            self_adjoint=True,
-            ip_B=lambda a, b: numpy.dot(a.T.conj(), b).real,
+            inner_product=lambda a, b: numpy.dot(a.T.conj(), b).real,
+            maxiter=1000,
+            tol=1.0e-10,
         )
-        out = Gmres(linear_system, maxiter=1000, tol=1.0e-10)
-        return out.xk[:, 0]
+        return out.xk
 
     u0 = numpy.ones(len(vertices), dtype=complex)
     u = pyfvm.newton(f, jacobian_solver, u0)
