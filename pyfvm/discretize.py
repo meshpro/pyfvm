@@ -3,7 +3,6 @@
 from . import form_language
 from .discretize_linear import _discretize_edge_integral
 from . import fvm_problem
-from . import fvm_matrix
 from . import jacobian
 
 import numpy
