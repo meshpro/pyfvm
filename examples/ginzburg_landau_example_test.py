@@ -33,7 +33,7 @@ def test():
 
             # The dot product <magnetic_potential, edge>, executed for many
             # points at once; cf. <http://stackoverflow.com/a/26168677/353337>.
-            beta = numpy.einsum("ijk,ijk->ij", magnetic_potential, edge)
+            beta = numpy.einsum("...k,...k->...", magnetic_potential, edge)
 
             return numpy.array(
                 [
