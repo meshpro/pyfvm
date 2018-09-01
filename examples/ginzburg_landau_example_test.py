@@ -29,9 +29,7 @@ def test():
             edge_ce_ratio = mesh.ce_ratios[..., cell_mask]
 
             # project the magnetic potential on the edge at the midpoint
-            magnetic_potential = (
-                0.5 * numpy.cross(self.magnetic_field, edge_midpoint)
-            )
+            magnetic_potential = 0.5 * numpy.cross(self.magnetic_field, edge_midpoint)
 
             # The dot product <magnetic_potential, edge>, executed for many
             # points at once; cf. <http://stackoverflow.com/a/26168677/353337>.

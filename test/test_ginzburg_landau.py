@@ -24,25 +24,19 @@ class Energy(object):
         return
 
     def eval(self, mesh, cell_mask):
-        """This eval does as if the magnetic vector potential was defined only in the
-        nodes, and interpolates from there. It'd also be possible to simply evaluate it
-        at the edge midpoints, but we do the former here to do the same as pynosh.
-        """
         nec = mesh.idx_hierarchy[..., cell_mask]
         X = mesh.node_coords[nec]
 
-        magnetic_potential = numpy.array(
-            [0.5 * numpy.cross(self.magnetic_field, x) for x in mesh.node_coords]
-        )
-
+        edge_midpoint = 0.5 * (X[0] + X[1])
         edge = X[1] - X[0]
         edge_ce_ratio = mesh.ce_ratios[..., cell_mask]
 
+        # project the magnetic potential on the edge at the midpoint
+        magnetic_potential = 0.5 * numpy.cross(self.magnetic_field, edge_midpoint)
+
         # The dot product <magnetic_potential, edge>, executed for many
         # points at once; cf. <http://stackoverflow.com/a/26168677/353337>.
-        # beta = numpy.einsum("ijk,ijk->ij", magnetic_potential.T, edge.T)
-        mp_edge = 0.5 * (magnetic_potential[nec[0]] + magnetic_potential[nec[1]])
-        beta = numpy.einsum("...k,...k->...", mp_edge, edge)
+        beta = numpy.einsum("...k,...k->...", magnetic_potential, edge)
 
         return numpy.array(
             [
@@ -50,6 +44,34 @@ class Energy(object):
                 [-edge_ce_ratio * numpy.exp(1j * beta), edge_ce_ratio],
             ]
         )
+
+    # This eval does as if the magnetic vector potential was defined only in the
+    # nodes, and interpolates from there. This is what nosh/pynosh do, and it's
+    # equivalent to what the above eval() does since the potential is linear.
+    #
+    # def eval(self, mesh, cell_mask):
+    #     nec = mesh.idx_hierarchy[..., cell_mask]
+    #     X = mesh.node_coords[nec]
+    #
+    #     magnetic_potential = numpy.array(
+    #         [0.5 * numpy.cross(self.magnetic_field, x) for x in mesh.node_coords]
+    #     )
+    #
+    #     edge = X[1] - X[0]
+    #     edge_ce_ratio = mesh.ce_ratios[..., cell_mask]
+    #
+    #     # The dot product <magnetic_potential, edge>, executed for many
+    #     # points at once; cf. <http://stackoverflow.com/a/26168677/353337>.
+    #     # beta = numpy.einsum("ijk,ijk->ij", magnetic_potential.T, edge.T)
+    #     mp_edge = 0.5 * (magnetic_potential[nec[0]] + magnetic_potential[nec[1]])
+    #     beta = numpy.einsum("...k,...k->...", mp_edge, edge)
+    #
+    #     return numpy.array(
+    #         [
+    #             [edge_ce_ratio, -edge_ce_ratio * numpy.exp(-1j * beta)],
+    #             [-edge_ce_ratio * numpy.exp(1j * beta), edge_ce_ratio],
+    #         ]
+    #     )
 
 
 @pytest.mark.parametrize(
