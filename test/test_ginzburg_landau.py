@@ -4,13 +4,33 @@
 These tests are against the reference values from pynosh.
 """
 import os
+import shutil
 
 import pyfvm
 
+import requests
 import pykry
 import meshplex
 import numpy
 import pytest
+
+
+def download_mesh(name):
+    filename = os.path.join("/tmp", name)
+    if not os.path.exists(filename):
+        print("Downloading {}...".format(name))
+        url = "https://github.com/nschloe/pynosh/raw/master/test/"
+        r = requests.get(url + name, stream=True)
+        if not r.ok:
+            raise RuntimeError(
+                "Download error ({}, return code {}).".format(r.url, r.status_code)
+            )
+        # save the mesh in /tmp
+        with open(filename, "wb") as f:
+            r.raw.decode_content = True
+            shutil.copyfileobj(r.raw, f)
+
+    return filename
 
 
 class Energy(object):
@@ -88,8 +108,7 @@ class Energy(object):
     ],
 )
 def test_keo(filename, control_values):
-    this_path = os.path.dirname(os.path.realpath(__file__))
-    filename = os.path.join(this_path, filename)
+    filename = download_mesh(filename)
     mu = 1.0e-2
 
     # read the mesh
@@ -149,9 +168,7 @@ def test_keo(filename, control_values):
     ],
 )
 def test_jacobian(filename, control_values):
-    # read the mesh
-    this_path = os.path.dirname(os.path.realpath(__file__))
-    filename = os.path.join(this_path, filename)
+    filename = download_mesh(filename)
     mu = 1.0e-2
 
     mesh, point_data, field_data, _ = meshplex.read(filename)
@@ -232,9 +249,7 @@ def test_jacobian(filename, control_values):
     ],
 )
 def test_f(filename, control_values):
-    # read the mesh
-    this_path = os.path.dirname(os.path.realpath(__file__))
-    filename = os.path.join(this_path, filename)
+    filename = download_mesh(filename)
     mesh, point_data, field_data, _ = meshplex.read(filename)
 
     mu = 1.0e-2
