@@ -127,12 +127,12 @@ def get_ball_mesh(k):
     h = 0.5 ** (k + 1)
     geom = pygmsh.built_in.Geometry()
     geom.add_ball([0.0, 0.0, 0.0], 1.0, lcar=h)
-    points, cells, _, _, _ = pygmsh.generate_mesh(geom, verbose=False)
-    cells = cells["tetra"]
+    mesh = pygmsh.generate_mesh(geom, verbose=False)
+    cells = mesh.cells["tetra"]
     # toss away unused points
     uvertices, uidx = numpy.unique(cells, return_inverse=True)
     cells = uidx.reshape(cells.shape)
-    points = points[uvertices]
+    points = mesh.points[uvertices]
     return meshplex.MeshTetra(points, cells)
 
 
@@ -156,10 +156,10 @@ def get_circle_mesh(k):
     h = 0.5 ** k
     geom = pygmsh.built_in.Geometry()
     geom.add_circle([0.0, 0.0, 0.0], 1.0, lcar=h)
-    points, cells, _, _, _ = pygmsh.generate_mesh(geom, verbose=False)
-    cells = cells["triangle"]
+    mesh = pygmsh.generate_mesh(geom, verbose=False)
+    cells = mesh.cells["triangle"]
     # toss away unused points
     uvertices, uidx = numpy.unique(cells, return_inverse=True)
     cells = uidx.reshape(cells.shape)
-    points = points[uvertices]
+    points = mesh.points[uvertices]
     return meshplex.MeshTri(points, cells)
