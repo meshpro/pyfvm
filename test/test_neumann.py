@@ -1,14 +1,13 @@
 # -*- coding: utf-8 -*-
-import helpers
-
-import pyfvm
-from pyfvm.form_language import integrate, n_dot_grad, dS, dGamma, dV, Subdomain
-
-import meshzoo
 import pyamg
 import pytest
-from sympy import sin, pi, cos, sqrt
+from sympy import cos, pi, sin, sqrt
+
+import helpers
 import meshplex
+import meshzoo
+import pyfvm
+from pyfvm.form_language import Subdomain, dGamma, dS, dV, integrate, n_dot_grad
 
 
 # Everything except the north Boundary()

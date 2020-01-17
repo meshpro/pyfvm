@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
-from numpy import pi
 import pyamg
-import pyfvm
-from pyfvm.form_language import integrate, Subdomain, dS, dV, n_dot_grad
+from numpy import pi
 from sympy import sin
+
 import meshplex
+import pyfvm
+from pyfvm.form_language import Subdomain, dS, dV, integrate, n_dot_grad
 
 
 def test():

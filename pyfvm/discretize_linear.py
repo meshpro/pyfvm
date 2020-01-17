@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 #
-from . import form_language
-from .linear_fvm_problem import get_linear_fvm_problem
-
 import numpy
 import sympy
 from sympy.matrices.expressions.matexpr import MatrixExpr, MatrixSymbol
+
+from . import form_language
+from .linear_fvm_problem import get_linear_fvm_problem
 
 
 def split(expr, variables):

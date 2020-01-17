@@ -1,14 +1,13 @@
 # -*- coding: utf-8 -*-
-import helpers
-
-import pyfvm
-from pyfvm.form_language import integrate, n_dot_grad, dS, dV, Boundary
-
-import meshplex
-import meshzoo
 import numpy
 import pytest
-from sympy import pi, sin, exp, cos
+from sympy import cos, exp, pi, sin
+
+import helpers
+import meshplex
+import meshzoo
+import pyfvm
+from pyfvm.form_language import Boundary, dS, dV, integrate, n_dot_grad
 
 
 class Square(object):

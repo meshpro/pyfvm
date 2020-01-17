@@ -1,12 +1,10 @@
 # -*- coding: utf-8 -*-
 #
-from . import form_language
-from .discretize_linear import _discretize_edge_integral
-from . import fvm_problem
-from . import jacobian
-
 import numpy
 import sympy
+
+from . import form_language, fvm_problem, jacobian
+from .discretize_linear import _discretize_edge_integral
 
 
 class EdgeKernel(object):

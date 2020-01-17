@@ -6,13 +6,13 @@ These tests are against the reference values from pynosh.
 import os
 import shutil
 
-import pyfvm
-
-import requests
-import pykry
-import meshplex
 import numpy
 import pytest
+import requests
+
+import meshplex
+import pyfvm
+import pykry
 
 
 def download_mesh(name):

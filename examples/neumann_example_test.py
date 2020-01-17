@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-import pyfvm
-from pyfvm.form_language import Subdomain, integrate, n_dot_grad, dS, dV, dGamma
-
-import meshzoo
 from scipy.sparse import linalg
+
 import meshplex
+import meshzoo
+import pyfvm
+from pyfvm.form_language import Subdomain, dGamma, dS, dV, integrate, n_dot_grad
 
 
 def test():

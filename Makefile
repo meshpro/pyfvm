@@ -1,4 +1,4 @@
-VERSION=$(shell python -c "import pyfvm; print(pyfvm.__version__)")
+VERSION=$(shell python3 -c "import pyfvm; print(pyfvm.__version__)")
 
 default:
 	@echo "\"make publish\"?"
@@ -24,8 +24,9 @@ clean:
 	@rm -rf *.egg-info/ build/ dist/ MANIFEST
 
 lint:
-	black --check setup.py pyfvm/ test/*.py
-	flake8 setup.py pyfvm/ test/*.py
+	black --check .
+	flake8 .
 
-black:
-	black setup.py pyfvm/ test/*.py
+format:
+	isort -rc .
+	black .

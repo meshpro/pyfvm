@@ -1,7 +1,7 @@
-import pyfvm
 import pytest
 import sympy
 
+import pyfvm
 
 a = sympy.Symbol("a")
 x = sympy.Symbol("x")
