@@ -1,6 +1,17 @@
 version: 2
 
 jobs:
+  lint:
+    docker:
+      - image: circleci/python:3
+    steps:
+      - checkout
+      - run: |
+          pip3 install black --user
+          black --check .
+      - run: |
+          pip3 install flake8 --user
+          flake8 .
   build:
     working_directory: ~/work/
     docker:
@@ -12,9 +23,6 @@ jobs:
       - checkout
       - run: LANG=C.UTF-8 pip3 install .
       - run: LANG=C.UTF-8 pip3 install -r test_requirements.txt
-      # format and lint
-      - run: LC_ALL=C.UTF-8 black --check setup.py pyfvm/ test/*.py
-      - run: flake8 setup.py pyfvm/ test/*.py
       # The actual test
       - run: excode README.md test/readme_test.py --filter python,test
       # OMPI doesn't work in chroot by default, cf.
@@ -23,3 +31,10 @@ jobs:
       # submit to codecov
       - run: apt-get install -y curl
       - run: bash <(curl -s https://codecov.io/bash)
+
+workflows:
+  version: 2
+  lint_and_build:
+    jobs:
+      - lint
+      - build
