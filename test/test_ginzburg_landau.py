@@ -1,4 +1,3 @@
-#
 """
 These tests are against the reference values from pynosh.
 """
@@ -9,6 +8,7 @@ import numpy
 import pytest
 import requests
 
+import meshio
 import meshplex
 import pyfvm
 import pykry
@@ -171,8 +171,9 @@ def test_jacobian(filename, control_values):
     mu = 1.0e-2
 
     mesh = meshplex.read(filename)
+    m2 = meshio.read(filename)
 
-    psi = mesh.point_data["psi"][:, 0] + 1j * mesh.point_data["psi"][:, 1]
+    psi = m2.point_data["psi"][:, 0] + 1j * m2.point_data["psi"][:, 1]
 
     V = -1.0
     g = 1.0
@@ -258,7 +259,8 @@ def test_f(filename, control_values):
     keo = pyfvm.get_fvm_matrix(mesh, edge_kernels=[Energy(mu)])
 
     # compute the Ginzburg-Landau residual
-    psi = mesh.point_data["psi"][:, 0] + 1j * mesh.point_data["psi"][:, 1]
+    m2 = meshio.read(filename)
+    psi = m2.point_data["psi"][:, 0] + 1j * m2.point_data["psi"][:, 1]
     cv = mesh.control_volumes
     # One divides by the control volumes here. No idea why this has been done in pynosh.
     # Perhaps to make sure that even the small control volumes have a significant
