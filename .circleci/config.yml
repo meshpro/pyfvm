@@ -15,7 +15,7 @@ jobs:
   build:
     working_directory: ~/work/
     docker:
-      - image: ubuntu:18.04
+      - image: ubuntu:19.10
     steps:
       - run: apt-get update
       - run: apt-get install -y git python3-pip gmsh
