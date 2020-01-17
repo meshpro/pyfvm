@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # pyfvm documentation build configuration file, created by
 # sphinx-quickstart on Tue Feb 25 11:45:44 2014.
@@ -52,8 +51,8 @@ source_suffix = ".rst"
 master_doc = "index"
 
 # General information about the project.
-project = u"pyfvm"
-copyright = u"2015, Nico Schlömer"
+project = "pyfvm"
+copyright = "2015, Nico Schlömer"
 
 # The short X.Y version.
 version = ".".join(__version__.split(".")[:2])
@@ -189,7 +188,7 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-    ("index", "pyfvm.tex", u"pyfvm Documentation", u"Nico Schlömer", "manual"),
+    ("index", "pyfvm.tex", "pyfvm Documentation", "Nico Schlömer", "manual"),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -217,7 +216,7 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [("index", "pyfvm", u"pyfvm Documentation", [u"Nico Schlömer"], 1)]
+man_pages = [("index", "pyfvm", "pyfvm Documentation", ["Nico Schlömer"], 1)]
 
 # If true, show URL addresses after external links.
 # man_show_urls = False
@@ -232,8 +231,8 @@ texinfo_documents = [
     (
         "index",
         "pyfvm",
-        u"pyfvm Documentation",
-        u"Nico Schlömer",
+        "pyfvm Documentation",
+        "Nico Schlömer",
         "pyfvm",
         "One line description of project.",
         "Miscellaneous",

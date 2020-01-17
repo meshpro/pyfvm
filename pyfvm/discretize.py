@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 import numpy
 import sympy
 
@@ -7,7 +5,7 @@ from . import form_language, fvm_problem, jacobian
 from .discretize_linear import _discretize_edge_integral
 
 
-class EdgeKernel(object):
+class EdgeKernel:
     def __init__(self, val):
         self.val = val
         self.subdomains = [None]
@@ -36,7 +34,7 @@ class EdgeKernel(object):
         )
 
 
-class VertexKernel(object):
+class VertexKernel:
     def __init__(self, val):
         self.val = val
         self.subdomains = [None]
@@ -49,7 +47,7 @@ class VertexKernel(object):
         return self.val(u, control_volumes, X) + zero
 
 
-class FaceKernel(object):
+class FaceKernel:
     def __init__(self, val, subdomain):
         self.val = val
         self.subdomain = subdomain
@@ -62,7 +60,7 @@ class FaceKernel(object):
         return self.val(u, face_areas, X) + zero
 
 
-class DirichletKernel(object):
+class DirichletKernel:
     def __init__(self, val, subdomain):
         self.val = val
         self.subdomain = subdomain

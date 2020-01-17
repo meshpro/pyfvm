@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import pyamg
 from numpy import pi
 from sympy import sin
@@ -21,7 +20,7 @@ def test():
 
         is_boundary_only = True
 
-    class Poisson(object):
+    class Poisson:
         def apply(self, u):
             return integrate(lambda x: -n_dot_grad(u(x)), dS) - integrate(
                 lambda x: 50 * sin(2 * pi * x[0]), dV

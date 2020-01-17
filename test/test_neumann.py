@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import pyamg
 import pytest
 from sympy import cos, pi, sin, sqrt
@@ -18,7 +17,7 @@ class Gamma1(Subdomain):
     is_boundary_only = True
 
 
-class Square(object):
+class Square:
     def exact_sol(self, x):
         return sin(pi * x[0]) * sin(pi * x[1])
 
@@ -47,7 +46,7 @@ class Gamma2(Subdomain):
     is_boundary_only = True
 
 
-class Circle(object):
+class Circle:
     def exact_sol(self, x):
         return cos(pi / 2 * (x[0] ** 2 + x[1] ** 2))
 

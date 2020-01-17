@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from scipy.sparse import linalg
 
 import meshplex
@@ -14,7 +13,7 @@ def test():
 
         is_boundary_only = True
 
-    class Poisson(object):
+    class Poisson:
         def apply(self, u):
             return (
                 integrate(lambda x: -n_dot_grad(u(x)), dS)

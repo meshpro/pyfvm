@@ -1,7 +1,3 @@
-# -*- coding: utf-8 -*-
-#
-from __future__ import print_function
-
 from pyfvm.__about__ import __author__, __author_email__, __version__
 
 from . import fvm_problem, linear_fvm_problem

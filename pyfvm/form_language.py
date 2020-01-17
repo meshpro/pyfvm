@@ -1,10 +1,8 @@
-# -*- coding: utf-8 -*-
-#
 import numpy
 import sympy
 
 
-class Subdomain(object):
+class Subdomain:
     pass
 
 
@@ -15,11 +13,11 @@ class Boundary(Subdomain):
         return numpy.ones(x.shape[1], dtype=bool)
 
 
-class FvmProblem(object):
+class FvmProblem:
     pass
 
 
-class Measure(object):
+class Measure:
     pass
 
 
@@ -43,7 +41,7 @@ class CellSurface(Measure):
     pass
 
 
-class EdgeKernel(object):
+class EdgeKernel:
     pass
 
 
@@ -64,7 +62,7 @@ def integrate(integrand, measure, subdomains=None):
     return IntegralSum(integrand, measure, subdomains)
 
 
-class Integral(object):
+class Integral:
     def __init__(self, integrand, measure, subdomains):
         assert isinstance(measure, Measure)
 
@@ -74,7 +72,7 @@ class Integral(object):
             try:
                 subdomains = set(subdomains)
             except TypeError:  # TypeError: 'D1' object is not iterable
-                subdomains = set([subdomains])
+                subdomains = {subdomains}
 
         assert (
             isinstance(measure, ControlVolumeSurface)
@@ -95,7 +93,7 @@ class Integral(object):
         return msg
 
 
-class IntegralSum(object):
+class IntegralSum:
     def __init__(self, integrand, measure, subdomains):
         self.integrals = [Integral(integrand, measure, subdomains)]
         return

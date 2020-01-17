@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import numpy
 import pyamg
 
@@ -8,7 +7,7 @@ import pyfvm
 
 
 def test():
-    class EnergyEdgeKernel(object):
+    class EnergyEdgeKernel:
         def __init__(self):
             self.subdomains = [None]
             return

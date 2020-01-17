@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import numpy
 from scipy.sparse import linalg
 
@@ -9,7 +8,7 @@ from pyfvm.form_language import Boundary, dS, dV, integrate, n_dot, n_dot_grad
 
 
 def test():
-    class DC(object):
+    class DC:
         def apply(self, u):
             a = numpy.array([2, 1, 0])
             return integrate(

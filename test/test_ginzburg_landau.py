@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 """
 These tests are against the reference values from pynosh.
@@ -18,12 +17,12 @@ import pykry
 def download_mesh(name):
     filename = os.path.join("/tmp", name)
     if not os.path.exists(filename):
-        print("Downloading {}...".format(name))
+        print(f"Downloading {name}...")
         url = "https://github.com/nschloe/pynosh/raw/master/test/"
         r = requests.get(url + name, stream=True)
         if not r.ok:
             raise RuntimeError(
-                "Download error ({}, return code {}).".format(r.url, r.status_code)
+                f"Download error ({r.url}, return code {r.status_code})."
             )
         # save the mesh in /tmp
         with open(filename, "wb") as f:
@@ -33,7 +32,7 @@ def download_mesh(name):
     return filename
 
 
-class Energy(object):
+class Energy:
     """Specification of the kinetic energy operator.
     """
 

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import numpy
 
 import meshplex
@@ -12,7 +11,7 @@ def test():
     V = -1.0
     g = 1.0
 
-    class Energy(object):
+    class Energy:
         """Specification of the kinetic energy operator.
         """
 

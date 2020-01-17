@@ -1,10 +1,8 @@
-# -*- coding: utf-8 -*-
-#
 import numpy
 from scipy import sparse
 
 
-class Jacobian(object):
+class Jacobian:
     def __init__(self, mesh, edge_kernels, vertex_kernels, face_kernels, dirichlets):
         self.mesh = mesh
         self.edge_kernels = edge_kernels
