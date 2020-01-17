@@ -19,8 +19,7 @@ def split(expr, variables):
         input_is_list = False
         variables = [variables]
 
-    # See <https://github.com/sympy/sympy/issues/11475> on why we need expand()
-    # here.
+    # See <https://github.com/sympy/sympy/issues/11475> on why we need expand() here.
     expr = expr.expand()
 
     # Get the affine part by removing all terms with any of the variables.
@@ -28,8 +27,7 @@ def split(expr, variables):
     for var in variables:
         affine = affine.coeff(var, n=0)
 
-    # Extract the linear coefficients by extracting the affine parts of the
-    # derivatives.
+    # Extract the linear coefficients by extracting the affine parts of the derivatives.
     linear = []
     for var in variables:
         d = sympy.diff(expr, var)
