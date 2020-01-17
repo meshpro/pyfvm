@@ -1,20 +1,18 @@
-# -*- coding: utf-8 -*-
-import helpers
-
-import pyfvm
-from pyfvm.form_language import integrate, n_dot, n_dot_grad, dS, dV, Boundary
-
 import numpy
 import pyamg
+import sympy
+from sympy import Matrix, cos, pi, sin
+
+import helpers
+import meshplex
 
 # import pytest
 import meshzoo
-import sympy
-from sympy import pi, sin, cos, Matrix
-import meshplex
+import pyfvm
+from pyfvm.form_language import Boundary, dS, dV, integrate, n_dot, n_dot_grad
 
 
-class Square(object):
+class Square:
     def exact_sol(self, x):
         return sin(pi * x[0]) * sin(pi * x[1])
 
@@ -40,7 +38,7 @@ class Square(object):
         return meshplex.MeshTri(vertices, cells)
 
 
-class Circle(object):
+class Circle:
     def exact_sol(self, x):
         return cos(pi / 2 * (x[0] ** 2 + x[1] ** 2))
 
@@ -68,7 +66,7 @@ class Circle(object):
         return helpers.get_circle_mesh(k)
 
 
-class Cube(object):
+class Cube:
     def exact_sol(self, x):
         return sin(pi * x[0]) * sin(pi * x[1]) * sin(pi * x[2])
 
@@ -96,7 +94,7 @@ class Cube(object):
         return meshplex.MeshTetra(vertices, cells)
 
 
-class Ball(object):
+class Ball:
     def exact_sol(self, x):
         return cos(pi / 2 * (x[0] ** 2 + x[1] ** 2 + x[2] ** 2))
 

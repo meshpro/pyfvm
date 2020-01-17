@@ -1,10 +1,9 @@
-# -*- coding: utf-8 -*-
-#
 import numpy
+
 from . import fvm_matrix
 
 
-class FvmProblem(object):
+class FvmProblem:
     def __init__(
         self,
         mesh,

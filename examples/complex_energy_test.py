@@ -1,14 +1,13 @@
-# -*- coding: utf-8 -*-
-import pyfvm
-
-import meshzoo
-import pyamg
 import numpy
+import pyamg
+
 import meshplex
+import meshzoo
+import pyfvm
 
 
 def test():
-    class EnergyEdgeKernel(object):
+    class EnergyEdgeKernel:
         def __init__(self):
             self.subdomains = [None]
             return

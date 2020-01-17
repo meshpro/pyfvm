@@ -1,9 +1,9 @@
-# -*- coding: utf-8 -*-
-import pykry
-import meshzoo
 import numpy
-import pyfvm
+
 import meshplex
+import meshzoo
+import pyfvm
+import pykry
 
 
 def test():
@@ -11,7 +11,7 @@ def test():
     V = -1.0
     g = 1.0
 
-    class Energy(object):
+    class Energy:
         """Specification of the kinetic energy operator.
         """
 

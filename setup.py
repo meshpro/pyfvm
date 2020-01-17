@@ -1,8 +1,8 @@
-# -*- coding: utf-8 -*-
 #
-from setuptools import setup, find_packages
-import os
 import codecs
+import os
+
+from setuptools import find_packages, setup
 
 # https://packaging.python.org/single_source_version/
 base_dir = os.path.abspath(os.path.dirname(__file__))
@@ -21,20 +21,14 @@ setup(
     author=about["__author__"],
     author_email=about["__author_email__"],
     packages=find_packages(),
-    description="Finite Volume Discretizations for Python",
+    description="Finite volume discretizations for Python",
     long_description=read("README.md"),
     long_description_content_type="text/markdown",
     url="https://github.com/nschloe/pyfvm",
     license=about["__license__"],
     platforms="any",
-    install_requires=[
-        "sphinxcontrib-bibtex",
-        "meshplex",
-        "numpy",
-        "pipdate >=0.3.0, <0.4.0",
-        "scipy",
-        "sympy",
-    ],
+    install_requires=["sphinxcontrib-bibtex", "meshplex", "numpy", "scipy", "sympy"],
+    python_requires=">=3.6",
     classifiers=[
         about["__license__"],
         about["__status__"],

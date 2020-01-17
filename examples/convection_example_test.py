@@ -1,14 +1,14 @@
-# -*- coding: utf-8 -*-
-import pyfvm
-from pyfvm.form_language import integrate, n_dot_grad, n_dot, dS, dV, Boundary
-import meshzoo
 import numpy
 from scipy.sparse import linalg
+
 import meshplex
+import meshzoo
+import pyfvm
+from pyfvm.form_language import Boundary, dS, dV, integrate, n_dot, n_dot_grad
 
 
 def test():
-    class DC(object):
+    class DC:
         def apply(self, u):
             a = numpy.array([2, 1, 0])
             return integrate(

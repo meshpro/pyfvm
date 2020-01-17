@@ -1,14 +1,14 @@
-# -*- coding: utf-8 -*-
 #
+from scipy.sparse import linalg
+
+import meshplex
 import meshzoo
 import pyfvm
-from pyfvm.form_language import integrate, n_dot_grad, dS, dV, Boundary
-from scipy.sparse import linalg
-import meshplex
+from pyfvm.form_language import Boundary, dS, dV, integrate, n_dot_grad
 
 
 def test():
-    class Singular(object):
+    class Singular:
         def apply(self, u):
             return (
                 integrate(lambda x: -1.0e-2 * n_dot_grad(u(x)), dS)

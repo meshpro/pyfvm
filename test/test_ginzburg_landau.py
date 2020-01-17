@@ -1,29 +1,28 @@
-# -*- coding: utf-8 -*-
-#
 """
 These tests are against the reference values from pynosh.
 """
 import os
 import shutil
 
-import pyfvm
-
-import requests
-import pykry
-import meshplex
 import numpy
 import pytest
+import requests
+
+import meshio
+import meshplex
+import pyfvm
+import pykry
 
 
 def download_mesh(name):
     filename = os.path.join("/tmp", name)
     if not os.path.exists(filename):
-        print("Downloading {}...".format(name))
+        print(f"Downloading {name}...")
         url = "https://github.com/nschloe/pynosh/raw/master/test/"
         r = requests.get(url + name, stream=True)
         if not r.ok:
             raise RuntimeError(
-                "Download error ({}, return code {}).".format(r.url, r.status_code)
+                f"Download error ({r.url}, return code {r.status_code})."
             )
         # save the mesh in /tmp
         with open(filename, "wb") as f:
@@ -33,7 +32,7 @@ def download_mesh(name):
     return filename
 
 
-class Energy(object):
+class Energy:
     """Specification of the kinetic energy operator.
     """
 
@@ -112,7 +111,7 @@ def test_keo(filename, control_values):
     mu = 1.0e-2
 
     # read the mesh
-    mesh, point_data, field_data, _ = meshplex.read(filename)
+    mesh = meshplex.read(filename)
 
     keo = pyfvm.get_fvm_matrix(mesh, edge_kernels=[Energy(mu)])
 
@@ -171,9 +170,10 @@ def test_jacobian(filename, control_values):
     filename = download_mesh(filename)
     mu = 1.0e-2
 
-    mesh, point_data, field_data, _ = meshplex.read(filename)
+    mesh = meshplex.read(filename)
+    m2 = meshio.read(filename)
 
-    psi = point_data["psi"][:, 0] + 1j * point_data["psi"][:, 1]
+    psi = m2.point_data["psi"][:, 0] + 1j * m2.point_data["psi"][:, 1]
 
     V = -1.0
     g = 1.0
@@ -250,7 +250,7 @@ def test_jacobian(filename, control_values):
 )
 def test_f(filename, control_values):
     filename = download_mesh(filename)
-    mesh, point_data, field_data, _ = meshplex.read(filename)
+    mesh = meshplex.read(filename)
 
     mu = 1.0e-2
     V = -1.0
@@ -259,7 +259,8 @@ def test_f(filename, control_values):
     keo = pyfvm.get_fvm_matrix(mesh, edge_kernels=[Energy(mu)])
 
     # compute the Ginzburg-Landau residual
-    psi = point_data["psi"][:, 0] + 1j * point_data["psi"][:, 1]
+    m2 = meshio.read(filename)
+    psi = m2.point_data["psi"][:, 0] + 1j * m2.point_data["psi"][:, 1]
     cv = mesh.control_volumes
     # One divides by the control volumes here. No idea why this has been done in pynosh.
     # Perhaps to make sure that even the small control volumes have a significant

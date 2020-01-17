@@ -1,10 +1,10 @@
-# -*- coding: utf-8 -*-
-from numpy import pi
 import pyamg
-import pyfvm
-from pyfvm.form_language import integrate, Subdomain, dS, dV, n_dot_grad
+from numpy import pi
 from sympy import sin
+
 import meshplex
+import pyfvm
+from pyfvm.form_language import Subdomain, dS, dV, integrate, n_dot_grad
 
 
 def test():
@@ -20,7 +20,7 @@ def test():
 
         is_boundary_only = True
 
-    class Poisson(object):
+    class Poisson:
         def apply(self, u):
             return integrate(lambda x: -n_dot_grad(u(x)), dS) - integrate(
                 lambda x: 50 * sin(2 * pi * x[0]), dV

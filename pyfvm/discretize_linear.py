@@ -1,11 +1,9 @@
-# -*- coding: utf-8 -*-
-#
-from . import form_language
-from .linear_fvm_problem import get_linear_fvm_problem
-
 import numpy
 import sympy
 from sympy.matrices.expressions.matexpr import MatrixExpr, MatrixSymbol
+
+from . import form_language
+from .linear_fvm_problem import get_linear_fvm_problem
 
 
 def split(expr, variables):
@@ -19,8 +17,7 @@ def split(expr, variables):
         input_is_list = False
         variables = [variables]
 
-    # See <https://github.com/sympy/sympy/issues/11475> on why we need expand()
-    # here.
+    # See <https://github.com/sympy/sympy/issues/11475> on why we need expand() here.
     expr = expr.expand()
 
     # Get the affine part by removing all terms with any of the variables.
@@ -28,8 +25,7 @@ def split(expr, variables):
     for var in variables:
         affine = affine.coeff(var, n=0)
 
-    # Extract the linear coefficients by extracting the affine parts of the
-    # derivatives.
+    # Extract the linear coefficients by extracting the affine parts of the derivatives.
     linear = []
     for var in variables:
         d = sympy.diff(expr, var)
@@ -50,7 +46,7 @@ def split(expr, variables):
     return affine, linear, nonlinear
 
 
-class EdgeLinearKernel(object):
+class EdgeLinearKernel:
     def __init__(self, linear, affine):
         self.linear = linear
         self.affine = affine
@@ -76,7 +72,7 @@ class EdgeLinearKernel(object):
         return val, rhs, nec
 
 
-class VertexLinearKernel(object):
+class VertexLinearKernel:
     def __init__(self, mesh, linear, affine):
         self.mesh = mesh
         self.linear = linear
@@ -100,7 +96,7 @@ class VertexLinearKernel(object):
         return (res0, res1)
 
 
-class FaceLinearKernel(object):
+class FaceLinearKernel:
     def __init__(self, mesh, coeff, affine, subdomains):
         self.mesh = mesh
         self.coeff = coeff
@@ -130,7 +126,7 @@ class FaceLinearKernel(object):
         )
 
 
-class DirichletLinearKernel(object):
+class DirichletLinearKernel:
     def __init__(self, mesh, coeff, rhs, subdomain):
         self.mesh = mesh
         self.coeff = coeff
@@ -151,7 +147,7 @@ def _discretize_edge_integral(
     return discretizer.generate(integrand, index_functions)
 
 
-class DiscretizeEdgeIntegral(object):
+class DiscretizeEdgeIntegral:
     # https://stackoverflow.com/q/38061465/353337
     class dot(sympy.Function):
         pass
@@ -202,8 +198,8 @@ class DiscretizeEdgeIntegral(object):
         index_vars = []
         for f in index_functions:
             # Replace f(x0) by f[k0], f(x1) by f[k1].
-            fk0 = sympy.Symbol("{}k0".format(f))
-            fk1 = sympy.Symbol("{}k1".format(f))
+            fk0 = sympy.Symbol(f"{f}k0")
+            fk1 = sympy.Symbol(f"{f}k1")
             out = out.subs(f(self.x0), fk0)
             out = out.subs(f(self.x1), fk1)
             # Replace f(x) by 0.5*(f[k0] + f[k1]) (the edge midpoint)

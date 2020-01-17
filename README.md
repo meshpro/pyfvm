@@ -1,18 +1,18 @@
 # pyfvm
 
-[![CircleCI](https://img.shields.io/circleci/project/github/nschloe/pyfvm.svg)](https://circleci.com/gh/nschloe/pyfvm)
-[![codecov](https://img.shields.io/codecov/c/github/nschloe/pyfvm.svg)](https://codecov.io/gh/nschloe/pyfvm)
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
-[![PyPi Version](https://img.shields.io/pypi/v/pyfvm.svg)](https://pypi.org/project/pyfvm)
-[![GitHub stars](https://img.shields.io/github/stars/nschloe/pyfvm.svg?logo=github&label=Stars)](https://github.com/nschloe/pyfvm)
+[![CircleCI](https://img.shields.io/circleci/project/github/nschloe/pyfvm.svg?style=flat-square)](https://circleci.com/gh/nschloe/pyfvm)
+[![codecov](https://img.shields.io/codecov/c/github/nschloe/pyfvm.svg?style=flat-square)](https://codecov.io/gh/nschloe/pyfvm)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg?style=flat-square)](https://github.com/psf/black)
+[![PyPi Version](https://img.shields.io/pypi/v/pyfvm.svg?style=flat-square)](https://pypi.org/project/pyfvm)
+[![GitHub stars](https://img.shields.io/github/stars/nschloe/pyfvm.svg?style=flat-square&logo=github&label=Stars)](https://github.com/nschloe/pyfvm)
+[![PyPi downloads](https://img.shields.io/pypi/dm/pyfvm.svg?style=flat-square)](https://pypistats.org/packages/pyfvm)
 
 Creating finite volume equation systems with ease.
 
-pyfvm provides everything that is needed for setting up finite volume equation
-systems. The user needs to specify the finite volume formulation in a
-configuration file, and pyfvm will create the matrix/right-hand side or the
-nonlinear system for it. This package is for everyone who wants to quickly
-construct FVM systems.
+pyfvm provides everything that is needed for setting up finite volume equation systems.
+The user needs to specify the finite volume formulation in a configuration file, and
+pyfvm will create the matrix/right-hand side or the nonlinear system for it. This
+package is for everyone who wants to quickly construct FVM systems.
 
 ### Examples
 
@@ -45,10 +45,10 @@ u = linalg.spsolve(matrix, rhs)
 
 mesh.write('out.vtk', point_data={'u': u})
 ```
-This example uses [meshzoo](https://pypi.org/project/meshzoo) for creating
-a simple mesh, but anything else that provides vertices and cells works as
-well. For example, reading from a wide variety of mesh files is supported
-(via [meshio](https://pypi.org/project/meshio)):
+This example uses [meshzoo](https://pypi.org/project/meshzoo) for creating a simple
+mesh, but anything else that provides vertices and cells works as well. For example,
+reading from a wide variety of mesh files is supported (via
+[meshio](https://pypi.org/project/meshio)):
 ```python
 mesh, _, _ = pyfvm.reader.read('pacman.e')
 ```
@@ -110,9 +110,9 @@ u = scipy.optimize.newton_krylov(f.eval, u0)
 pyfvm is [available from the Python Package
 Index](https://pypi.org/project/pyfvm/), so simply type
 ```
-pip install -U pyfvm
+pip3 install --user pyfvm
 ```
-to install or upgrade.
+to install.
 
 ### Testing
 
@@ -120,17 +120,6 @@ To run the tests, check out this repository and type
 ```
 pytest
 ```
-
-### Distribution
-
-To create a new release
-
-1. bump the `__version__` number,
-
-2. publish to PyPi and GitHub:
-    ```
-    make publish
-    ```
 
 ### License
 

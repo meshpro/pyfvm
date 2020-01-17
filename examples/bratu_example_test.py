@@ -1,14 +1,14 @@
-# -*- coding: utf-8 -*-
-import meshzoo
-import pyfvm
-from pyfvm.form_language import integrate, n_dot_grad, dS, dV, Boundary
 import numpy
 from sympy import exp
+
 import meshplex
+import meshzoo
+import pyfvm
+from pyfvm.form_language import Boundary, dS, dV, integrate, n_dot_grad
 
 
 def test():
-    class Bratu(object):
+    class Bratu:
         def apply(self, u):
             return integrate(lambda x: -n_dot_grad(u(x)), dS) - integrate(
                 lambda x: 2.0 * exp(u(x)), dV
