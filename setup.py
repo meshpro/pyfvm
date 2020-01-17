@@ -27,7 +27,7 @@ setup(
     url="https://github.com/nschloe/pyfvm",
     license=about["__license__"],
     platforms="any",
-    install_requires=["sphinxcontrib-bibtex", "meshplex", "numpy", "scipy", "sympy",],
+    install_requires=["sphinxcontrib-bibtex", "meshplex", "numpy", "scipy", "sympy"],
     python_requires=">=3.6",
     classifiers=[
         about["__license__"],
