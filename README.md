@@ -3,6 +3,7 @@
 [![CircleCI](https://img.shields.io/circleci/project/github/nschloe/pyfvm.svg?style=flat-square)](https://circleci.com/gh/nschloe/pyfvm)
 [![codecov](https://img.shields.io/codecov/c/github/nschloe/pyfvm.svg?style=flat-square)](https://codecov.io/gh/nschloe/pyfvm)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg?style=flat-square)](https://github.com/psf/black)
+[![PyPI pyversions](https://img.shields.io/pypi/pyversions/pyfvm.svg?style=flat-square)](https://pypi.org/pypi/pyfvm/)
 [![PyPi Version](https://img.shields.io/pypi/v/pyfvm.svg?style=flat-square)](https://pypi.org/project/pyfvm)
 [![GitHub stars](https://img.shields.io/github/stars/nschloe/pyfvm.svg?style=flat-square&logo=github&label=Stars)](https://github.com/nschloe/pyfvm)
 [![PyPi downloads](https://img.shields.io/pypi/dm/pyfvm.svg?style=flat-square)](https://pypistats.org/packages/pyfvm)
