@@ -51,7 +51,7 @@ mesh, but anything else that provides vertices and cells works as well. For exam
 reading from a wide variety of mesh files is supported (via
 [meshio](https://pypi.org/project/meshio)):
 ```python
-mesh, _, _ = pyfvm.reader.read('pacman.e')
+mesh = meshplex.read("pacman.e")
 ```
 Likewise, [PyAMG](https://github.com/pyamg/pyamg) is a much faster solver
 for this problem
