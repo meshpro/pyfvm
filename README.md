@@ -3,6 +3,7 @@
 [![CircleCI](https://img.shields.io/circleci/project/github/nschloe/pyfvm.svg?style=flat-square)](https://circleci.com/gh/nschloe/pyfvm)
 [![codecov](https://img.shields.io/codecov/c/github/nschloe/pyfvm.svg?style=flat-square)](https://codecov.io/gh/nschloe/pyfvm)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg?style=flat-square)](https://github.com/psf/black)
+[![PyPI pyversions](https://img.shields.io/pypi/pyversions/pyfvm.svg?style=flat-square)](https://pypi.org/pypi/pyfvm/)
 [![PyPi Version](https://img.shields.io/pypi/v/pyfvm.svg?style=flat-square)](https://pypi.org/project/pyfvm)
 [![GitHub stars](https://img.shields.io/github/stars/nschloe/pyfvm.svg?style=flat-square&logo=github&label=Stars)](https://github.com/nschloe/pyfvm)
 [![PyPi downloads](https://img.shields.io/pypi/dm/pyfvm.svg?style=flat-square)](https://pypistats.org/packages/pyfvm)
@@ -50,7 +51,7 @@ mesh, but anything else that provides vertices and cells works as well. For exam
 reading from a wide variety of mesh files is supported (via
 [meshio](https://pypi.org/project/meshio)):
 ```python
-mesh, _, _ = pyfvm.reader.read('pacman.e')
+mesh = meshplex.read("pacman.e")
 ```
 Likewise, [PyAMG](https://github.com/pyamg/pyamg) is a much faster solver
 for this problem
@@ -110,7 +111,7 @@ u = scipy.optimize.newton_krylov(f.eval, u0)
 pyfvm is [available from the Python Package
 Index](https://pypi.org/project/pyfvm/), so simply type
 ```
-pip3 install --user pyfvm
+pip install pyfvm
 ```
 to install.
 
