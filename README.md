@@ -110,7 +110,7 @@ u = scipy.optimize.newton_krylov(f.eval, u0)
 pyfvm is [available from the Python Package
 Index](https://pypi.org/project/pyfvm/), so simply type
 ```
-pip3 install --user pyfvm
+pip install pyfvm
 ```
 to install.
 
