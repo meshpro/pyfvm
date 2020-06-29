@@ -55,7 +55,7 @@ mesh = meshplex.read("pacman.e")
 ```
 Likewise, [PyAMG](https://github.com/pyamg/pyamg) is a much faster solver
 for this problem
-```
+```python
 import pyamg
 ml = pyamg.smoothed_aggregation_solver(linear_system.matrix)
 u = ml.solve(linear_system.rhs, tol=1e-10)
@@ -101,7 +101,7 @@ Note that the Jacobian is computed symbolically from the `Bratu` class.
 
 Instead of `pyfvm.newton`, you can use any solver that accepts the residual
 computation `f.eval`, e.g.,
-```
+```python
 import scipy.optimize
 u = scipy.optimize.newton_krylov(f.eval, u0)
 ```
