@@ -1,6 +1,6 @@
 # pyfvm
 
-[![CircleCI](https://img.shields.io/circleci/project/github/nschloe/pyfvm.svg?style=flat-square)](https://circleci.com/gh/nschloe/pyfvm)
+[![gh-actions](https://img.shields.io/github/workflow/status/nschloe/pyfvm/ci?style=flat-square)](https://github.com/nschloe/pyfvm/actions?query=workflow%3Aci)
 [![codecov](https://img.shields.io/codecov/c/github/nschloe/pyfvm.svg?style=flat-square)](https://codecov.io/gh/nschloe/pyfvm)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg?style=flat-square)](https://github.com/psf/black)
 [![PyPI pyversions](https://img.shields.io/pypi/pyversions/pyfvm.svg?style=flat-square)](https://pypi.org/pypi/pyfvm/)
@@ -123,5 +123,4 @@ pytest
 ```
 
 ### License
-
-pyfvm is published under the [MIT license](https://en.wikipedia.org/wiki/MIT_License).
+This software is published under the [GPLv3 license](https://www.gnu.org/licenses/gpl-3.0.en.html).
