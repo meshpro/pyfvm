@@ -39,7 +39,6 @@ def test():
     mesh = meshplex.MeshTetra(vertices, cells)
     # vertices, cells = meshzoo.rectangle(0.0, 2.0, 0.0, 1.0, 401, 201)
     # mesh = meshplex.MeshTri(vertices, cells)
-    print(len(vertices))
 
     # import mshr
     # import dolfin

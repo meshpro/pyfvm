@@ -58,11 +58,6 @@ class EdgeLinearKernel:
         nec = mesh.idx_hierarchy[..., cell_mask]
         X = mesh.node_coords[nec]
 
-        print(self.linear)
-        print(X.shape)
-        print(edge_ce_ratio.shape)
-        print(edge_length.shape)
-
         val = self.linear(X[0], X[1], edge_ce_ratio, edge_length)
         rhs = self.affine(X[0], X[1], edge_ce_ratio, edge_length)
 

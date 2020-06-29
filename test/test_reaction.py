@@ -31,7 +31,7 @@ class Square:
         return meshplex.MeshTri(vertices, cells)
 
 
-class Circle:
+class Disk:
     def exact_sol(self, x):
         return cos(pi / 2 * (x[0] ** 2 + x[1] ** 2))
 
@@ -113,7 +113,7 @@ def solve(problem, max_k, verbose=False):
 
 
 @pytest.mark.parametrize(
-    "problem, max_k", [(Square(), 6), (Circle(), 4), (Cube(), 4), (Ball(), 3)]
+    "problem, max_k", [(Square(), 6), (Disk(), 5), (Cube(), 4), (Ball(), 3)]
 )
 def test(problem, max_k):
     H, error_norm_1, error_norm_inf, order_1, order_inf = solve(problem, max_k)
@@ -121,11 +121,13 @@ def test(problem, max_k):
     tol = 1.0e-1
     assert order_1[-1] > expected_order - tol
     assert order_inf[-1] > expected_order - tol
-    return
 
 
 if __name__ == "__main__":
-    H, error_norm_1, error_norm_inf, order_1, order_inf = solve(
-        Square(), 6, verbose=True
-    )
+    # problem = Square()
+    problem = Disk()
+    # problem = Cube()
+    # problem = Ball()
+    max_k = 6
+    H, error_norm_1, error_norm_inf, order_1, order_inf = solve(problem, max_k, verbose=True)
     helpers.show_error_data(H, error_norm_1, error_norm_inf)
