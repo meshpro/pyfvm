@@ -28,7 +28,7 @@ import meshzoo
 from scipy.sparse import linalg
 import meshplex
 
-class Poisson(object):
+class Poisson:
     def apply(self, u):
         return integrate(lambda x: -n_dot_grad(u(x)), dS) \
              - integrate(lambda x: 1.0, dV)
@@ -74,7 +74,7 @@ import numpy
 from sympy import exp
 import meshplex
 
-class Bratu(object):
+class Bratu:
     def apply(self, u):
         return integrate(lambda x: -n_dot_grad(u(x)), dS) \
              - integrate(lambda x: 2.0 * exp(u(x)), dV)
