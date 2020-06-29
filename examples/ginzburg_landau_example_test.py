@@ -43,6 +43,8 @@ def test():
             )
 
     vertices, cells = meshzoo.rectangle(-5.0, 5.0, -5.0, 5.0, 51, 51)
+    # TODO get this to work without appending 0
+    vertices = numpy.column_stack([vertices, numpy.zeros(len(vertices))])
     mesh = meshplex.MeshTri(vertices, cells)
 
     keo = pyfvm.get_fvm_matrix(mesh, edge_kernels=[Energy()])

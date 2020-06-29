@@ -19,6 +19,8 @@ def test():
             return [(u, Boundary())]
 
     vertices, cells = meshzoo.rectangle(0.0, 1.0, 0.0, 1.0, 51, 51)
+    # TODO get this to work without appending 0
+    vertices = numpy.column_stack([vertices, numpy.zeros(len(vertices))])
     mesh = meshplex.MeshTri(vertices, cells)
 
     matrix, rhs = pyfvm.discretize_linear(DC(), mesh)
