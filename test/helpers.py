@@ -87,7 +87,6 @@ def perform_convergence_tests(discrete_solver, exact_sol, get_mesh, rng, verbose
 def show_error_data(*args, **kwargs):
     plot_error_data(*args, **kwargs)
     plt.show()
-    return
 
 
 def plot_error_data(H, error_norm_1, error_norm_inf):
@@ -106,7 +105,6 @@ def plot_error_data(H, error_norm_1, error_norm_inf):
     )
 
     plt.legend(loc="upper left")
-    return
 
 
 # def get_ball_mesh(k):
@@ -151,15 +149,7 @@ def get_ball_mesh(k):
 
 
 def get_circle_mesh(k):
-    import pygmsh
+    import meshzoo
 
-    h = 0.5 ** k
-    geom = pygmsh.built_in.Geometry()
-    geom.add_circle([0.0, 0.0, 0.0], 1.0, lcar=h)
-    mesh = pygmsh.generate_mesh(geom, verbose=False)
-    cells = mesh.get_cells_type("triangle")
-    # toss away unused points
-    uvertices, uidx = numpy.unique(cells, return_inverse=True)
-    cells = uidx.reshape(cells.shape)
-    points = mesh.points[uvertices]
+    points, cells = meshzoo.disk(6, 8)
     return meshplex.MeshTri(points, cells)
