@@ -10,9 +10,6 @@ from pyfvm.form_language import Boundary, dS, dV, integrate, n_dot_grad
 
 
 class Square:
-    def exact_sol(self, x):
-        return sin(pi * x[0]) * sin(pi * x[1])
-
     def apply(self, u):
         return (
             integrate(lambda x: -n_dot_grad(u(x)), dS)
@@ -29,8 +26,11 @@ class Square:
         vertices, cells = meshzoo.rectangle(0.0, 1.0, 0.0, 1.0, n + 1, n + 1)
         return meshplex.MeshTri(vertices, cells)
 
+    def exact_sol(self, x):
+        return sin(pi * x[0]) * sin(pi * x[1])
 
-class Circle:
+
+class Disk:
     def exact_sol(self, x):
         return cos(pi / 2 * (x[0] ** 2 + x[1] ** 2))
 
@@ -49,7 +49,7 @@ class Circle:
         return [(lambda x: u(x) - self.exact_sol(x), Boundary())]
 
     def get_mesh(self, k):
-        return helpers.get_circle_mesh(k)
+        return helpers.get_disk_mesh(k)
 
 
 class Cube:
@@ -122,7 +122,7 @@ def solve(problem, max_k, verbose=False):
 
 
 @pytest.mark.parametrize(
-    "problem, max_k", [(Square(), 6), (Circle(), 4), (Cube(), 4), (Ball(), 3)]
+    "problem, max_k", [(Square(), 6), (Disk(), 4), (Cube(), 4), (Ball(), 3)]
 )
 def test(problem, max_k):
     H, error_norm_1, error_norm_inf, order_1, order_inf = solve(problem, max_k)
@@ -133,5 +133,10 @@ def test(problem, max_k):
 
 
 if __name__ == "__main__":
-    H, error_norm_1, error_norm_inf, order_1, order_inf = solve(verbose=True)
+    # problem = Square()
+    problem = Disk()
+    # problem = Cube()
+    # problem = Ball()
+    max_k = 6
+    H, error_norm_1, error_norm_inf, order_1, order_inf = solve(problem, max_k, verbose=True)
     helpers.show_error_data(H, error_norm_1, error_norm_inf)

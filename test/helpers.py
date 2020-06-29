@@ -134,7 +134,7 @@ def get_ball_mesh(k):
     return meshplex.MeshTetra(points, cells)
 
 
-# def get_circle_mesh(k):
+# def get_disk_mesh(k):
 #     import dolfin
 #     import mshr
 #     from numpy import pi
@@ -148,7 +148,7 @@ def get_ball_mesh(k):
 #     return meshplex.MeshTri(coords, m.cells())
 
 
-def get_circle_mesh(k):
+def get_disk_mesh(k):
     import meshzoo
 
     points, cells = meshzoo.disk(6, 8)

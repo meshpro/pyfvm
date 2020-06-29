@@ -50,7 +50,7 @@ class Circle:
         return [(lambda x: u(x) - self.exact_sol(x), Boundary())]
 
     def get_mesh(self, k):
-        return helpers.get_circle_mesh(k)
+        return helpers.get_disk_mesh(k)
 
 
 class Cube:
