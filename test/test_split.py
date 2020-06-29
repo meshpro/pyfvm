@@ -21,7 +21,6 @@ y = sympy.Symbol("y")
 def test_split(expr, parts):
     pts = pyfvm.split(expr, [x, y])
     assert pts == parts
-    return
 
 
 if __name__ == "__main__":

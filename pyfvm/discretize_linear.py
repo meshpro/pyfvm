@@ -51,7 +51,6 @@ class EdgeLinearKernel:
         self.linear = linear
         self.affine = affine
         self.subdomains = [None]
-        return
 
     def eval(self, mesh, cell_mask):
         edge_ce_ratio = mesh.ce_ratios[..., cell_mask]

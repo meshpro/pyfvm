@@ -32,9 +32,7 @@ class Square:
 
     def get_mesh(self, k):
         n = 2 ** (k + 1)
-        vertices, cells = meshzoo.rectangle(
-            0.0, 1.0, 0.0, 1.0, n + 1, n + 1, zigzag=True
-        )
+        vertices, cells = meshzoo.rectangle(0.0, 1.0, 0.0, 1.0, n + 1, n + 1)
         return meshplex.MeshTri(vertices, cells)
 
 
@@ -63,7 +61,7 @@ class Circle:
         return [(lambda x: u(x) - self.exact_sol(x), Boundary())]
 
     def get_mesh(self, k):
-        return helpers.get_circle_mesh(k)
+        return helpers.get_disk_mesh(k)
 
 
 class Cube:
@@ -148,7 +146,6 @@ def solve(problem, max_k, verbose=False):
 #     tol = 1.0e-1
 #     assert order_1[-1] > expected_order - tol
 #     assert order_inf[-1] > expected_order - tol
-#     return
 
 
 if __name__ == "__main__":

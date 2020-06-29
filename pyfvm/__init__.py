@@ -1,6 +1,5 @@
-from pyfvm.__about__ import __author__, __author_email__, __version__
-
 from . import fvm_problem, linear_fvm_problem
+from .__about__ import __version__
 from .discretize import discretize
 from .discretize_linear import discretize_linear, split
 from .fvm_matrix import get_fvm_matrix
@@ -8,8 +7,6 @@ from .nonlinear_methods import newton
 
 __all__ = [
     "__version__",
-    "__author__",
-    "__author_email__",
     "discretize",
     "discretize_linear",
     "split",

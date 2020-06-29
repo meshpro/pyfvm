@@ -3,7 +3,6 @@ doc/_build/
 doc/build/
 pyfvm.egg-info/
 dist/
-*.vtu
 *.prof
 *.e
 *.msh
