@@ -28,7 +28,7 @@ import meshzoo
 from scipy.sparse import linalg
 import meshplex
 
-class Poisson(object):
+class Poisson:
     def apply(self, u):
         return integrate(lambda x: -n_dot_grad(u(x)), dS) \
              - integrate(lambda x: 1.0, dV)
@@ -55,7 +55,7 @@ mesh = meshplex.read("pacman.e")
 ```
 Likewise, [PyAMG](https://github.com/pyamg/pyamg) is a much faster solver
 for this problem
-```
+```python
 import pyamg
 ml = pyamg.smoothed_aggregation_solver(linear_system.matrix)
 u = ml.solve(linear_system.rhs, tol=1e-10)
@@ -74,7 +74,7 @@ import numpy
 from sympy import exp
 import meshplex
 
-class Bratu(object):
+class Bratu:
     def apply(self, u):
         return integrate(lambda x: -n_dot_grad(u(x)), dS) \
              - integrate(lambda x: 2.0 * exp(u(x)), dV)
@@ -101,7 +101,7 @@ Note that the Jacobian is computed symbolically from the `Bratu` class.
 
 Instead of `pyfvm.newton`, you can use any solver that accepts the residual
 computation `f.eval`, e.g.,
-```
+```python
 import scipy.optimize
 u = scipy.optimize.newton_krylov(f.eval, u0)
 ```
