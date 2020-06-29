@@ -1,6 +1,5 @@
-from .__about__ import __version__
-
 from . import fvm_problem, linear_fvm_problem
+from .__about__ import __version__
 from .discretize import discretize
 from .discretize_linear import discretize_linear, split
 from .fvm_matrix import get_fvm_matrix

@@ -150,6 +150,7 @@ def get_ball_mesh(k):
 
 def get_disk_mesh(k):
     import meshzoo
+
     points, cells = meshzoo.disk(6, k + 1)
     out = meshplex.MeshTri(points, cells)
     # out.show()

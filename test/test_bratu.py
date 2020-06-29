@@ -138,5 +138,7 @@ if __name__ == "__main__":
     # problem = Cube()
     # problem = Ball()
     max_k = 6
-    H, error_norm_1, error_norm_inf, order_1, order_inf = solve(problem, max_k, verbose=True)
+    H, error_norm_1, error_norm_inf, order_1, order_inf = solve(
+        problem, max_k, verbose=True
+    )
     helpers.show_error_data(H, error_norm_1, error_norm_inf)
