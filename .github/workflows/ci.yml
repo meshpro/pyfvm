@@ -29,15 +29,12 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
     - uses: actions/checkout@v2
-    - name: Install package
+    - name: Install system dependencies
+      run: sudo apt-get install -y gmsh
+    - name: Test with tox
       run: |
-        sudo apt-get install -y gmsh
-        pip install -r test_requirements.txt
-        pip install .[all]
-    - name: Test with pytest
-      run: |
-        pip install pytest pytest-cov
-        pytest --cov pyfvm
+        pip install tox
+        tox
     - name: Submit to codecov
       if: ${{ matrix.python-version == '3.8' }}
       run: bash <(curl -s https://codecov.io/bash)
