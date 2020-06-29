@@ -146,7 +146,6 @@ def solve(problem, max_k, verbose=False):
 #     tol = 1.0e-1
 #     assert order_1[-1] > expected_order - tol
 #     assert order_inf[-1] > expected_order - tol
-#     return
 
 
 if __name__ == "__main__":

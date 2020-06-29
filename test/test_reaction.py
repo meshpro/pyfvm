@@ -113,7 +113,14 @@ def solve(problem, max_k, verbose=False):
 
 
 @pytest.mark.parametrize(
-    "problem, max_k", [(Square(), 6), (Disk(), 5), (Cube(), 4), (Ball(), 3)]
+    "problem, max_k",
+    [
+        (Square(), 6),
+        (Disk(), 5),
+        (Cube(), 4),
+        # Disable Ball() to avoid broken gmsh on gh-actions TODO enable
+        # (Ball(), 3)
+    ],
 )
 def test(problem, max_k):
     H, error_norm_1, error_norm_inf, order_1, order_inf = solve(problem, max_k)
