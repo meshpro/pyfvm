@@ -26,7 +26,6 @@ def test():
     u = linalg.spsolve(matrix, rhs)
 
     mesh.write("out.vtk", point_data={"u": u})
-    return
 
 
 if __name__ == "__main__":

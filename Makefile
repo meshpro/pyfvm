@@ -18,7 +18,7 @@ upload: setup.py
 	python3 setup.py bdist_wheel
 	twine upload dist/*
 
-publish: tag upload
+publish: upload tag
 
 clean:
 	@find . | grep -E "(__pycache__|\.pyc|\.pyo$\)" | xargs rm -rf

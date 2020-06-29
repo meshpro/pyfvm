@@ -23,9 +23,7 @@ class Square:
 
     def get_mesh(self, k):
         n = 2 ** (k + 1)
-        vertices, cells = meshzoo.rectangle(
-            0.0, 1.0, 0.0, 1.0, n + 1, n + 1, zigzag=True
-        )
+        vertices, cells = meshzoo.rectangle(0.0, 1.0, 0.0, 1.0, n + 1, n + 1)
         return meshplex.MeshTri(vertices, cells)
 
 

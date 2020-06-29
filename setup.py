@@ -20,7 +20,6 @@ setup(
     long_description_content_type="text/markdown",
     url="https://github.com/nschloe/pyfvm",
     license=about["__license__"],
-    platforms="any",
     install_requires=["sphinxcontrib-bibtex", "meshplex", "numpy", "scipy", "sympy"],
     python_requires=">=3.6",
     classifiers=[
