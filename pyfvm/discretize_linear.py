@@ -256,12 +256,12 @@ def discretize_linear(obj, mesh):
     u = sympy.Function("u")
     res = obj.apply(u)
 
-    # See <http://docs.sympy.org/dev/modules/utilities/lambdify.html>.
-    # A sympy.Matrix _always_ has two dimensions, meaning that even if you
-    # seemingly create a vector 'a la `Matrix([1, 2, 3]), it'll have shape (3,
-    # 1). This makes it impossible to handle dot products correctly. To work
-    # around this, always cut off the last dimension of an ImmutableDenseMatrix
-    # if it is of size 1; see <https://github.com/sympy/sympy/issues/12666>.
+    # See <http://docs.sympy.org/dev/modules/utilities/lambdify.html>. A sympy.Matrix
+    # _always_ has two dimensions, meaning that even if you seemingly create a vector 'a
+    # la `Matrix([1, 2, 3])`, it'll have shape (3, 1). This makes it impossible to
+    # handle dot products correctly. To work around this, always cut off the last
+    # dimension of an ImmutableDenseMatrix if it is of size 1; see
+    # <https://github.com/sympy/sympy/issues/12666>.
     def vector2vector(x):
         out = numpy.array(x)
         if len(out.shape) == 2 and out.shape[1] == 1:
