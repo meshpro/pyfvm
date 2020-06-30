@@ -16,23 +16,27 @@ def test():
         """
 
         def __init__(self):
-            self.magnetic_field = mu * numpy.array([0.0, 0.0, 1.0])
             self.subdomains = [None]
-            return
 
         def eval(self, mesh, cell_mask):
             nec = mesh.idx_hierarchy[..., cell_mask]
             X = mesh.node_coords[nec]
 
             edge_midpoint = 0.5 * (X[0] + X[1])
-            edge = X[1] - X[0]
             edge_ce_ratio = mesh.ce_ratios[..., cell_mask]
 
             # project the magnetic potential on the edge at the midpoint
-            magnetic_potential = 0.5 * numpy.cross(self.magnetic_field, edge_midpoint)
+            # magnetic_field = mu * numpy.array([0.0, 0.0, 1.0])
+            # magnetic_potential = 0.5 * numpy.cross(magnetic_field, edge_midpoint)
+            magnetic_potential = (
+                0.5
+                * mu
+                * numpy.stack([-edge_midpoint[..., 1], edge_midpoint[..., 0]], axis=-1)
+            )
 
             # The dot product <magnetic_potential, edge>, executed for many
             # points at once; cf. <http://stackoverflow.com/a/26168677/353337>.
+            edge = X[1] - X[0]
             beta = numpy.einsum("...k,...k->...", magnetic_potential, edge)
 
             return numpy.array(
@@ -43,8 +47,6 @@ def test():
             )
 
     vertices, cells = meshzoo.rectangle(-5.0, 5.0, -5.0, 5.0, 51, 51)
-    # TODO get this to work without appending 0
-    vertices = numpy.column_stack([vertices, numpy.zeros(len(vertices))])
     mesh = meshplex.MeshTri(vertices, cells)
 
     keo = pyfvm.get_fvm_matrix(mesh, edge_kernels=[Energy()])
