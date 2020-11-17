@@ -8,7 +8,7 @@ def get_linear_fvm_problem(
     V, I, J, rhs = _get_VIJ(mesh, edge_kernels, vertex_kernels, face_kernels)
 
     # One unknown per vertex
-    n = len(mesh.node_coords)
+    n = len(mesh.points)
     # Transform to CSR format for efficiency
     matrix = sparse.coo_matrix((V, (I, J)), shape=(n, n))
     matrix = matrix.tocsr()
@@ -35,7 +35,7 @@ def _get_VIJ(mesh, edge_kernels, vertex_kernels, face_kernels):
     V = []
     I_ = []
     J = []
-    n = len(mesh.node_coords)
+    n = len(mesh.points)
     # Treating the diagonal explicitly makes tocsr() faster at the cost of a
     # bunch of numpy.add.at().
     diag = numpy.zeros(n)
@@ -50,7 +50,7 @@ def _get_VIJ(mesh, edge_kernels, vertex_kernels, face_kernels):
 
             # Diagonal entries.
             # Manually sum up the entries corresponding to the same i, j first.
-            for c, i in zip(mesh.cells["nodes"].T, mesh.local_idx_inv):
+            for c, i in zip(mesh.cells["points"].T, mesh.local_idx_inv):
                 numpy.add.at(diag, c, sum([v_mtx[t[0]][t[0]][t[1:]] for t in i]))
 
             # offdiagonal entries
@@ -64,7 +64,7 @@ def _get_VIJ(mesh, edge_kernels, vertex_kernels, face_kernels):
 
             # Right-hand side.
             try:
-                for c, i in zip(mesh.cells["nodes"].T, mesh.local_idx_inv):
+                for c, i in zip(mesh.cells["points"].T, mesh.local_idx_inv):
                     numpy.subtract.at(rhs, c, sum([v_rhs[t[0]][t[1:]] for t in i]))
             except TypeError:
                 # v_rhs probably integers/floats

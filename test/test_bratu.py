@@ -112,7 +112,7 @@ def solve(problem, max_k, verbose=False):
             jac = jacobian.get_linear_operator(u0)
             return linalg.spsolve(jac, rhs)
 
-        u0 = numpy.zeros(len(mesh.node_coords))
+        u0 = numpy.zeros(len(mesh.points))
         u = pyfvm.newton(f.eval, jacobian_solver, u0, verbose=False)
         return u
 

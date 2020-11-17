@@ -13,7 +13,7 @@ def get_fvm_matrix(
     V, I, J = _get_VIJ(mesh, edge_kernels, vertex_kernels, face_kernels)
 
     # One unknown per vertex
-    n = len(mesh.node_coords)
+    n = len(mesh.points)
     matrix = sparse.coo_matrix((V, (I, J)), shape=(n, n))
     # Transform to CSR format for efficiency
     matrix = matrix.tocsr()

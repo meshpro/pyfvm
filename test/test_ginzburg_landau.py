@@ -24,7 +24,7 @@ class Energy:
 
     def eval(self, mesh, cell_mask):
         nec = mesh.idx_hierarchy[..., cell_mask]
-        X = mesh.node_coords[nec]
+        X = mesh.points[nec]
 
         edge_midpoint = 0.5 * (X[0] + X[1])
         edge = X[1] - X[0]
@@ -50,10 +50,10 @@ class Energy:
     #
     # def eval(self, mesh, cell_mask):
     #     nec = mesh.idx_hierarchy[..., cell_mask]
-    #     X = mesh.node_coords[nec]
+    #     X = mesh.points[nec]
     #
     #     magnetic_potential = numpy.array(
-    #         [0.5 * numpy.cross(self.magnetic_field, x) for x in mesh.node_coords]
+    #         [0.5 * numpy.cross(self.magnetic_field, x) for x in mesh.points]
     #     )
     #
     #     edge = X[1] - X[0]
@@ -169,7 +169,7 @@ def test_jacobian(filename, control_values):
         alpha = V + g * 2.0 * (psi.real ** 2 + psi.imag ** 2)
         gPsi0Squared = g * psi ** 2
 
-        num_unknowns = len(mesh.node_coords)
+        num_unknowns = len(mesh.points)
         return pykry.LinearOperator(
             (num_unknowns, num_unknowns),
             complex,

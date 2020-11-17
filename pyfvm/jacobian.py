@@ -17,7 +17,7 @@ class Jacobian:
         )
 
         # One unknown per vertex
-        n = len(self.mesh.node_coords)
+        n = len(self.mesh.points)
         matrix = sparse.coo_matrix((V, (I, J)), shape=(n, n))
         # Transform to CSR format for efficiency
         matrix = matrix.tocsr()

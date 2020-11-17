@@ -56,7 +56,7 @@ class EdgeLinearKernel:
         edge_ce_ratio = mesh.ce_ratios[..., cell_mask]
         edge_length = mesh.edge_lengths[..., cell_mask]
         nec = mesh.idx_hierarchy[..., cell_mask]
-        X = mesh.node_coords[nec]
+        X = mesh.points[nec]
 
         val = self.linear(X[0], X[1], edge_ce_ratio, edge_length)
         rhs = self.affine(X[0], X[1], edge_ce_ratio, edge_length)
@@ -81,7 +81,7 @@ class VertexLinearKernel:
 
     def eval(self, vertex_mask):
         control_volumes = self.mesh.control_volumes[vertex_mask]
-        X = self.mesh.node_coords[vertex_mask].T
+        X = self.mesh.points[vertex_mask].T
 
         res0 = self.linear(control_volumes, X)
         res1 = self.affine(control_volumes, X)
@@ -114,7 +114,7 @@ class FaceLinearKernel:
         ids = self.mesh.idx_hierarchy[..., face_cells_inside]
         face_parts = self.mesh.face_partitions[..., face_cells_inside]
 
-        X = self.mesh.node_coords[ids]
+        X = self.mesh.points[ids]
 
         # Use +zero to make sure the output shape is correct. (The functions
         # coeff and affine can return just a float, for example.)
@@ -134,7 +134,7 @@ class DirichletLinearKernel:
         return
 
     def eval(self, vertex_mask):
-        X = self.mesh.node_coords[vertex_mask].T
+        X = self.mesh.points[vertex_mask].T
         zero = numpy.zeros(sum(vertex_mask))
         return (self.coeff(X) + zero, self.rhs(X) + zero)
 
