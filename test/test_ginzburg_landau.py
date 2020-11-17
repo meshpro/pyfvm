@@ -3,20 +3,19 @@ These tests are against the reference values from pynosh.
 """
 import pathlib
 
-import numpy
-import pytest
-
 import meshio
 import meshplex
-import pyfvm
+import numpy
 import pykry
+import pytest
+
+import pyfvm
 
 this_dir = pathlib.Path(__file__).resolve().parent
 
 
 class Energy:
-    """Specification of the kinetic energy operator.
-    """
+    """Specification of the kinetic energy operator."""
 
     def __init__(self, mu):
         self.magnetic_field = mu * numpy.array([0.0, 0.0, 1.0])
@@ -24,7 +23,7 @@ class Energy:
 
     def eval(self, mesh, cell_mask):
         nec = mesh.idx_hierarchy[..., cell_mask]
-        X = mesh.node_coords[nec]
+        X = mesh.points[nec]
 
         edge_midpoint = 0.5 * (X[0] + X[1])
         edge = X[1] - X[0]
@@ -50,10 +49,10 @@ class Energy:
     #
     # def eval(self, mesh, cell_mask):
     #     nec = mesh.idx_hierarchy[..., cell_mask]
-    #     X = mesh.node_coords[nec]
+    #     X = mesh.points[nec]
     #
     #     magnetic_potential = numpy.array(
-    #         [0.5 * numpy.cross(self.magnetic_field, x) for x in mesh.node_coords]
+    #         [0.5 * numpy.cross(self.magnetic_field, x) for x in mesh.points]
     #     )
     #
     #     edge = X[1] - X[0]
@@ -169,7 +168,7 @@ def test_jacobian(filename, control_values):
         alpha = V + g * 2.0 * (psi.real ** 2 + psi.imag ** 2)
         gPsi0Squared = g * psi ** 2
 
-        num_unknowns = len(mesh.node_coords)
+        num_unknowns = len(mesh.points)
         return pykry.LinearOperator(
             (num_unknowns, num_unknowns),
             complex,

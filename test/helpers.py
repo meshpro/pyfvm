@@ -1,8 +1,7 @@
 import matplotlib.pyplot as plt
+import meshplex
 import numpy
 import sympy
-
-import meshplex
 
 
 def perform_convergence_tests(discrete_solver, exact_sol, get_mesh, rng, verbose=False):
@@ -45,13 +44,13 @@ def perform_convergence_tests(discrete_solver, exact_sol, get_mesh, rng, verbose
 
         u = discrete_solver(mesh)
 
-        zero = numpy.zeros(len(mesh.node_coords))
-        error = u - exact_eval(mesh.node_coords.T, zero)
+        zero = numpy.zeros(len(mesh.points))
+        error = u - exact_eval(mesh.points.T, zero)
 
         # import meshio
         # meshio.write(
         #     'sol%d.vtu' % k,
-        #     mesh.node_coords, {'triangle': mesh.cells['nodes']},
+        #     mesh.points, {'triangle': mesh.cells["points']},
         #     point_data={'x': x, 'error': error},
         #     )
 
@@ -75,7 +74,7 @@ def perform_convergence_tests(discrete_solver, exact_sol, get_mesh, rng, verbose
                 print
 
         if verbose:
-            num_nodes = len(mesh.node_coords)
+            num_nodes = len(mesh.points)
             print(
                 "%2d    %5.3e    %0.10e   %0.10e   %0.10e"
                 % (k, num_nodes, H[k], error_norm_1[k], error_norm_inf[k])

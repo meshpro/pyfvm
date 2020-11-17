@@ -1,10 +1,10 @@
+import helpers
+import meshplex
+import meshzoo
 import numpy
 import pytest
 from sympy import cos, exp, pi, sin
 
-import helpers
-import meshplex
-import meshzoo
 import pyfvm
 from pyfvm.form_language import Boundary, dS, dV, integrate, n_dot_grad
 
@@ -112,7 +112,7 @@ def solve(problem, max_k, verbose=False):
             jac = jacobian.get_linear_operator(u0)
             return linalg.spsolve(jac, rhs)
 
-        u0 = numpy.zeros(len(mesh.node_coords))
+        u0 = numpy.zeros(len(mesh.points))
         u = pyfvm.newton(f.eval, jacobian_solver, u0, verbose=False)
         return u
 

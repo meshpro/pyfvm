@@ -13,7 +13,7 @@ class EdgeKernel:
 
     def eval(self, u, mesh, cell_ids):
         node_edge_face_cells = mesh.idx_hierarchy[..., cell_ids]
-        X = mesh.node_coords[node_edge_face_cells]
+        X = mesh.points[node_edge_face_cells]
         x0 = X[..., 0]
         x1 = X[..., 1]
         edge_ce_ratio = mesh.ce_ratios[..., cell_ids]
@@ -42,7 +42,7 @@ class VertexKernel:
 
     def eval(self, u, mesh, vertex_ids):
         control_volumes = mesh.control_volumes[vertex_ids]
-        X = mesh.node_coords[vertex_ids].T
+        X = mesh.points[vertex_ids].T
         zero = numpy.zeros(len(control_volumes))
         return self.val(u, control_volumes, X) + zero
 
@@ -55,7 +55,7 @@ class FaceKernel:
 
     def eval(self, u, mesh, cell_face_nodes):
         face_areas = mesh.get_face_areas(cell_face_nodes)
-        X = mesh.node_coords[cell_face_nodes].T
+        X = mesh.points[cell_face_nodes].T
         zero = numpy.zeros(len(cell_face_nodes))
         return self.val(u, face_areas, X) + zero
 
@@ -68,7 +68,7 @@ class DirichletKernel:
 
     def eval(self, u, mesh, vertex_mask):
         assert len(u) == sum(vertex_mask)
-        X = mesh.node_coords[vertex_mask].T
+        X = mesh.points[vertex_mask].T
         zero = numpy.zeros(sum(vertex_mask))
         return self.val(u, X) + zero
 

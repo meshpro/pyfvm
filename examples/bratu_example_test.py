@@ -1,8 +1,8 @@
+import meshplex
+import meshzoo
 import numpy
 from sympy import exp
 
-import meshplex
-import meshzoo
 import pyfvm
 from pyfvm.form_language import Boundary, dS, dV, integrate, n_dot_grad
 

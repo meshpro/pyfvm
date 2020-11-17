@@ -1,8 +1,8 @@
+import meshplex
 import pyamg
 from numpy import pi
 from sympy import sin
 
-import meshplex
 import pyfvm
 from pyfvm.form_language import Subdomain, dS, dV, integrate, n_dot_grad
 

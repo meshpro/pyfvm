@@ -1,8 +1,8 @@
+import meshplex
+import meshzoo
 import numpy
 import pyamg
 
-import meshplex
-import meshzoo
 import pyfvm
 
 

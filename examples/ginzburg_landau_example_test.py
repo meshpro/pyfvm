@@ -1,9 +1,9 @@
-import numpy
-
 import meshplex
 import meshzoo
-import pyfvm
+import numpy
 import pykry
+
+import pyfvm
 
 
 def test():
@@ -12,15 +12,14 @@ def test():
     g = 1.0
 
     class Energy:
-        """Specification of the kinetic energy operator.
-        """
+        """Specification of the kinetic energy operator."""
 
         def __init__(self):
             self.subdomains = [None]
 
         def eval(self, mesh, cell_mask):
             nec = mesh.idx_hierarchy[..., cell_mask]
-            X = mesh.node_coords[nec]
+            X = mesh.points[nec]
 
             edge_midpoint = 0.5 * (X[0] + X[1])
             edge_ce_ratio = mesh.ce_ratios[..., cell_mask]
@@ -64,7 +63,7 @@ def test():
         alpha = V + g * 2.0 * (psi.real ** 2 + psi.imag ** 2)
         gPsi0Squared = g * psi ** 2
 
-        num_unknowns = len(mesh.node_coords)
+        num_unknowns = len(mesh.points)
         return pykry.LinearOperator(
             (num_unknowns, num_unknowns),
             complex,
