@@ -1,8 +1,8 @@
 #
-from scipy.sparse import linalg
-
 import meshplex
 import meshzoo
+from scipy.sparse import linalg
+
 import pyfvm
 from pyfvm.form_language import Boundary, dS, dV, integrate, n_dot_grad
 

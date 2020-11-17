@@ -57,8 +57,7 @@ dGamma = CellSurface()
 
 
 def integrate(integrand, measure, subdomains=None):
-    """Convenience function for IntegralSum. Just syntastic sugar.
-    """
+    """Convenience function for IntegralSum. Just syntastic sugar."""
     return IntegralSum(integrand, measure, subdomains)
 
 

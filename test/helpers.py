@@ -1,8 +1,7 @@
 import matplotlib.pyplot as plt
+import meshplex
 import numpy
 import sympy
-
-import meshplex
 
 
 def perform_convergence_tests(discrete_solver, exact_sol, get_mesh, rng, verbose=False):

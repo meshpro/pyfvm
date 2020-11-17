@@ -1,9 +1,9 @@
-import numpy
-
 import meshplex
 import meshzoo
-import pyfvm
+import numpy
 import pykry
+
+import pyfvm
 
 
 def test():
@@ -12,8 +12,7 @@ def test():
     g = 1.0
 
     class Energy:
-        """Specification of the kinetic energy operator.
-        """
+        """Specification of the kinetic energy operator."""
 
         def __init__(self):
             self.subdomains = [None]

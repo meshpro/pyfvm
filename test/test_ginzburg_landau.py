@@ -3,20 +3,19 @@ These tests are against the reference values from pynosh.
 """
 import pathlib
 
-import numpy
-import pytest
-
 import meshio
 import meshplex
-import pyfvm
+import numpy
 import pykry
+import pytest
+
+import pyfvm
 
 this_dir = pathlib.Path(__file__).resolve().parent
 
 
 class Energy:
-    """Specification of the kinetic energy operator.
-    """
+    """Specification of the kinetic energy operator."""
 
     def __init__(self, mu):
         self.magnetic_field = mu * numpy.array([0.0, 0.0, 1.0])

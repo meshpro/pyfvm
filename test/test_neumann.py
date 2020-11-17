@@ -1,10 +1,10 @@
+import helpers
+import meshplex
+import meshzoo
 import pyamg
 import pytest
 from sympy import cos, pi, sin, sqrt
 
-import helpers
-import meshplex
-import meshzoo
 import pyfvm
 from pyfvm.form_language import Subdomain, dGamma, dS, dV, integrate, n_dot_grad
 

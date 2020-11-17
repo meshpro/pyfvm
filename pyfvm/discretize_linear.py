@@ -7,8 +7,7 @@ from .linear_fvm_problem import get_linear_fvm_problem
 
 
 def split(expr, variables):
-    """Split affine, linear, and nonlinear part of expr w.r.t. variables.
-    """
+    """Split affine, linear, and nonlinear part of expr w.r.t. variables."""
     if isinstance(expr, float):
         return expr, 0, 0
 
@@ -184,8 +183,7 @@ class DiscretizeEdgeIntegral:
         return node
 
     def generate(self, node, index_functions=None):
-        """Entrance point to this class.
-        """
+        """Entrance point to this class."""
         if index_functions is None:
             index_functions = []
 
@@ -212,8 +210,7 @@ class DiscretizeEdgeIntegral:
         return out, index_vars
 
     def visit_Call(self, node):
-        """Handles calls for operators A(u) and pointwise functions sin(u).
-        """
+        """Handles calls for operators A(u) and pointwise functions sin(u)."""
         try:
             ident = node.func.__name__
         except AttributeError:
@@ -238,8 +235,7 @@ class DiscretizeEdgeIntegral:
         return out
 
     def visit_ChainOp(self, node, operator):
-        """Handles binary operations (e.g., +, -, *,...).
-        """
+        """Handles binary operations (e.g., +, -, *,...)."""
         # collect the pointwise code for left and right
         args = []
         for arg in node.args:

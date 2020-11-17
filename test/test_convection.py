@@ -1,13 +1,13 @@
-import numpy
-import pyamg
-import sympy
-from sympy import Matrix, cos, pi, sin
-
 import helpers
 import meshplex
 
 # import pytest
 import meshzoo
+import numpy
+import pyamg
+import sympy
+from sympy import Matrix, cos, pi, sin
+
 import pyfvm
 from pyfvm.form_language import Boundary, dS, dV, integrate, n_dot, n_dot_grad
 
