@@ -22,7 +22,7 @@ def test():
                 ]
             )
 
-    vertices, cells = meshzoo.rectangle(0.0, 2.0, 0.0, 1.0, 101, 51)
+    vertices, cells = meshzoo.rectangle_tri((0.0, 0.0), (2.0, 1.0), (101, 51))
     mesh = meshplex.MeshTri(vertices, cells)
 
     matrix = pyfvm.get_fvm_matrix(mesh, [EnergyEdgeKernel()], [], [], [])
@@ -34,7 +34,6 @@ def test():
     # Cannot write complex data ot VTU; split real and imaginary parts first.
     # <http://stackoverflow.com/a/38902227/353337>
     mesh.write("out.vtk", point_data={"u": u.view("(2,)float")})
-    return
 
 
 if __name__ == "__main__":

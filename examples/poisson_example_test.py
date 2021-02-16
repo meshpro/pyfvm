@@ -35,7 +35,7 @@ def test():
     # Create mesh using meshzoo
     import meshzoo
 
-    vertices, cells = meshzoo.cube(0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 30, 30, 30)
+    vertices, cells = meshzoo.cube_tetra((0.0, 0.0, 0.0), (1.0, 1.0, 1.0), 30)
     mesh = meshplex.MeshTetra(vertices, cells)
     # vertices, cells = meshzoo.rectangle(0.0, 2.0, 0.0, 1.0, 401, 201)
     # mesh = meshplex.MeshTri(vertices, cells)
