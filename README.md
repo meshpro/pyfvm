@@ -1,12 +1,13 @@
 # pyfvm
 
+[![PyPi Version](https://img.shields.io/pypi/v/pyfvm.svg?style=flat-square)](https://pypi.org/project/pyfvm)
+[![PyPI pyversions](https://img.shields.io/pypi/pyversions/pyfvm.svg?style=flat-square)](https://pypi.org/pypi/pyfvm/)
+[![GitHub stars](https://img.shields.io/github/stars/nschloe/pyfvm.svg?style=flat-square&logo=github&label=Stars&logoColor=white)](https://github.com/nschloe/pyfvm)
+[![PyPi downloads](https://img.shields.io/pypi/dm/pyfvm.svg?style=flat-square)](https://pypistats.org/packages/pyfvm)
+
 [![gh-actions](https://img.shields.io/github/workflow/status/nschloe/pyfvm/ci?style=flat-square)](https://github.com/nschloe/pyfvm/actions?query=workflow%3Aci)
 [![codecov](https://img.shields.io/codecov/c/github/nschloe/pyfvm.svg?style=flat-square)](https://codecov.io/gh/nschloe/pyfvm)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg?style=flat-square)](https://github.com/psf/black)
-[![PyPI pyversions](https://img.shields.io/pypi/pyversions/pyfvm.svg?style=flat-square)](https://pypi.org/pypi/pyfvm/)
-[![PyPi Version](https://img.shields.io/pypi/v/pyfvm.svg?style=flat-square)](https://pypi.org/project/pyfvm)
-[![GitHub stars](https://img.shields.io/github/stars/nschloe/pyfvm.svg?style=flat-square&logo=github&label=Stars)](https://github.com/nschloe/pyfvm)
-[![PyPi downloads](https://img.shields.io/pypi/dm/pyfvm.svg?style=flat-square)](https://pypistats.org/packages/pyfvm)
 
 Creating finite volume equation systems with ease.
 
