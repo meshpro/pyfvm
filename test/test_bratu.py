@@ -1,7 +1,7 @@
 import helpers
 import meshplex
 import meshzoo
-import numpy
+import numpy as np
 import pytest
 from sympy import cos, exp, pi, sin
 
@@ -110,7 +110,7 @@ def solve(problem, max_k, verbose=False):
             jac = jacobian.get_linear_operator(u0)
             return linalg.spsolve(jac, rhs)
 
-        u0 = numpy.zeros(len(mesh.points))
+        u0 = np.zeros(len(mesh.points))
         u = pyfvm.newton(f.eval, jacobian_solver, u0, verbose=False)
         return u
 

@@ -1,4 +1,4 @@
-import numpy
+import numpy as np
 
 from . import fvm_matrix
 
@@ -36,14 +36,14 @@ class FvmProblem:
     def eval(self, u):
 
         if self.matrix is None:
-            out = numpy.zeros_like(u)
+            out = np.zeros_like(u)
         else:
             out = self.matrix.dot(u)
 
         for edge_kernel in self.edge_kernels:
             for subdomain in edge_kernel.subdomains:
                 cell_mask = self.mesh.get_cell_mask(subdomain)
-                numpy.add.at(
+                np.add.at(
                     out,
                     self.mesh.idx_hierarchy,
                     edge_kernel.eval(u, self.mesh, cell_mask),
@@ -57,7 +57,7 @@ class FvmProblem:
         for face_kernel in self.face_kernels:
             for subdomain in face_kernel.subdomains:
                 face_mask = self.mesh.get_face_mask(subdomain)
-                numpy.add(out, face_mask, face_kernel.eval(u, self.mesh, face_mask))
+                np.add(out, face_mask, face_kernel.eval(u, self.mesh, face_mask))
 
         for dirichlet in self.dirichlets:
             vertex_mask = self.mesh.get_vertex_mask(dirichlet.subdomain)

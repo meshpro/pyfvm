@@ -1,4 +1,4 @@
-import numpy
+import numpy as np
 import sympy
 
 from . import form_language, fvm_problem, jacobian
@@ -17,10 +17,10 @@ class EdgeKernel:
         x0 = X[..., 0]
         x1 = X[..., 1]
         edge_ce_ratio = mesh.ce_ratios[..., cell_ids]
-        edge_length = numpy.sqrt(mesh.ei_dot_ei[..., cell_ids])
-        zero = numpy.zeros(node_edge_face_cells.shape)
+        edge_length = np.sqrt(mesh.ei_dot_ei[..., cell_ids])
+        zero = np.zeros(node_edge_face_cells.shape)
         return (
-            numpy.array(
+            np.array(
                 self.val(
                     u[node_edge_face_cells[0]],
                     u[node_edge_face_cells[1]],
@@ -43,7 +43,7 @@ class VertexKernel:
     def eval(self, u, mesh, vertex_ids):
         control_volumes = mesh.control_volumes[vertex_ids]
         X = mesh.points[vertex_ids].T
-        zero = numpy.zeros(len(control_volumes))
+        zero = np.zeros(len(control_volumes))
         return self.val(u, control_volumes, X) + zero
 
 
@@ -56,7 +56,7 @@ class FaceKernel:
     def eval(self, u, mesh, cell_face_nodes):
         face_areas = mesh.get_face_areas(cell_face_nodes)
         X = mesh.points[cell_face_nodes].T
-        zero = numpy.zeros(len(cell_face_nodes))
+        zero = np.zeros(len(cell_face_nodes))
         return self.val(u, face_areas, X) + zero
 
 
@@ -69,7 +69,7 @@ class DirichletKernel:
     def eval(self, u, mesh, vertex_mask):
         assert len(u) == sum(vertex_mask)
         X = mesh.points[vertex_mask].T
-        zero = numpy.zeros(sum(vertex_mask))
+        zero = np.zeros(sum(vertex_mask))
         return self.val(u, X) + zero
 
 
@@ -85,7 +85,7 @@ def discretize(obj, mesh):
     # res = obj.apply(u)
 
     # See <http://docs.sympy.org/dev/modules/utilities/lambdify.html>.
-    a2a = [{"ImmutableMatrix": numpy.array}, "numpy"]
+    a2a = [{"ImmutableMatrix": np.array}, "numpy"]
 
     edge_kernels = set()
     vertex_kernels = set()

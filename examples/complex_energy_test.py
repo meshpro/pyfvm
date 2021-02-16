@@ -1,6 +1,6 @@
 import meshplex
 import meshzoo
-import numpy
+import numpy as np
 import pyamg
 
 import pyfvm
@@ -15,10 +15,10 @@ def test():
         def eval(self, mesh, cell_mask):
             edge_ce_ratio = mesh.ce_ratios[..., cell_mask]
             beta = 1.0
-            return numpy.array(
+            return np.array(
                 [
-                    [edge_ce_ratio, -edge_ce_ratio * numpy.exp(1j * beta)],
-                    [-edge_ce_ratio * numpy.exp(-1j * beta), edge_ce_ratio],
+                    [edge_ce_ratio, -edge_ce_ratio * np.exp(1j * beta)],
+                    [-edge_ce_ratio * np.exp(-1j * beta), edge_ce_ratio],
                 ]
             )
 

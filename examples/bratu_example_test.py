@@ -1,6 +1,6 @@
 import meshplex
 import meshzoo
-import numpy
+import numpy as np
 from sympy import exp
 
 import pyfvm
@@ -28,7 +28,7 @@ def test():
         jac = jac_u.get_linear_operator(u0)
         return linalg.spsolve(jac, rhs)
 
-    u0 = numpy.zeros(len(vertices))
+    u0 = np.zeros(len(vertices))
     u = pyfvm.newton(lambda u: f.eval(u), jacobian_solver, u0)
     # import scipy.optimize
     # u = scipy.optimize.newton_krylov(f_eval, u0)

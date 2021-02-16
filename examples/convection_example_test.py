@@ -1,6 +1,6 @@
 import meshplex
 import meshzoo
-import numpy
+import numpy as np
 from scipy.sparse import linalg
 
 import pyfvm
@@ -10,7 +10,7 @@ from pyfvm.form_language import Boundary, dS, dV, integrate, n_dot, n_dot_grad
 def test():
     class DC:
         def apply(self, u):
-            a = numpy.array([2, 1])
+            a = np.array([2, 1])
             return integrate(
                 lambda x: -n_dot_grad(u(x)) + n_dot(a) * u(x), dS
             ) - integrate(lambda x: 1.0, dV)

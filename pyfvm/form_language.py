@@ -1,4 +1,4 @@
-import numpy
+import numpy as np
 import sympy
 
 
@@ -10,7 +10,7 @@ class Boundary(Subdomain):
     is_boundary_only = True
 
     def is_inside(self, x):
-        return numpy.ones(x.shape[1], dtype=bool)
+        return np.ones(x.shape[1], dtype=bool)
 
 
 class FvmProblem:

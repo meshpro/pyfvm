@@ -49,7 +49,7 @@ def test():
     # # cell_size = 2 * bounding_box_radius / res
     # m = mshr.generate_mesh(c, 2.0 / h)
     # coords = m.coordinates()
-    # coords = numpy.c_[coords, numpy.zeros(len(coords))]
+    # coords = np.c_[coords, np.zeros(len(coords))]
     # cells = m.cells().copy()
     # mesh = meshplex.MeshTri(coords, cells)
     # # mesh = meshplex.lloyd_smoothing(mesh, 1.0e-4)
