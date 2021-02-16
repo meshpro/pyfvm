@@ -1,4 +1,4 @@
-import numpy
+import numpy as np
 from scipy import sparse
 
 
@@ -81,8 +81,8 @@ def _get_VIJ(mesh, edge_kernels, vertex_kernels, face_kernels):
             J.append(ids)
 
     # Finally, make V, I, J into 1D-arrays.
-    V = numpy.concatenate(V)
-    I_ = numpy.concatenate(I_)
-    J = numpy.concatenate(J)
+    V = np.concatenate(V)
+    I_ = np.concatenate(I_)
+    J = np.concatenate(J)
 
     return V, I_, J

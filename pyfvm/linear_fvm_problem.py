@@ -1,4 +1,4 @@
-import numpy
+import numpy as np
 from scipy import sparse
 
 
@@ -18,7 +18,7 @@ def get_linear_fvm_problem(
     for dirichlet in dirichlets:
         vertex_mask = mesh.get_vertex_mask(dirichlet.subdomain)
         # Set all Dirichlet rows to 0.
-        for i in numpy.where(vertex_mask)[0]:
+        for i in np.where(vertex_mask)[0]:
             matrix.data[matrix.indptr[i] : matrix.indptr[i + 1]] = 0.0
 
         # Set the diagonal and RHS.
@@ -37,10 +37,10 @@ def _get_VIJ(mesh, edge_kernels, vertex_kernels, face_kernels):
     J = []
     n = len(mesh.points)
     # Treating the diagonal explicitly makes tocsr() faster at the cost of a
-    # bunch of numpy.add.at().
-    diag = numpy.zeros(n)
+    # bunch of np.add.at().
+    diag = np.zeros(n)
     #
-    rhs = numpy.zeros(n)
+    rhs = np.zeros(n)
 
     for edge_kernel in edge_kernels:
         for subdomain in edge_kernel.subdomains:
@@ -51,7 +51,7 @@ def _get_VIJ(mesh, edge_kernels, vertex_kernels, face_kernels):
             # Diagonal entries.
             # Manually sum up the entries corresponding to the same i, j first.
             for c, i in zip(mesh.cells["points"].T, mesh.local_idx_inv):
-                numpy.add.at(diag, c, sum([v_mtx[t[0]][t[0]][t[1:]] for t in i]))
+                np.add.at(diag, c, sum([v_mtx[t[0]][t[0]][t[1:]] for t in i]))
 
             # offdiagonal entries
             V.append(v_mtx[0][1])
@@ -65,15 +65,15 @@ def _get_VIJ(mesh, edge_kernels, vertex_kernels, face_kernels):
             # Right-hand side.
             try:
                 for c, i in zip(mesh.cells["points"].T, mesh.local_idx_inv):
-                    numpy.subtract.at(rhs, c, sum([v_rhs[t[0]][t[1:]] for t in i]))
+                    np.subtract.at(rhs, c, sum([v_rhs[t[0]][t[1:]] for t in i]))
             except TypeError:
                 # v_rhs probably integers/floats
                 if v_rhs[0] != 0:
                     # FIXME these at operations seem really slow with v_rhs
-                    #       not being of type numpy.ndarray
-                    numpy.subtract.at(rhs, nec[0], v_rhs[0])
+                    #       not being of type np.ndarray
+                    np.subtract.at(rhs, nec[0], v_rhs[0])
                 if v_rhs[1] != 0:
-                    numpy.subtract.at(rhs, nec[1], v_rhs[1])
+                    np.subtract.at(rhs, nec[1], v_rhs[1])
 
             # if dot() is used in the expression, the shape of of v_matrix will
             # be (2, 2, 1, k) instead of (2, 2, 871, k).
@@ -91,9 +91,9 @@ def _get_VIJ(mesh, edge_kernels, vertex_kernels, face_kernels):
 
             vals_matrix, vals_rhs = vertex_kernel.eval(vertex_mask)
 
-            # numpy.add.at(diag, verts, vals_matrix)
-            # numpy.subtract.at(rhs, verts, vals_rhs)
-            if vertex_mask == numpy.s_[:]:
+            # np.add.at(diag, verts, vals_matrix)
+            # np.subtract.at(rhs, verts, vals_rhs)
+            if vertex_mask == np.s_[:]:
                 diag += vals_matrix
                 rhs -= vals_rhs
             else:
@@ -111,16 +111,16 @@ def _get_VIJ(mesh, edge_kernels, vertex_kernels, face_kernels):
             I_.append(ids)
             J.append(ids)
 
-            numpy.subtract.at(rhs, ids, vals_rhs)
+            np.subtract.at(rhs, ids, vals_rhs)
 
     # add diagonal
-    I_.append(numpy.arange(n))
-    J.append(numpy.arange(n))
+    I_.append(np.arange(n))
+    J.append(np.arange(n))
     V.append(diag)
 
     # Finally, make V, I, J into 1D-arrays.
-    V = numpy.concatenate([v.flat for v in V])
-    I_ = numpy.concatenate([i.flat for i in I_])
-    J = numpy.concatenate([j.flat for j in J])
+    V = np.concatenate([v.flat for v in V])
+    I_ = np.concatenate([i.flat for i in I_])
+    J = np.concatenate([j.flat for j in J])
 
     return V, I_, J, rhs

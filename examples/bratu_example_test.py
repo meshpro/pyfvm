@@ -1,6 +1,6 @@
 import meshplex
 import meshzoo
-import numpy
+import numpy as np
 from sympy import exp
 
 import pyfvm
@@ -17,7 +17,7 @@ def test():
         def dirichlet(self, u):
             return [(u, Boundary())]
 
-    vertices, cells = meshzoo.rectangle(0.0, 2.0, 0.0, 1.0, 101, 51)
+    vertices, cells = meshzoo.rectangle_tri((0.0, 0.0), (2.0, 1.0), (101, 51))
     mesh = meshplex.MeshTri(vertices, cells)
 
     f, jac_u = pyfvm.discretize(Bratu(), mesh)
@@ -28,13 +28,12 @@ def test():
         jac = jac_u.get_linear_operator(u0)
         return linalg.spsolve(jac, rhs)
 
-    u0 = numpy.zeros(len(vertices))
+    u0 = np.zeros(len(vertices))
     u = pyfvm.newton(lambda u: f.eval(u), jacobian_solver, u0)
     # import scipy.optimize
     # u = scipy.optimize.newton_krylov(f_eval, u0)
 
     mesh.write("out.vtk", point_data={"u": u})
-    return
 
 
 if __name__ == "__main__":

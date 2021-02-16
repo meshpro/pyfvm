@@ -1,11 +1,11 @@
-import numpy
+import numpy as np
 
 
 def newton(f, jacobian_solver, u0, tol=1.0e-10, max_iter=20, verbose=True):
     u = u0.copy()
 
     fu = f(u)
-    nrm = numpy.linalg.norm(fu)
+    nrm = np.linalg.norm(fu)
     if verbose:
         print("||F(u)|| = %e" % nrm)
 
@@ -18,7 +18,7 @@ def newton(f, jacobian_solver, u0, tol=1.0e-10, max_iter=20, verbose=True):
         du = jacobian_solver(u, -fu)
         u += du
         fu = f(u)
-        nrm = numpy.linalg.norm(fu)
+        nrm = np.linalg.norm(fu)
         k += 1
         if verbose:
             print("||F(u)|| = %e" % nrm)

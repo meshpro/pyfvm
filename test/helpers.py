@@ -1,16 +1,16 @@
 import matplotlib.pyplot as plt
 import meshplex
-import numpy
+import numpy as np
 import sympy
 
 
 def perform_convergence_tests(discrete_solver, exact_sol, get_mesh, rng, verbose=False):
     n = len(rng)
-    H = numpy.empty(n)
-    error_norm_1 = numpy.empty(n)
-    order_1 = numpy.empty(n - 1)
-    error_norm_inf = numpy.empty(n)
-    order_inf = numpy.empty(n - 1)
+    H = np.empty(n)
+    error_norm_1 = np.empty(n)
+    order_1 = np.empty(n - 1)
+    error_norm_inf = np.empty(n)
+    order_inf = np.empty(n - 1)
 
     if verbose:
         print(79 * "-")
@@ -34,17 +34,17 @@ def perform_convergence_tests(discrete_solver, exact_sol, get_mesh, rng, verbose
     zero = sympy.Symbol("zero")
     x = sympy.DeferredVector("x")
     # See <http://docs.sympy.org/dev/modules/utilities/lambdify.html>.
-    array2array = [{"ImmutableMatrix": numpy.array}, "numpy"]
+    array2array = [{"ImmutableMatrix": np.array}, "numpy"]
     exact_eval = sympy.lambdify((x, zero), exact_sol(x), modules=array2array)
 
     for k in rng:
         mesh = get_mesh(k)
         # get max edge length
-        H[k] = numpy.sqrt(mesh.ei_dot_ei.max())
+        H[k] = np.sqrt(mesh.ei_dot_ei.max())
 
         u = discrete_solver(mesh)
 
-        zero = numpy.zeros(len(mesh.points))
+        zero = np.zeros(len(mesh.points))
         error = u - exact_eval(mesh.points.T, zero)
 
         # import meshio
@@ -54,17 +54,17 @@ def perform_convergence_tests(discrete_solver, exact_sol, get_mesh, rng, verbose
         #     point_data={'x': x, 'error': error},
         #     )
 
-        error_norm_1[k] = numpy.sum(abs(mesh.control_volumes * error))
+        error_norm_1[k] = np.sum(abs(mesh.control_volumes * error))
         error_norm_inf[k] = max(abs(error))
 
         # numerical orders of convergence
         if k > 0:
-            order_1[k - 1] = numpy.log(
-                error_norm_1[k - 1] / error_norm_1[k]
-            ) / numpy.log(H[k - 1] / H[k])
-            order_inf[k - 1] = numpy.log(
+            order_1[k - 1] = np.log(error_norm_1[k - 1] / error_norm_1[k]) / np.log(
+                H[k - 1] / H[k]
+            )
+            order_inf[k - 1] = np.log(
                 error_norm_inf[k - 1] / error_norm_inf[k]
-            ) / numpy.log(H[k - 1] / H[k])
+            ) / np.log(H[k - 1] / H[k])
             if verbose:
                 print
                 print(
@@ -127,7 +127,7 @@ def get_ball_mesh(k):
     mesh = pygmsh.generate_mesh(geom, verbose=False)
     cells = mesh.get_cells_type("tetra")
     # toss away unused points
-    uvertices, uidx = numpy.unique(cells, return_inverse=True)
+    uvertices, uidx = np.unique(cells, return_inverse=True)
     cells = uidx.reshape(cells.shape)
     points = mesh.points[uvertices]
     return meshplex.MeshTetra(points, cells)
@@ -143,7 +143,7 @@ def get_ball_mesh(k):
 #     # cell_size = 2 * bounding_box_radius / res
 #     m = mshr.generate_mesh(c, 2.0 / h)
 #     coords = m.coordinates()
-#     coords = numpy.c_[coords, numpy.zeros(len(coords))]
+#     coords = np.c_[coords, np.zeros(len(coords))]
 #     return meshplex.MeshTri(coords, m.cells())
 
 

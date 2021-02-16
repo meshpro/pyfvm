@@ -1,12 +1,13 @@
 # pyfvm
 
+[![PyPi Version](https://img.shields.io/pypi/v/pyfvm.svg?style=flat-square)](https://pypi.org/project/pyfvm)
+[![PyPI pyversions](https://img.shields.io/pypi/pyversions/pyfvm.svg?style=flat-square)](https://pypi.org/pypi/pyfvm/)
+[![GitHub stars](https://img.shields.io/github/stars/nschloe/pyfvm.svg?style=flat-square&logo=github&label=Stars&logoColor=white)](https://github.com/nschloe/pyfvm)
+[![PyPi downloads](https://img.shields.io/pypi/dm/pyfvm.svg?style=flat-square)](https://pypistats.org/packages/pyfvm)
+
 [![gh-actions](https://img.shields.io/github/workflow/status/nschloe/pyfvm/ci?style=flat-square)](https://github.com/nschloe/pyfvm/actions?query=workflow%3Aci)
 [![codecov](https://img.shields.io/codecov/c/github/nschloe/pyfvm.svg?style=flat-square)](https://codecov.io/gh/nschloe/pyfvm)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg?style=flat-square)](https://github.com/psf/black)
-[![PyPI pyversions](https://img.shields.io/pypi/pyversions/pyfvm.svg?style=flat-square)](https://pypi.org/pypi/pyfvm/)
-[![PyPi Version](https://img.shields.io/pypi/v/pyfvm.svg?style=flat-square)](https://pypi.org/project/pyfvm)
-[![GitHub stars](https://img.shields.io/github/stars/nschloe/pyfvm.svg?style=flat-square&logo=github&label=Stars)](https://github.com/nschloe/pyfvm)
-[![PyPi downloads](https://img.shields.io/pypi/dm/pyfvm.svg?style=flat-square)](https://pypistats.org/packages/pyfvm)
 
 Creating finite volume equation systems with ease.
 
@@ -21,7 +22,7 @@ package is for everyone who wants to quickly construct FVM systems.
 
 pyfvm works by specifying the residuals, so for solving Poisson's equation with
 Dirichlet boundary conditions, simply do
-```python,test
+```python
 import pyfvm
 from pyfvm.form_language import *
 import meshzoo
@@ -37,7 +38,7 @@ class Poisson:
         return [(lambda x: u(x) - 0.0, Boundary())]
 
 # Create mesh using meshzoo
-vertices, cells = meshzoo.rectangle(0.0, 2.0, 0.0, 1.0, 401, 201)
+vertices, cells = meshzoo.rectangle_tri((0.0, 0.0), (2.0, 1.0), (401, 201))
 mesh = meshplex.MeshTri(vertices, cells)
 
 matrix, rhs = pyfvm.discretize_linear(Poisson(), mesh)
@@ -50,11 +51,13 @@ This example uses [meshzoo](https://pypi.org/project/meshzoo) for creating a sim
 mesh, but anything else that provides vertices and cells works as well. For example,
 reading from a wide variety of mesh files is supported (via
 [meshio](https://pypi.org/project/meshio)):
+<!--exdown-skip-->
 ```python
 mesh = meshplex.read("pacman.e")
 ```
 Likewise, [PyAMG](https://github.com/pyamg/pyamg) is a much faster solver
 for this problem
+<!--exdown-skip-->
 ```python
 import pyamg
 
@@ -67,7 +70,7 @@ More examples are contained in the [examples directory](examples/).
 #### Nonlinear equation systems
 Nonlinear systems are treated almost equally; only the discretization and
 obviously the solver call is different. For Bratu's problem:
-```python,test
+```python
 import pyfvm
 from pyfvm.form_language import *
 import meshzoo
@@ -83,7 +86,7 @@ class Bratu:
     def dirichlet(self, u):
         return [(u, Boundary())]
 
-vertices, cells = meshzoo.rectangle(0.0, 2.0, 0.0, 1.0, 101, 51)
+vertices, cells = meshzoo.rectangle_tri((0.0, 0.0), (2.0, 1.0), (101, 51))
 mesh = meshplex.MeshTri(vertices, cells)
 
 f, jacobian = pyfvm.discretize(Bratu(), mesh)
@@ -102,6 +105,7 @@ Note that the Jacobian is computed symbolically from the `Bratu` class.
 
 Instead of `pyfvm.newton`, you can use any solver that accepts the residual
 computation `f.eval`, e.g.,
+<!--exdown-skip-->
 ```python
 import scipy.optimize
 

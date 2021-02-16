@@ -1,4 +1,4 @@
-import numpy
+import numpy as np
 import sympy
 from sympy.matrices.expressions.matexpr import MatrixExpr, MatrixSymbol
 
@@ -60,11 +60,11 @@ class EdgeLinearKernel:
         val = self.linear(X[0], X[1], edge_ce_ratio, edge_length)
         rhs = self.affine(X[0], X[1], edge_ce_ratio, edge_length)
 
-        ones = numpy.ones(nec.shape[1:])
+        ones = np.ones(nec.shape[1:])
         for i in [0, 1]:
             rhs[i] *= ones
             for j in [0, 1]:
-                if not isinstance(val[i][j], numpy.ndarray):
+                if not isinstance(val[i][j], np.ndarray):
                     val[i][j] *= ones
 
         return val, rhs, nec
@@ -87,9 +87,9 @@ class VertexLinearKernel:
 
         n = len(control_volumes)
         if isinstance(res0, float):
-            res0 *= numpy.ones(n)
+            res0 *= np.ones(n)
         if isinstance(res1, float):
-            res1 *= numpy.ones(n)
+            res1 *= np.ones(n)
 
         return (res0, res1)
 
@@ -117,7 +117,7 @@ class FaceLinearKernel:
 
         # Use +zero to make sure the output shape is correct. (The functions
         # coeff and affine can return just a float, for example.)
-        zero = numpy.zeros(ids.shape).T
+        zero = np.zeros(ids.shape).T
         return (
             face_parts * (self.coeff(X.T) + zero).T,
             face_parts * (self.affine(X.T) + zero).T,
@@ -134,7 +134,7 @@ class DirichletLinearKernel:
 
     def eval(self, vertex_mask):
         X = self.mesh.points[vertex_mask].T
-        zero = numpy.zeros(sum(vertex_mask))
+        zero = np.zeros(sum(vertex_mask))
         return (self.coeff(X) + zero, self.rhs(X) + zero)
 
 
@@ -259,7 +259,7 @@ def discretize_linear(obj, mesh):
     # dimension of an ImmutableDenseMatrix if it is of size 1; see
     # <https://github.com/sympy/sympy/issues/12666>.
     def vector2vector(x):
-        out = numpy.array(x)
+        out = np.array(x)
         if len(out.shape) == 2 and out.shape[1] == 1:
             out = out[:, 0]
         return out

@@ -1,4 +1,4 @@
-import numpy
+import numpy as np
 from scipy import sparse
 
 
@@ -27,7 +27,7 @@ class Jacobian:
         for dirichlet in self.dirichlets:
             vertex_mask = self.mesh.get_vertex_mask(dirichlet.subdomain)
             # Set all Dirichlet rows to 0.
-            for i in numpy.where(vertex_mask)[0]:
+            for i in np.where(vertex_mask)[0]:
                 matrix.data[matrix.indptr[i] : matrix.indptr[i + 1]] = 0.0
 
             # Set the diagonal.
@@ -68,8 +68,8 @@ def _get_VIJ(mesh, u, edge_kernels, vertex_kernels, face_kernels):
             vertex_mask = mesh.get_vertex_mask(subdomain)
             vals_matrix = vertex_kernel.eval(u, mesh, vertex_mask)
 
-            if vertex_mask == numpy.s_[:]:
-                verts = numpy.arange(len(vals_matrix))
+            if vertex_mask == np.s_[:]:
+                verts = np.arange(len(vals_matrix))
             V.append(vals_matrix)
             I_.append(verts)
             J.append(verts)
@@ -84,8 +84,8 @@ def _get_VIJ(mesh, u, edge_kernels, vertex_kernels, face_kernels):
             J.append(faces)
 
     # Finally, make V, I, J into 1D-arrays.
-    V = numpy.concatenate(V)
-    I_ = numpy.concatenate(I_)
-    J = numpy.concatenate(J)
+    V = np.concatenate(V)
+    I_ = np.concatenate(I_)
+    J = np.concatenate(J)
 
     return V, I_, J

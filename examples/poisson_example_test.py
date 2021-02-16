@@ -35,7 +35,7 @@ def test():
     # Create mesh using meshzoo
     import meshzoo
 
-    vertices, cells = meshzoo.cube(0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 30, 30, 30)
+    vertices, cells = meshzoo.cube_tetra((0.0, 0.0, 0.0), (1.0, 1.0, 1.0), 30)
     mesh = meshplex.MeshTetra(vertices, cells)
     # vertices, cells = meshzoo.rectangle(0.0, 2.0, 0.0, 1.0, 401, 201)
     # mesh = meshplex.MeshTri(vertices, cells)
@@ -49,7 +49,7 @@ def test():
     # # cell_size = 2 * bounding_box_radius / res
     # m = mshr.generate_mesh(c, 2.0 / h)
     # coords = m.coordinates()
-    # coords = numpy.c_[coords, numpy.zeros(len(coords))]
+    # coords = np.c_[coords, np.zeros(len(coords))]
     # cells = m.cells().copy()
     # mesh = meshplex.MeshTri(coords, cells)
     # # mesh = meshplex.lloyd_smoothing(mesh, 1.0e-4)

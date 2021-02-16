@@ -3,7 +3,7 @@ import meshplex
 
 # import pytest
 import meshzoo
-import numpy
+import numpy as np
 import pyamg
 import sympy
 from sympy import Matrix, cos, pi, sin
@@ -43,7 +43,7 @@ class Circle:
     def apply(self, u):
         a0 = 2
         a1 = 1
-        a = numpy.array([a0, a1, 0])
+        a = np.array([a0, a1, 0])
 
         def rhs(x):
             z = pi / 2 * (x[0] ** 2 + x[1] ** 2)

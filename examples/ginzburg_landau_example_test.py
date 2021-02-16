@@ -1,6 +1,6 @@
 import meshplex
 import meshzoo
-import numpy
+import numpy as np
 import pykry
 
 import pyfvm
@@ -25,27 +25,27 @@ def test():
             edge_ce_ratio = mesh.ce_ratios[..., cell_mask]
 
             # project the magnetic potential on the edge at the midpoint
-            # magnetic_field = mu * numpy.array([0.0, 0.0, 1.0])
-            # magnetic_potential = 0.5 * numpy.cross(magnetic_field, edge_midpoint)
+            # magnetic_field = mu * np.array([0.0, 0.0, 1.0])
+            # magnetic_potential = 0.5 * np.cross(magnetic_field, edge_midpoint)
             magnetic_potential = (
                 0.5
                 * mu
-                * numpy.stack([-edge_midpoint[..., 1], edge_midpoint[..., 0]], axis=-1)
+                * np.stack([-edge_midpoint[..., 1], edge_midpoint[..., 0]], axis=-1)
             )
 
             # The dot product <magnetic_potential, edge>, executed for many
             # points at once; cf. <http://stackoverflow.com/a/26168677/353337>.
             edge = X[1] - X[0]
-            beta = numpy.einsum("...k,...k->...", magnetic_potential, edge)
+            beta = np.einsum("...k,...k->...", magnetic_potential, edge)
 
-            return numpy.array(
+            return np.array(
                 [
-                    [edge_ce_ratio, -edge_ce_ratio * numpy.exp(-1j * beta)],
-                    [-edge_ce_ratio * numpy.exp(1j * beta), edge_ce_ratio],
+                    [edge_ce_ratio, -edge_ce_ratio * np.exp(-1j * beta)],
+                    [-edge_ce_ratio * np.exp(1j * beta), edge_ce_ratio],
                 ]
             )
 
-    vertices, cells = meshzoo.rectangle(-5.0, 5.0, -5.0, 5.0, 51, 51)
+    vertices, cells = meshzoo.rectangle_tri((-5.0, -5.0), (5.0, 5.0), 51)
     mesh = meshplex.MeshTri(vertices, cells)
 
     keo = pyfvm.get_fvm_matrix(mesh, edge_kernels=[Energy()])
@@ -76,13 +76,13 @@ def test():
         out = pykry.gmres(
             A=jac,
             b=rhs,
-            inner_product=lambda a, b: numpy.dot(a.T.conj(), b).real,
+            inner_product=lambda a, b: np.dot(a.T.conj(), b).real,
             maxiter=1000,
             tol=1.0e-10,
         )
         return out.xk
 
-    u0 = numpy.ones(len(vertices), dtype=complex)
+    u0 = np.ones(len(vertices), dtype=complex)
     u = pyfvm.newton(f, jacobian_solver, u0)
 
     mesh.write("out.vtk", point_data={"u": u.view("(2,)float")})

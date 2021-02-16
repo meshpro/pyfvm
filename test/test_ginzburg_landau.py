@@ -5,7 +5,7 @@ import pathlib
 
 import meshio
 import meshplex
-import numpy
+import numpy as np
 import pykry
 import pytest
 
@@ -18,7 +18,7 @@ class Energy:
     """Specification of the kinetic energy operator."""
 
     def __init__(self, mu):
-        self.magnetic_field = mu * numpy.array([0.0, 0.0, 1.0])
+        self.magnetic_field = mu * np.array([0.0, 0.0, 1.0])
         self.subdomains = [None]
 
     def eval(self, mesh, cell_mask):
@@ -30,16 +30,16 @@ class Energy:
         edge_ce_ratio = mesh.ce_ratios[..., cell_mask]
 
         # project the magnetic potential on the edge at the midpoint
-        magnetic_potential = 0.5 * numpy.cross(self.magnetic_field, edge_midpoint)
+        magnetic_potential = 0.5 * np.cross(self.magnetic_field, edge_midpoint)
 
         # The dot product <magnetic_potential, edge>, executed for many
         # points at once; cf. <http://stackoverflow.com/a/26168677/353337>.
-        beta = numpy.einsum("...k,...k->...", magnetic_potential, edge)
+        beta = np.einsum("...k,...k->...", magnetic_potential, edge)
 
-        return numpy.array(
+        return np.array(
             [
-                [edge_ce_ratio, -edge_ce_ratio * numpy.exp(-1j * beta)],
-                [-edge_ce_ratio * numpy.exp(1j * beta), edge_ce_ratio],
+                [edge_ce_ratio, -edge_ce_ratio * np.exp(-1j * beta)],
+                [-edge_ce_ratio * np.exp(1j * beta), edge_ce_ratio],
             ]
         )
 
@@ -51,8 +51,8 @@ class Energy:
     #     nec = mesh.idx_hierarchy[..., cell_mask]
     #     X = mesh.points[nec]
     #
-    #     magnetic_potential = numpy.array(
-    #         [0.5 * numpy.cross(self.magnetic_field, x) for x in mesh.points]
+    #     magnetic_potential = np.array(
+    #         [0.5 * np.cross(self.magnetic_field, x) for x in mesh.points]
     #     )
     #
     #     edge = X[1] - X[0]
@@ -60,14 +60,14 @@ class Energy:
     #
     #     # The dot product <magnetic_potential, edge>, executed for many
     #     # points at once; cf. <http://stackoverflow.com/a/26168677/353337>.
-    #     # beta = numpy.einsum("ijk,ijk->ij", magnetic_potential.T, edge.T)
+    #     # beta = np.einsum("ijk,ijk->ij", magnetic_potential.T, edge.T)
     #     mp_edge = 0.5 * (magnetic_potential[nec[0]] + magnetic_potential[nec[1]])
-    #     beta = numpy.einsum("...k,...k->...", mp_edge, edge)
+    #     beta = np.einsum("...k,...k->...", mp_edge, edge)
     #
-    #     return numpy.array(
+    #     return np.array(
     #         [
-    #             [edge_ce_ratio, -edge_ce_ratio * numpy.exp(-1j * beta)],
-    #             [-edge_ce_ratio * numpy.exp(1j * beta), edge_ce_ratio],
+    #             [edge_ce_ratio, -edge_ce_ratio * np.exp(-1j * beta)],
+    #             [-edge_ce_ratio * np.exp(1j * beta), edge_ce_ratio],
     #         ]
     #     )
 
@@ -108,7 +108,7 @@ def test_keo(filename, control_values):
     #   Re(K) -Im(K)
     #   Im(K)  Re(K).
     K = abs(keo.real) + abs(keo.imag)
-    assert abs(control_values[1] - numpy.max(K.sum(0))) < tol
+    assert abs(control_values[1] - np.max(K.sum(0))) < tol
 
 
 @pytest.mark.parametrize(
@@ -184,18 +184,18 @@ def test_jacobian(filename, control_values):
     num_unknowns = psi.shape[0]
 
     # [1+i, 1+i, 1+i, ... ]
-    phi = numpy.full(num_unknowns, 1 + 1j)
-    val = numpy.vdot(phi, mesh.control_volumes * (J * phi)).real
+    phi = np.full(num_unknowns, 1 + 1j)
+    val = np.vdot(phi, mesh.control_volumes * (J * phi)).real
     assert abs(control_values[0] - val) < tol
 
     # [1, 1, 1, ... ]
-    phi = numpy.full(num_unknowns, 1.0, dtype=complex)
-    val = numpy.vdot(phi, mesh.control_volumes * (J * phi)).real
+    phi = np.full(num_unknowns, 1.0, dtype=complex)
+    val = np.vdot(phi, mesh.control_volumes * (J * phi)).real
     assert abs(control_values[1] - val) < tol
 
     # [i, i, i, ... ]
-    phi = numpy.full(num_unknowns, 1j, dtype=complex)
-    val = numpy.vdot(phi, mesh.control_volumes * (J * phi)).real
+    phi = np.full(num_unknowns, 1j, dtype=complex)
+    val = np.vdot(phi, mesh.control_volumes * (J * phi)).real
     assert abs(control_values[2] - val) < tol
 
 
@@ -256,13 +256,13 @@ def test_f(filename, control_values):
     tol = 1.0e-13
     # For C++ Nosh compatibility:
     # Compute 1-norm of vector (Re(psi[0]), Im(psi[0]), Re(psi[1]), ... )
-    alpha = numpy.linalg.norm(r.real, ord=1) + numpy.linalg.norm(r.imag, ord=1)
+    alpha = np.linalg.norm(r.real, ord=1) + np.linalg.norm(r.imag, ord=1)
     assert abs(control_values[0] - alpha) < tol
-    assert abs(control_values[1] - numpy.linalg.norm(r, ord=2)) < tol
+    assert abs(control_values[1] - np.linalg.norm(r, ord=2)) < tol
     # For C++ Nosh compatibility:
     # Compute inf-norm of vector (Re(psi[0]), Im(psi[0]), Re(psi[1]), ... )
     alpha = max(
-        numpy.linalg.norm(r.real, ord=numpy.inf),
-        numpy.linalg.norm(r.imag, ord=numpy.inf),
+        np.linalg.norm(r.real, ord=np.inf),
+        np.linalg.norm(r.imag, ord=np.inf),
     )
     assert abs(control_values[2] - alpha) < tol
