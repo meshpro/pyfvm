@@ -36,8 +36,8 @@ def _get_VIJ(mesh, edge_kernels, vertex_kernels, face_kernels):
     I_ = []
     J = []
     n = len(mesh.points)
-    # Treating the diagonal explicitly makes tocsr() faster at the cost of a
-    # bunch of np.add.at().
+    # Treating the diagonal explicitly makes tocsr() faster at the cost of a bunch of
+    # np.add.at().
     diag = np.zeros(n)
     #
     rhs = np.zeros(n)
