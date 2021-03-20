@@ -25,11 +25,12 @@ package is for everyone who wants to quickly construct FVM systems.
 pyfvm works by specifying the residuals, so for solving Poisson's equation with
 Dirichlet boundary conditions, simply do
 ```python
-import pyfvm
-from pyfvm.form_language import *
+import meshplex
 import meshzoo
 from scipy.sparse import linalg
-import meshplex
+
+import pyfvm
+from pyfvm.form_language import Boundary, dS, dV, integrate, n_dot_grad
 
 
 class Poisson:
@@ -42,7 +43,7 @@ class Poisson:
 
 # Create mesh using meshzoo
 vertices, cells = meshzoo.rectangle_tri((0.0, 0.0), (2.0, 1.0), (401, 201))
-mesh = meshplex.MeshTri(vertices, cells)
+mesh = meshplex.Mesh(vertices, cells)
 
 matrix, rhs = pyfvm.discretize_linear(Poisson(), mesh)
 
@@ -64,8 +65,8 @@ for this problem
 ```python
 import pyamg
 
-ml = pyamg.smoothed_aggregation_solver(linear_system.matrix)
-u = ml.solve(linear_system.rhs, tol=1e-10)
+ml = pyamg.smoothed_aggregation_solver(matrix)
+u = ml.solve(rhs, tol=1e-10)
 ```
 
 More examples are contained in the [examples directory](examples/).
