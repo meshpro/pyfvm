@@ -1,3 +1,4 @@
+import npx
 import numpy as np
 
 from . import fvm_matrix
@@ -43,7 +44,7 @@ class FvmProblem:
         for edge_kernel in self.edge_kernels:
             for subdomain in edge_kernel.subdomains:
                 cell_mask = self.mesh.get_cell_mask(subdomain)
-                np.add.at(
+                npx.add_at(
                     out,
                     self.mesh.idx_hierarchy,
                     edge_kernel.eval(u, self.mesh, cell_mask),
