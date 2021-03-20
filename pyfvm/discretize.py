@@ -67,9 +67,9 @@ class DirichletKernel:
         return
 
     def eval(self, u, mesh, vertex_mask):
-        assert len(u) == sum(vertex_mask)
+        assert len(u) == np.sum(vertex_mask)
         X = mesh.points[vertex_mask].T
-        zero = np.zeros(sum(vertex_mask))
+        zero = np.zeros(np.sum(vertex_mask))
         return self.val(u, X) + zero
 
 

@@ -134,7 +134,7 @@ class DirichletLinearKernel:
 
     def eval(self, vertex_mask):
         X = self.mesh.points[vertex_mask].T
-        zero = np.zeros(sum(vertex_mask))
+        zero = np.zeros(np.sum(vertex_mask))
         return (self.coeff(X) + zero, self.rhs(X) + zero)
 
 
