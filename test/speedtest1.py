@@ -1,6 +1,5 @@
 import meshplex
 import meshzoo
-import numpy as np
 
 import pyfvm
 from pyfvm.form_language import Boundary, dS, dV, integrate, n_dot_grad
