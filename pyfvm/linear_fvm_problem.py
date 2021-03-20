@@ -1,5 +1,5 @@
-import numpy as np
 import npx
+import numpy as np
 from scipy import sparse
 
 
