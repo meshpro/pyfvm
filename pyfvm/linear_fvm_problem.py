@@ -34,7 +34,7 @@ def get_linear_fvm_problem(
 
 def _get_VIJ(mesh, edge_kernels, vertex_kernels, face_kernels):
     V = []
-    I_ = []
+    I = []
     J = []
     n = len(mesh.points)
     # Treating the diagonal explicitly makes tocsr() faster at the cost of a bunch of
@@ -51,30 +51,21 @@ def _get_VIJ(mesh, edge_kernels, vertex_kernels, face_kernels):
 
             # Diagonal entries.
             # Manually sum up the entries corresponding to the same i, j first.
-            for c, i in zip(mesh.cells["points"].T, mesh.local_idx_inv):
-                npx.add_at(diag, c, sum([v_mtx[t[0]][t[0]][t[1:]] for t in i]))
+            npx.add_at(diag, nec[0], v_mtx[0][0])
+            npx.add_at(diag, nec[1], v_mtx[1][1])
 
             # offdiagonal entries
             V.append(v_mtx[0][1])
-            I_.append(nec[0])
+            I.append(nec[0])
             J.append(nec[1])
             #
             V.append(v_mtx[1][0])
-            I_.append(nec[1])
+            I.append(nec[1])
             J.append(nec[0])
 
             # Right-hand side.
-            try:
-                for c, i in zip(mesh.cells["points"].T, mesh.local_idx_inv):
-                    npx.subtract_at(rhs, c, sum([v_rhs[t[0]][t[1:]] for t in i]))
-            except TypeError:
-                # v_rhs probably integers/floats
-                if v_rhs[0] != 0:
-                    # FIXME these at operations seem really slow with v_rhs
-                    #       not being of type np.ndarray
-                    npx.subtract_at(rhs, nec[0], v_rhs[0])
-                if v_rhs[1] != 0:
-                    npx.subtract_at(rhs, nec[1], v_rhs[1])
+            npx.subtract_at(rhs, nec[0], v_rhs[0])
+            npx.subtract_at(rhs, nec[1], v_rhs[1])
 
             # if dot() is used in the expression, the shape of of v_matrix will
             # be (2, 2, 1, k) instead of (2, 2, 871, k).
@@ -109,19 +100,19 @@ def _get_VIJ(mesh, edge_kernels, vertex_kernels, face_kernels):
             ids = mesh.idx_hierarchy[..., face_mask]
 
             V.append(vals_matrix)
-            I_.append(ids)
+            I.append(ids)
             J.append(ids)
 
             npx.subtract_at(rhs, ids, vals_rhs)
 
     # add diagonal
-    I_.append(np.arange(n))
+    I.append(np.arange(n))
     J.append(np.arange(n))
     V.append(diag)
 
     # Finally, make V, I, J into 1D-arrays.
     V = np.concatenate([v.flat for v in V])
-    I_ = np.concatenate([i.flat for i in I_])
+    I = np.concatenate([i.flat for i in I])
     J = np.concatenate([j.flat for j in J])
 
-    return V, I_, J, rhs
+    return V, I, J, rhs
