@@ -18,7 +18,7 @@ def test():
             self.subdomains = [None]
 
         def eval(self, mesh, cell_mask):
-            nec = mesh.idx_hierarchy[..., cell_mask]
+            nec = mesh.idx[-1][..., cell_mask]
             X = mesh.points[nec]
 
             edge_midpoint = 0.5 * (X[0] + X[1])

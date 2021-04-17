@@ -97,7 +97,7 @@ def _get_VIJ(mesh, edge_kernels, vertex_kernels, face_kernels):
             face_mask = mesh.get_face_mask(subdomain)
             vals_matrix, vals_rhs = face_kernel.eval(face_mask)
 
-            ids = mesh.idx_hierarchy[..., face_mask]
+            ids = mesh.idx[-1][..., face_mask]
 
             V.append(vals_matrix)
             I.append(ids)

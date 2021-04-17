@@ -12,7 +12,7 @@ class EdgeKernel:
         return
 
     def eval(self, u, mesh, cell_ids):
-        node_edge_face_cells = mesh.idx_hierarchy[..., cell_ids]
+        node_edge_face_cells = mesh.idx[-1][..., cell_ids]
         X = mesh.points[node_edge_face_cells]
         x0 = X[..., 0]
         x1 = X[..., 1]

@@ -46,7 +46,7 @@ class FvmProblem:
                 cell_mask = self.mesh.get_cell_mask(subdomain)
                 npx.add_at(
                     out,
-                    self.mesh.idx_hierarchy,
+                    self.mesh.idx[-1],
                     edge_kernel.eval(u, self.mesh, cell_mask),
                 )
 
