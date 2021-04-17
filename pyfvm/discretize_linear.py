@@ -54,7 +54,7 @@ class EdgeLinearKernel:
     def eval(self, mesh, cell_mask):
         edge_ce_ratio = mesh.ce_ratios[..., cell_mask]
         edge_length = mesh.edge_lengths[..., cell_mask]
-        nec = mesh.idx_hierarchy[..., cell_mask]
+        nec = mesh.idx[-1][..., cell_mask]
         X = mesh.points[nec]
 
         val = self.linear(X[0], X[1], edge_ce_ratio, edge_length)
@@ -110,7 +110,7 @@ class FaceLinearKernel:
         # (e.g., some explicitly defined function).
         # Hence, for each of the subregions, do a numerical integration. For now, this
         # only works with triangular meshes and linear faces.
-        ids = self.mesh.idx_hierarchy[..., face_cells_inside]
+        ids = self.mesh.idx[-1][..., face_cells_inside]
         face_parts = self.mesh.face_partitions[..., face_cells_inside]
 
         X = self.mesh.points[ids]

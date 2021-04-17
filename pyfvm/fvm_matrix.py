@@ -50,15 +50,15 @@ def _get_VIJ(mesh, edge_kernels, vertex_kernels, face_kernels):
             V.append(v_matrix[1, 0].flatten())
             V.append(v_matrix[1, 1].flatten())
 
-            I_.append(mesh.idx_hierarchy[0].flatten())
-            I_.append(mesh.idx_hierarchy[0].flatten())
-            I_.append(mesh.idx_hierarchy[1].flatten())
-            I_.append(mesh.idx_hierarchy[1].flatten())
+            I_.append(mesh.idx[-1][0].flatten())
+            I_.append(mesh.idx[-1][0].flatten())
+            I_.append(mesh.idx[-1][1].flatten())
+            I_.append(mesh.idx[-1][1].flatten())
 
-            J.append(mesh.idx_hierarchy[0].flatten())
-            J.append(mesh.idx_hierarchy[1].flatten())
-            J.append(mesh.idx_hierarchy[0].flatten())
-            J.append(mesh.idx_hierarchy[1].flatten())
+            J.append(mesh.idx[-1][0].flatten())
+            J.append(mesh.idx[-1][1].flatten())
+            J.append(mesh.idx[-1][0].flatten())
+            J.append(mesh.idx[-1][1].flatten())
 
     # TODO
     # for vertex_kernel in vertex_kernels:
@@ -75,7 +75,7 @@ def _get_VIJ(mesh, edge_kernels, vertex_kernels, face_kernels):
             face_mask = mesh.get_face_mask(subdomain)
             vals_matrix = face_kernel.eval(mesh, face_mask)
 
-            ids = mesh.idx_hierarchy[..., face_mask]
+            ids = mesh.idx[-1][..., face_mask]
             V.append(vals_matrix)
             I_.append(ids)
             J.append(ids)
