@@ -55,13 +55,13 @@ This example uses [meshzoo](https://pypi.org/project/meshzoo) for creating a sim
 mesh, but anything else that provides vertices and cells works as well. For example,
 reading from a wide variety of mesh files is supported (via
 [meshio](https://pypi.org/project/meshio)):
-<!--exdown-skip-->
+<!--pytest-codeblocks:skip-->
 ```python
 mesh = meshplex.read("pacman.e")
 ```
 Likewise, [PyAMG](https://github.com/pyamg/pyamg) is a much faster solver
 for this problem
-<!--exdown-skip-->
+<!--pytest-codeblocks:skip-->
 ```python
 import pyamg
 
@@ -115,7 +115,7 @@ Note that the Jacobian is computed symbolically from the `Bratu` class.
 
 Instead of `pyfvm.newton`, you can use any solver that accepts the residual
 computation `f.eval`, e.g.,
-<!--exdown-skip-->
+<!--pytest-codeblocks:skip-->
 ```python
 import scipy.optimize
 
