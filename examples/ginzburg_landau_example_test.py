@@ -1,7 +1,8 @@
+import krylov
 import meshplex
 import meshzoo
 import numpy as np
-import pykry
+from scipy.sparse.linalg import LinearOperator
 
 import pyfvm
 
@@ -64,23 +65,23 @@ def test():
         gPsi0Squared = g * psi ** 2
 
         num_unknowns = len(mesh.points)
-        return pykry.LinearOperator(
-            (num_unknowns, num_unknowns),
-            complex,
-            dot=_apply_jacobian,
-            dot_adj=_apply_jacobian,
+        return LinearOperator(
+            shape=(num_unknowns, num_unknowns),
+            matvec=_apply_jacobian,
+            rmatvec=_apply_jacobian,
+            dtype=complex,
         )
 
     def jacobian_solver(psi0, rhs):
-        jac = jacobian(psi0)
-        out = pykry.gmres(
-            A=jac,
-            b=rhs,
-            inner_product=lambda a, b: np.dot(a.T.conj(), b).real,
+        sol, _ = krylov.gmres(
+            jacobian(psi0),
+            rhs,
+            inner=lambda a, b: np.dot(a.T.conj(), b).real,
             maxiter=1000,
             tol=1.0e-10,
         )
-        return out.xk
+        assert sol is not None
+        return sol
 
     u0 = np.ones(len(vertices), dtype=complex)
     u = pyfvm.newton(f, jacobian_solver, u0)
