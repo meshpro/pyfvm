@@ -27,7 +27,7 @@ def test():
             return [(u, D1())]
 
     vertices, cells = meshzoo.rectangle_tri((0.0, 0.0), (1.0, 1.0), 51)
-    mesh = meshplex.MeshTri(vertices, cells)
+    mesh = meshplex.Mesh(vertices, cells)
 
     matrix, rhs = pyfvm.discretize_linear(Poisson(), mesh)
 

@@ -46,8 +46,10 @@ def test():
                 ]
             )
 
-    vertices, cells = meshzoo.rectangle_tri((-5.0, -5.0), (5.0, 5.0), 51)
-    mesh = meshplex.MeshTri(vertices, cells)
+    vertices, cells = meshzoo.rectangle_tri(
+        np.linspace(-5.0, 5.0, 51), np.linspace(-5.0, 5.0, 51)
+    )
+    mesh = meshplex.Mesh(vertices, cells)
 
     keo = pyfvm.get_fvm_matrix(mesh, edge_kernels=[Energy()])
 

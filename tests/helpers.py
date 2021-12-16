@@ -112,7 +112,7 @@ def plot_error_data(H, error_norm_1, error_norm_inf):
 #     h = 0.5**(k+2)
 #     c = mshr.Sphere(dolfin.Point(0., 0., 0.), 1.0, int(2*pi / h))
 #     m = mshr.generate_mesh(c, 2.0 / h)
-#     return meshplex.MeshTetra(
+#     return meshplex.Mesh(
 #             m.coordinates(),
 #             m.cells(),
 #             )
@@ -130,7 +130,7 @@ def get_ball_mesh(k):
     uvertices, uidx = np.unique(cells, return_inverse=True)
     cells = uidx.reshape(cells.shape)
     points = mesh.points[uvertices]
-    return meshplex.MeshTetra(points, cells)
+    return meshplex.Mesh(points, cells)
 
 
 # def get_disk_mesh(k):
@@ -144,13 +144,13 @@ def get_ball_mesh(k):
 #     m = mshr.generate_mesh(c, 2.0 / h)
 #     coords = m.coordinates()
 #     coords = np.c_[coords, np.zeros(len(coords))]
-#     return meshplex.MeshTri(coords, m.cells())
+#     return meshplex.Mesh(coords, m.cells())
 
 
 def get_disk_mesh(k):
     import meshzoo
 
     points, cells = meshzoo.disk(6, k + 1)
-    out = meshplex.MeshTri(points, cells)
+    out = meshplex.Mesh(points, cells)
     # out.show()
     return out

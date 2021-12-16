@@ -1,6 +1,7 @@
 import helpers
 import meshplex
 import meshzoo
+import numpy as np
 import pyamg
 import pytest
 from sympy import cos, pi, sin
@@ -23,8 +24,10 @@ class Square:
 
     def get_mesh(self, k):
         n = 2 ** (k + 1)
-        vertices, cells = meshzoo.rectangle_tri((0.0, 0.0), (1.0, 1.0), n + 1)
-        return meshplex.MeshTri(vertices, cells)
+        vertices, cells = meshzoo.rectangle_tri(
+            np.linspace(0.0, 1.0, n + 1), np.linspace(0.0, 1.0, n + 1)
+        )
+        return meshplex.Mesh(vertices, cells)
 
 
 class Circle:
@@ -59,8 +62,12 @@ class Cube:
 
     def get_mesh(self, k):
         n = 2 ** (k + 1)
-        vertices, cells = meshzoo.cube_tetra((0.0, 0.0, 0.0), (1.0, 1.0, 1.0), n + 1)
-        return meshplex.MeshTetra(vertices, cells)
+        vertices, cells = meshzoo.cube_tetra(
+            np.linspace(0.0, 1.0, n + 1),
+            np.linspace(0.0, 1.0, n + 1),
+            np.linspace(0.0, 1.0, n + 1),
+        )
+        return meshplex.Mesh(vertices, cells)
 
 
 class Ball:

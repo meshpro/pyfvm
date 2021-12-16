@@ -27,6 +27,7 @@ Dirichlet boundary conditions, simply do
 ```python
 import meshplex
 import meshzoo
+import numpy as np
 from scipy.sparse import linalg
 
 import pyfvm
@@ -42,7 +43,9 @@ class Poisson:
 
 
 # Create mesh using meshzoo
-vertices, cells = meshzoo.rectangle_tri((0.0, 0.0), (2.0, 1.0), (401, 201))
+vertices, cells = meshzoo.rectangle_tri(
+    np.linspace(0.0, 2.0, 401), np.linspace(0.0, 1.0, 201)
+)
 mesh = meshplex.Mesh(vertices, cells)
 
 matrix, rhs = pyfvm.discretize_linear(Poisson(), mesh)
@@ -93,8 +96,10 @@ class Bratu:
         return [(u, Boundary())]
 
 
-vertices, cells = meshzoo.rectangle_tri((0.0, 0.0), (2.0, 1.0), (101, 51))
-mesh = meshplex.MeshTri(vertices, cells)
+vertices, cells = meshzoo.rectangle_tri(
+    np.linspace(0.0, 2.0, 101), np.linspace(0.0, 1.0, 51)
+)
+mesh = meshplex.Mesh(vertices, cells)
 
 f, jacobian = pyfvm.discretize(Bratu(), mesh)
 
