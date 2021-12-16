@@ -10,3 +10,4 @@ dist/
 LloydInit.pos
 *.egg-info/
 .pytest_cache/
+.tox/
