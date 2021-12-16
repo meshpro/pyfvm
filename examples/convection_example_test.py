@@ -18,8 +18,10 @@ def test():
         def dirichlet(self, u):
             return [(u, Boundary())]
 
-    vertices, cells = meshzoo.rectangle_tri((0.0, 0.0), (1.0, 1.0), 51)
-    mesh = meshplex.MeshTri(vertices, cells)
+    vertices, cells = meshzoo.rectangle_tri(
+        np.linspace(0.0, 2.0, 101), np.linspace(0.0, 1.0, 51)
+    )
+    mesh = meshplex.Mesh(vertices, cells)
 
     matrix, rhs = pyfvm.discretize_linear(DC(), mesh)
 

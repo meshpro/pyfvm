@@ -1,4 +1,5 @@
 import meshplex
+import numpy as np
 import pyamg
 from numpy import pi
 from sympy import sin
@@ -35,10 +36,12 @@ def test():
     # Create mesh using meshzoo
     import meshzoo
 
-    vertices, cells = meshzoo.cube_tetra((0.0, 0.0, 0.0), (1.0, 1.0, 1.0), 30)
-    mesh = meshplex.MeshTetra(vertices, cells)
+    vertices, cells = meshzoo.cube_tetra(
+        np.linspace(0.0, 1.0, 30), np.linspace(0.0, 1.0, 30), np.linspace(0.0, 1.0, 30)
+    )
+    mesh = meshplex.Mesh(vertices, cells)
     # vertices, cells = meshzoo.rectangle(0.0, 2.0, 0.0, 1.0, 401, 201)
-    # mesh = meshplex.MeshTri(vertices, cells)
+    # mesh = meshplex.Mesh(vertices, cells)
 
     # import mshr
     # import dolfin
@@ -51,7 +54,7 @@ def test():
     # coords = m.coordinates()
     # coords = np.c_[coords, np.zeros(len(coords))]
     # cells = m.cells().copy()
-    # mesh = meshplex.MeshTri(coords, cells)
+    # mesh = meshplex.Mesh(coords, cells)
     # # mesh = meshplex.lloyd_smoothing(mesh, 1.0e-4)
 
     matrix, rhs = pyfvm.discretize_linear(Poisson(), mesh)

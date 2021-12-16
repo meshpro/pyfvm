@@ -6,8 +6,8 @@ import pathlib
 import meshio
 import meshplex
 import numpy as np
-import pykry
 import pytest
+from scipy.sparse.linalg import LinearOperator
 
 import pyfvm
 
@@ -169,11 +169,11 @@ def test_jacobian(filename, control_values):
         gPsi0Squared = g * psi ** 2
 
         num_unknowns = len(mesh.points)
-        return pykry.LinearOperator(
-            (num_unknowns, num_unknowns),
-            complex,
-            dot=_apply_jacobian,
-            dot_adj=_apply_jacobian,
+        return LinearOperator(
+            shape=(num_unknowns, num_unknowns),
+            matvec=_apply_jacobian,
+            rmatvec=_apply_jacobian,
+            dtype=complex,
         )
 
     # Get the Jacobian

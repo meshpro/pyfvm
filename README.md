@@ -24,9 +24,11 @@ package is for everyone who wants to quickly construct FVM systems.
 
 pyfvm works by specifying the residuals, so for solving Poisson's equation with
 Dirichlet boundary conditions, simply do
+
 ```python
 import meshplex
 import meshzoo
+import numpy as np
 from scipy.sparse import linalg
 
 import pyfvm
@@ -42,7 +44,9 @@ class Poisson:
 
 
 # Create mesh using meshzoo
-vertices, cells = meshzoo.rectangle_tri((0.0, 0.0), (2.0, 1.0), (401, 201))
+vertices, cells = meshzoo.rectangle_tri(
+    np.linspace(0.0, 2.0, 401), np.linspace(0.0, 1.0, 201)
+)
 mesh = meshplex.Mesh(vertices, cells)
 
 matrix, rhs = pyfvm.discretize_linear(Poisson(), mesh)
@@ -51,17 +55,23 @@ u = linalg.spsolve(matrix, rhs)
 
 mesh.write("out.vtk", point_data={"u": u})
 ```
+
 This example uses [meshzoo](https://pypi.org/project/meshzoo) for creating a simple
 mesh, but anything else that provides vertices and cells works as well. For example,
 reading from a wide variety of mesh files is supported (via
 [meshio](https://pypi.org/project/meshio)):
+
 <!--pytest-codeblocks:skip-->
+
 ```python
 mesh = meshplex.read("pacman.e")
 ```
+
 Likewise, [PyAMG](https://github.com/pyamg/pyamg) is a much faster solver
 for this problem
+
 <!--pytest-codeblocks:skip-->
+
 ```python
 import pyamg
 
@@ -72,8 +82,10 @@ u = ml.solve(rhs, tol=1e-10)
 More examples are contained in the [examples directory](examples/).
 
 #### Nonlinear equation systems
+
 Nonlinear systems are treated almost equally; only the discretization and
 obviously the solver call is different. For Bratu's problem:
+
 ```python
 import pyfvm
 from pyfvm.form_language import *
@@ -93,8 +105,10 @@ class Bratu:
         return [(u, Boundary())]
 
 
-vertices, cells = meshzoo.rectangle_tri((0.0, 0.0), (2.0, 1.0), (101, 51))
-mesh = meshplex.MeshTri(vertices, cells)
+vertices, cells = meshzoo.rectangle_tri(
+    np.linspace(0.0, 2.0, 101), np.linspace(0.0, 1.0, 51)
+)
+mesh = meshplex.Mesh(vertices, cells)
 
 f, jacobian = pyfvm.discretize(Bratu(), mesh)
 
@@ -111,11 +125,14 @@ u = pyfvm.newton(f.eval, jacobian_solver, u0)
 
 mesh.write("out.vtk", point_data={"u": u})
 ```
+
 Note that the Jacobian is computed symbolically from the `Bratu` class.
 
 Instead of `pyfvm.newton`, you can use any solver that accepts the residual
 computation `f.eval`, e.g.,
+
 <!--pytest-codeblocks:skip-->
+
 ```python
 import scipy.optimize
 
@@ -126,17 +143,21 @@ u = scipy.optimize.newton_krylov(f.eval, u0)
 
 pyfvm is [available from the Python Package
 Index](https://pypi.org/project/pyfvm/), so simply type
+
 ```
 pip install pyfvm
 ```
+
 to install.
 
 ### Testing
 
 To run the tests, check out this repository and type
+
 ```
 pytest
 ```
 
 ### License
+
 This software is published under the [GPLv3 license](https://www.gnu.org/licenses/gpl-3.0.en.html).
