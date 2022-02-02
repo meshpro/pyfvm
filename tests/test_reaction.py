@@ -19,7 +19,7 @@ class Square:
             integrate(lambda x: -n_dot_grad(u(x)), dS)
             + integrate(lambda x: u(x), dV)
             - integrate(
-                lambda x: (2 * pi ** 2 + 1) * sin(pi * x[0]) * sin(pi * x[1]), dV
+                lambda x: (2 * pi**2 + 1) * sin(pi * x[0]) * sin(pi * x[1]), dV
             )
         )
 
@@ -62,7 +62,7 @@ class Cube:
 
     def apply(self, u):
         def rhs(x):
-            return (3 * pi ** 2 + 1) * sin(pi * x[0]) * sin(pi * x[1]) * sin(pi * x[2])
+            return (3 * pi**2 + 1) * sin(pi * x[0]) * sin(pi * x[1]) * sin(pi * x[2])
 
         return (
             integrate(lambda x: -n_dot_grad(u(x)), dS)

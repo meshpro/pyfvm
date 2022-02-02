@@ -25,7 +25,7 @@ class Square:
         return (
             integrate(lambda x: -n_dot_grad(u(x)), dS)
             - integrate(lambda x: -pi * sin(pi * x[0]), dGamma)
-            - integrate(lambda x: 2 * pi ** 2 * sin(pi * x[0]) * sin(pi * x[1]), dV)
+            - integrate(lambda x: 2 * pi**2 * sin(pi * x[0]) * sin(pi * x[1]), dV)
         )
 
     def dirichlet(self, u):

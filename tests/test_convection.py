@@ -21,7 +21,7 @@ class Square:
         a1 = 1
         a = sympy.Matrix([a0, a1, 0])
         return integrate(lambda x: -n_dot_grad(u(x)) + n_dot(a) * u(x), dS) - integrate(
-            lambda x: 2 * pi ** 2 * sin(pi * x[0]) * sin(pi * x[1])
+            lambda x: 2 * pi**2 * sin(pi * x[0]) * sin(pi * x[1])
             + a0 * pi * cos(pi * x[0]) * sin(pi * x[1])
             + a1 * pi * sin(pi * x[0]) * cos(pi * x[1]),
             dV,
@@ -74,7 +74,7 @@ class Cube:
         a2 = 3
         a = Matrix([a0, a1, a2])
         return integrate(lambda x: -n_dot_grad(u(x)) + n_dot(a) * u(x), dS) - integrate(
-            lambda x: 3 * pi ** 2 * sin(pi * x[0]) * sin(pi * x[1]) * sin(pi * x[2])
+            lambda x: 3 * pi**2 * sin(pi * x[0]) * sin(pi * x[1]) * sin(pi * x[2])
             + a0 * pi * cos(pi * x[0]) * sin(pi * x[1]) * sin(pi * x[2])
             + a1 * pi * sin(pi * x[0]) * cos(pi * x[1]) * sin(pi * x[2])
             + a2 * pi * sin(pi * x[0]) * sin(pi * x[1]) * cos(pi * x[2]),

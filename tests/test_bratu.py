@@ -14,7 +14,7 @@ class Square:
         return (
             integrate(lambda x: -n_dot_grad(u(x)), dS)
             - integrate(lambda x: 2.0 * exp(u(x)), dV)
-            - integrate(lambda x: 2 * pi ** 2 * sin(pi * x[0]) * sin(pi * x[1]), dV)
+            - integrate(lambda x: 2 * pi**2 * sin(pi * x[0]) * sin(pi * x[1]), dV)
             + integrate(lambda x: 2.0 * exp(sin(pi * x[0]) * sin(pi * x[1])), dV)
         )
 
@@ -64,7 +64,7 @@ class Cube:
             - integrate(lambda x: 2.0 * exp(u(x)), dV)
             - integrate(
                 lambda x: (
-                    3 * pi ** 2 * sin(pi * x[0]) * sin(pi * x[1]) * sin(pi * x[2])
+                    3 * pi**2 * sin(pi * x[0]) * sin(pi * x[1]) * sin(pi * x[2])
                     - 2.0 * exp(self.exact_sol(x))
                 ),
                 dV,

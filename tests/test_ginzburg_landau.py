@@ -165,8 +165,8 @@ def test_jacobian(filename, control_values):
             y = keo * phi / cv + alpha * phi + gPsi0Squared * phi.conj()
             return y
 
-        alpha = V + g * 2.0 * (psi.real ** 2 + psi.imag ** 2)
-        gPsi0Squared = g * psi ** 2
+        alpha = V + g * 2.0 * (psi.real**2 + psi.imag**2)
+        gPsi0Squared = g * psi**2
 
         num_unknowns = len(mesh.points)
         return LinearOperator(

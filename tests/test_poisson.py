@@ -16,7 +16,7 @@ class Square:
 
     def apply(self, u):
         return integrate(lambda x: -n_dot_grad(u(x)), dS) - integrate(
-            lambda x: 2 * pi ** 2 * sin(pi * x[0]) * sin(pi * x[1]), dV
+            lambda x: 2 * pi**2 * sin(pi * x[0]) * sin(pi * x[1]), dV
         )
 
     def dirichlet(self, u):
@@ -54,7 +54,7 @@ class Cube:
 
     def apply(self, u):
         return integrate(lambda x: -n_dot_grad(u(x)), dS) - integrate(
-            lambda x: 3 * pi ** 2 * sin(pi * x[0]) * sin(pi * x[1]) * sin(pi * x[2]), dV
+            lambda x: 3 * pi**2 * sin(pi * x[0]) * sin(pi * x[1]) * sin(pi * x[2]), dV
         )
 
     def dirichlet(self, u):
