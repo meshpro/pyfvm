@@ -87,7 +87,7 @@ obviously the solver call is different. For Bratu's problem:
 import pyfvm
 from pyfvm.form_language import *
 import meshzoo
-import numpy
+import numpy as np
 from sympy import exp
 import meshplex
 
@@ -117,7 +117,7 @@ def jacobian_solver(u0, rhs):
     return linalg.spsolve(jac, rhs)
 
 
-u0 = numpy.zeros(len(vertices))
+u0 = np.zeros(len(vertices))
 u = pyfvm.newton(f.eval, jacobian_solver, u0)
 
 mesh.write("out.vtk", point_data={"u": u})
